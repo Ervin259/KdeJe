@@ -1,6 +1,7 @@
 import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
 import { NavTabs, type Tab } from "./NavTabs";
+import { TopBar } from "./TopBar";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -50,11 +51,11 @@ export async function Header({
           </form>
         </div>
       </header>
-      <div className={`topbar${stack ? " tstack" : ""}`} id="bar">
+      <TopBar stack={stack}>
         <NavTabs tabs={tabs} />
         <div className="bl">{center}</div>
         <div className="br">{right}</div>
-      </div>
+      </TopBar>
     </div>
   );
 }
