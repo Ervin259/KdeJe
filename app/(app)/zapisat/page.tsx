@@ -1,29 +1,101 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireMe, todayIso } from "@/lib/data";
-import { EntryForm } from "./EntryForm";
+import { loadCompany } from "@/lib/loaders";
+import { byLastName, hhmm, type Entry } from "@/lib/calc";
+import { safeBack } from "@/lib/params";
+import { Header } from "@/components/Header";
+import { EntryForm, type Init } from "./EntryForm";
 
-export default async function NewEntryPage({
+export default async function EntryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ spat?: string }>;
+  searchParams: Promise<{ spat?: string; id?: string; emp?: string; d?: string }>;
 }) {
   const me = await requireMe();
+  const admin = me.role === "admin";
   const supabase = await createClient();
   const sp = await searchParams;
-  // len interné cesty, žiadne presmerovanie mimo aplikácie
-  const back = sp.spat?.startsWith("/") && !sp.spat.startsWith("//") ? sp.spat : "/kalendar";
+  const back = safeBack(sp.spat);
+  const { emps, calc } = await loadCompany();
 
-  const [{ data: types }, people] = await Promise.all([
-    supabase.from("absence_types").select("code, name, parts").eq("enabled", true).order("sort"),
-    me.role === "admin"
-      ? supabase.from("employees").select("id, name").eq("active", true).order("name").then((r) => r.data ?? [])
-      : Promise.resolve(null),
-  ]);
+  const { data: types } = await supabase.from("absence_types").select("code, name, parts").eq("enabled", true).order("sort");
 
+  let init: Init;
+  let locked = false;
+  if (sp.id) {
+    const { data } = await supabase.from("entries").select("*").eq("id", sp.id).maybeSingle();
+    if (!data) {
+      return (
+        <>
+          <Header me={me} />
+          <main id="view">
+            <div className="box">
+              Záznam sa nenašiel. <Link href={back}>Späť</Link>
+            </div>
+          </main>
+        </>
+      );
+    }
+    const x = data as Entry;
+    init = {
+      id: x.id,
+      employee_id: x.employee_id,
+      type: x.type,
+      part: x.part,
+      date_from: x.date_from,
+      date_to: x.date_to,
+      time_from: hhmm(x.time_from) || "08:30",
+      time_to: hhmm(x.time_to) || "10:30",
+      substitute_id: x.substitute_id ?? "",
+      note: x.note ?? "",
+    };
+    if (!admin) {
+      const { data: can } = await supabase.rpc("employee_can_write", {
+        p_emp: x.employee_id,
+        p_from: x.date_from,
+        p_to: x.date_to,
+        p_change: true,
+      });
+      locked = can === false;
+    }
+  } else {
+    const d = sp.d && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) ? sp.d : todayIso();
+    const empId = admin && sp.emp && emps.some((e) => e.id === sp.emp) ? sp.emp : me.id;
+    const sc = calc.sched(empId);
+    init = {
+      id: null,
+      employee_id: empId,
+      type: types?.[0]?.code ?? "DOV",
+      part: "full",
+      date_from: d,
+      date_to: d,
+      time_from: sc.start || "08:30",
+      time_to: "",
+      substitute_id: "",
+      note: "",
+    };
+  }
+
+  const active = emps.filter((e) => e.active).sort(byLastName);
   return (
-    <section className="narrow">
-      <h1>Zapísať neprítomnosť</h1>
-      <EntryForm types={types ?? []} people={people} meId={me.id} back={back} today={todayIso()} />
-    </section>
+    <>
+      <Header me={me} />
+      <main id="view">
+        <div className="panel">
+          <div className="box">
+            <h3 style={{ marginBottom: 14 }}>{init.id ? "Upraviť záznam" : "Zapísať neprítomnosť"}</h3>
+            <EntryForm
+              types={(types ?? []) as { code: string; name: string; parts: string[] }[]}
+              people={admin ? active.map((e) => ({ id: e.id, name: e.name })) : null}
+              subs={active.map((e) => ({ id: e.id, name: e.name }))}
+              init={init}
+              back={back}
+              locked={locked}
+            />
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

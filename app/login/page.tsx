@@ -64,13 +64,15 @@ export default function LoginPage() {
   return (
     <main className="login">
       <div className="login-card">
-        <div className="logo logo-lg">
-          Kde<span>Je</span>
+        <div className="brand">
+          <h1>
+            Kde<b>Je</b>
+          </h1>
         </div>
         <p className="muted">Euro Data Distribution s.r.o.</p>
 
         {state === "sent" ? (
-          <p className="ok">
+          <p className="okmsg">
             Na adresu <b>{email}</b> sme poslali odkaz na prihlásenie. Otvorte ho v tomto prehliadači.
           </p>
         ) : (
@@ -85,7 +87,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="meno@firma.sk"
             />
-            <button className="btn btn-primary" disabled={state === "sending"}>
+            <button className="btn primary" disabled={state === "sending"}>
               {state === "sending" ? "Posielam…" : "Poslať prihlasovací odkaz"}
             </button>
             {state === "error" && <p className="err">{error}</p>}

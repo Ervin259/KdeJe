@@ -1,55 +1,88 @@
 "use client";
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { saveEntry, type FormState } from "./actions";
+import { deleteEntry, saveEntry, type FormState } from "./actions";
 
 type AbsenceType = { code: string; name: string; parts: string[] };
 type Person = { id: string; name: string };
+export type Init = {
+  id: string | null;
+  employee_id: string;
+  type: string;
+  part: "full" | "am" | "pm" | "hrs";
+  date_from: string;
+  date_to: string;
+  time_from: string;
+  time_to: string;
+  substitute_id: string;
+  note: string;
+};
+
+const PARTS = [
+  { v: "full", label: "Celý deň", need: "full" },
+  { v: "am", label: "Dopoludnie", need: "half" },
+  { v: "pm", label: "Popoludnie", need: "half" },
+  { v: "hrs", label: "Hodiny", need: "hrs" },
+] as const;
+
+function addMin(t: string, min: number) {
+  const [h, m] = t.split(":").map(Number);
+  const x = h * 60 + m + min;
+  return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
+}
 
 export function EntryForm({
   types,
   people,
-  meId,
+  subs,
+  init,
   back,
-  today,
+  locked,
 }: {
   types: AbsenceType[];
-  people: Person[] | null; // null = nie je admin
-  meId: string;
+  people: Person[] | null;
+  subs: Person[];
+  init: Init;
   back: string;
-  today: string;
+  locked: boolean;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(saveEntry, {});
-  const [type, setType] = useState(types[0]?.code ?? "DOV");
-  const [part, setPart] = useState("full");
+  const [state, save, saving] = useActionState<FormState, FormData>(saveEntry, {});
+  const [dstate, del, deleting] = useActionState<FormState, FormData>(deleteEntry, {});
+  const [type, setType] = useState(init.type);
+  const [part, setPart] = useState<string>(init.part);
+  const [emp, setEmp] = useState(init.employee_id);
   const allowed = types.find((t) => t.code === type)?.parts ?? ["full"];
-
-  const partOptions = [
-    { v: "full", label: "Celý deň", need: "full" },
-    { v: "am", label: "Dopoludnie", need: "half" },
-    { v: "pm", label: "Popoludnie", need: "half" },
-    { v: "hrs", label: "Hodiny", need: "hrs" },
-  ].filter((o) => allowed.includes(o.need));
-  const effectivePart = partOptions.some((o) => o.v === part) ? part : "full";
+  const options = PARTS.filter((o) => allowed.includes(o.need));
+  const p = options.some((o) => o.v === part) ? part : "full";
+  const needReason = locked || state.needReason || dstate.needReason;
+  const errors = [...(state.error ?? []), ...(dstate.error ?? [])];
+  const reasonMsg = state.reasonMsg || dstate.reasonMsg;
 
   return (
-    <form action={action} className="card form">
+    <form action={save} className="fform">
       <input type="hidden" name="spat" value={back} />
+      {init.id && <input type="hidden" name="id" value={init.id} />}
+
+      {locked && (
+        <div className="fmsg info">
+          Záznam je v uzamknutom období alebo zmeny schvaľuje administrátor. Úprava aj vymazanie sa odošlú ako žiadosť.
+        </div>
+      )}
 
       {people && (
-        <label>
+        <label className="fl">
           Zamestnanec
-          <select name="employee_id" defaultValue={meId}>
-            {people.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+          <select name="employee_id" value={emp} onChange={(e) => setEmp(e.target.value)}>
+            {people.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name}
               </option>
             ))}
           </select>
         </label>
       )}
 
-      <label>
+      <label className="fl">
         Neprítomnosť
         <select name="type" value={type} onChange={(e) => setType(e.target.value)}>
           {types.map((t) => (
@@ -60,69 +93,102 @@ export function EntryForm({
         </select>
       </label>
 
-      <fieldset className="seg">
-        <legend>Rozsah</legend>
-        {partOptions.map((o) => (
-          <label key={o.v} className={effectivePart === o.v ? "seg-on" : undefined}>
-            <input
-              type="radio"
-              name="part"
-              value={o.v}
-              checked={effectivePart === o.v}
-              onChange={() => setPart(o.v)}
-            />
-            {o.label}
-          </label>
-        ))}
-      </fieldset>
+      <div className="fl" style={{ display: "grid", gap: 5, fontWeight: 600, fontSize: 13 }}>
+        Rozsah
+        <div className="seg" role="group" aria-label="Rozsah" style={{ justifySelf: "start" }}>
+          {options.map((o) => (
+            <button key={o.v} type="button" aria-pressed={p === o.v} onClick={() => setPart(o.v)}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <input type="hidden" name="part" value={p} />
+      </div>
 
       <div className="row2">
-        <label>
-          {effectivePart === "full" ? "Od" : "Dátum"}
-          <input type="date" name="date_from" defaultValue={today} required />
+        <label className="fl">
+          {p === "full" ? "Od" : "Dátum"}
+          <input type="date" name="date_from" defaultValue={init.date_from} required />
         </label>
-        {effectivePart === "full" && (
-          <label>
+        {p === "full" && (
+          <label className="fl">
             Do
-            <input type="date" name="date_to" defaultValue={today} />
+            <input type="date" name="date_to" defaultValue={init.date_to} />
           </label>
         )}
       </div>
 
-      {effectivePart === "hrs" && (
+      {p === "hrs" && (
         <div className="row2">
-          <label>
+          <label className="fl">
             Čas od
-            <input type="time" name="time_from" defaultValue="08:30" step={900} required />
+            <input type="time" name="time_from" defaultValue={init.time_from} step={900} required />
           </label>
-          <label>
+          <label className="fl">
             Čas do
-            <input type="time" name="time_to" defaultValue="10:30" step={900} required />
+            <input type="time" name="time_to" defaultValue={init.time_to || addMin(init.time_from, 120)} step={900} required />
           </label>
         </div>
       )}
 
-      <label>
-        Poznámka
-        <input type="text" name="note" maxLength={300} />
-      </label>
+      <div className="row2">
+        <label className="fl">
+          Zástup
+          <select name="substitute_id" defaultValue={init.substitute_id}>
+            <option value="">—</option>
+            {subs
+              .filter((x) => x.id !== emp)
+              .map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="fl">
+          Poznámka
+          <input type="text" name="note" defaultValue={init.note} maxLength={300} />
+        </label>
+      </div>
 
-      {state.needReason && (
-        <label>
+      {needReason && (
+        <label className="fl">
           Dôvod žiadosti
+          {reasonMsg && <span className="muted" style={{ fontWeight: 400 }}>{reasonMsg}</span>}
           <textarea name="reason" required rows={3} />
         </label>
       )}
 
-      {state.error && <p className="err">{state.error}</p>}
+      {errors.length > 0 && (
+        <div className="fmsg err">
+          {errors.map((e, i) => (
+            <div key={i}>{e}</div>
+          ))}
+        </div>
+      )}
 
-      <div className="actions">
-        <Link href={back} className="btn">
-          Zrušiť
-        </Link>
-        <button className="btn btn-primary" disabled={pending}>
-          {pending ? "Ukladám…" : state.needReason ? "Odoslať žiadosť" : "Uložiť"}
-        </button>
+      <div className="acts">
+        {init.id && (
+          <button
+            className="btn danger"
+            formAction={del}
+            formNoValidate
+            disabled={deleting}
+            onClick={(e) => {
+              if (!confirm(needReason ? "Odoslať žiadosť o vymazanie záznamu?" : "Naozaj vymazať tento záznam?")) e.preventDefault();
+            }}
+          >
+            {needReason ? "Žiadosť o vymazanie" : "Vymazať"}
+          </button>
+        )}
+        <div className="row">
+          <Link href={back} className="btn">
+            Zrušiť
+          </Link>
+          <button className="btn primary" disabled={saving}>
+            {saving ? "Ukladám…" : needReason ? "Odoslať žiadosť" : "Uložiť"}
+          </button>
+        </div>
       </div>
     </form>
   );

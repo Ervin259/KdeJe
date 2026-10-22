@@ -862,6 +862,7 @@ join employees e on e.name = v.name;
 
 alter table entries enable trigger entries_audit;
 
+delete from audit_log where action = 'IMPORT';
 insert into audit_log (table_name, action, text) values
   ('entries', 'IMPORT', 'Import dochádzky 2026 z Outlooku: TPP 681 záznamov, živnosť a s.r.o. 94 záznamov');
 

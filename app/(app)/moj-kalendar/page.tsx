@@ -1,12 +1,13 @@
-import { MonthCalendar } from "@/components/MonthCalendar";
-import { parseMonth, requireMe } from "@/lib/data";
+import { Calendar } from "@/components/Calendar";
+import { requireMe } from "@/lib/data";
+import { calParams } from "@/lib/params";
 
 export default async function MyCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ v?: string; d?: string; m?: string }>;
 }) {
   const me = await requireMe();
-  const { y, m } = parseMonth((await searchParams).m);
-  return <MonthCalendar me={me} y={y} m={m} basePath="/moj-kalendar" onlyMe />;
+  const { view, anchor } = calParams(await searchParams, "month");
+  return <Calendar me={me} view={view} anchor={anchor} basePath="/moj-kalendar" onlyMe />;
 }
