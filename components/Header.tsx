@@ -10,10 +10,13 @@ export async function Header({
   me,
   center,
   right,
+  stack = false,
 }: {
   me: Me;
   center?: React.ReactNode;
   right?: React.ReactNode;
+  /** lišta pod záložkami na samostatnom riadku (veľa ovládacích prvkov) */
+  stack?: boolean;
 }) {
   const tabs: Tab[] = [];
   if (me.role === "admin") {
@@ -46,7 +49,7 @@ export async function Header({
           </form>
         </div>
       </header>
-      <div className="topbar" id="bar">
+      <div className={`topbar${stack ? " tstack" : ""}`} id="bar">
         <NavTabs tabs={tabs} />
         <div className="bl">{center}</div>
         <div className="br">{right}</div>
