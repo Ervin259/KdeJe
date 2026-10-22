@@ -23,6 +23,7 @@ export async function Header({
     const pending = await pendingRequestsCount();
     tabs.push(
       { href: "/kalendar", label: "Kalendár tímu" },
+      { href: "/moj-kalendar", label: "Môj kalendár" },
       { href: "/prehlad", label: "Prehľad" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },

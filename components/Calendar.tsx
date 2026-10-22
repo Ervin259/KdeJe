@@ -130,7 +130,7 @@ export async function Calendar({
   );
   const right = (
     <div className="row">
-      {view === "month" && !admin && me.contract_type === "TPP" && (
+      {view === "month" && (onlyMe || !admin) && me.contract_type === "TPP" && (
         <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} />
       )}
       {onlyMe && (
