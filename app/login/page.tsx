@@ -1,11 +1,39 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+
+  // Pozvánka s predvolenou šablónou Supabase vracia prihlásenie v časti URL za „#“
+  // (#access_token=…&refresh_token=…). Server ju nevidí, preto ju prevezmeme tu.
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const access_token = hash.get("access_token");
+    const refresh_token = hash.get("refresh_token");
+    const hashError = hash.get("error_description");
+    if (hashError) {
+      setState("error");
+      setError("Odkaz je neplatný alebo mu vypršala platnosť. Pošlite si nový.");
+      history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+    if (!access_token || !refresh_token) return;
+    setState("sending");
+    createClient()
+      .auth.setSession({ access_token, refresh_token })
+      .then(({ error }) => {
+        history.replaceState(null, "", window.location.pathname);
+        if (error) {
+          setState("error");
+          setError("Prihlásenie z odkazu sa nepodarilo: " + error.message);
+        } else {
+          window.location.replace("/kalendar");
+        }
+      });
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
