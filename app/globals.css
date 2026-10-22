@@ -1,0 +1,128 @@
+:root {
+  --hdr: #222b37;
+  --hdr-line: #3a4553;
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #6b7684;
+  --line: #e1e4e8;
+  --indigo: #4f46e5;
+  --indigo-soft: #eef0ff;
+  --off: #eceef1;
+  --err: #c0362c;
+  --ok: #217a4b;
+
+  --DOV: #4f9d69;
+  --PAR: #d9822b;
+  --OCR: #c4569b;
+  --PV: #8a6fd1;
+  --PN: #d0453e;
+  --SCT: #2f80c2;
+  --SCZ: #1f5f99;
+  --HO: #2ba3a3;
+  --NV: #8b95a1;
+  --NEP: #5b6470;
+  --MIMO: #7a8592;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+a { color: inherit; }
+h1 { font-size: 20px; margin: 0 0 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.err { color: var(--err); }
+.ok { color: var(--ok); }
+
+/* ---------- hlavička ---------- */
+.hdr { position: sticky; top: 0; z-index: 10; background: var(--hdr); color: #fff; }
+.hdr-top { display: flex; align-items: center; gap: 24px; padding: 10px 20px; border-bottom: 1px solid var(--hdr-line); }
+.logo { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
+.logo span { color: #8fa7ff; }
+.logo-lg { font-size: 34px; color: var(--hdr); }
+.hdr-company { color: #c9d1db; }
+.hdr-user { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.hdr-user .role { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--hdr-line); }
+.hdr-bottom { padding: 0 12px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; }
+.tab { padding: 10px 12px; text-decoration: none; color: #c9d1db; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab:hover { color: #fff; }
+.tab.active { color: #fff; border-bottom-color: #8fa7ff; }
+.btn-link { background: none; border: 0; color: #c9d1db; cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* ---------- stránka ---------- */
+.page { padding: 20px; }
+.narrow { max-width: 560px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 34px; padding: 0 12px; border-radius: 6px;
+  border: 1px solid var(--line); background: #fff; color: var(--text);
+  font: inherit; text-decoration: none; cursor: pointer;
+}
+.btn:hover { border-color: #c4c9d0; }
+.btn-primary { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+.btn-primary:hover { background: #4338ca; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar-mid { display: flex; align-items: center; gap: 8px; }
+.period { margin: 0 8px; min-width: 150px; text-align: center; font-size: 18px; }
+
+/* ---------- mesačná mriežka ---------- */
+.grid-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+.cal { border-collapse: collapse; width: 100%; min-width: 900px; }
+.cal th, .cal td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: center; padding: 0; }
+.cal th { font-weight: 600; font-size: 12px; padding: 4px 0; background: #fafbfc; }
+.cal th .dow { font-weight: 400; color: var(--muted); }
+.cal th.today { background: var(--indigo-soft); color: var(--indigo); }
+.cal .off { background: var(--off); }
+.cal th.off { background: #e4e7eb; }
+.cal td { position: relative; height: 40px; min-width: 26px; }
+.cal .cal-name { text-align: left; padding: 4px 10px; min-width: 170px; position: sticky; left: 0; background: var(--card); z-index: 1; }
+.cal thead .cal-name { background: #fafbfc; }
+.cal tr.me .cal-name { font-weight: 600; }
+
+.blk {
+  position: absolute; left: 2px; right: 2px; border-radius: 3px;
+  color: #fff; font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: var(--MIMO);
+}
+.blk .dot { position: absolute; top: 2px; right: 2px; width: 5px; height: 5px; border-radius: 50%; background: #fff; }
+.t-DOV { background: var(--DOV); } .t-PAR { background: var(--PAR); } .t-OCR { background: var(--OCR); }
+.t-PV { background: var(--PV); }   .t-PN { background: var(--PN); }   .t-SCT { background: var(--SCT); }
+.t-SCZ { background: var(--SCZ); } .t-HO { background: var(--HO); }   .t-NV { background: var(--NV); }
+.t-NEP { background: var(--NEP); } .t-MIMO { background: var(--MIMO); }
+
+/* ---------- formulár ---------- */
+.form { display: grid; gap: 14px; }
+.form label { display: grid; gap: 4px; font-weight: 500; }
+.form input, .form select, .form textarea, .login input {
+  font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #fff; width: 100%;
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.seg { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.seg legend { font-weight: 500; margin-bottom: 4px; padding: 0; }
+.seg label { display: inline-flex; align-items: center; gap: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-weight: 400; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; width: auto; }
+.seg .seg-on { border-color: var(--indigo); background: var(--indigo-soft); color: var(--indigo); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---------- prihlásenie ---------- */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.login-card { width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 28px; display: grid; gap: 12px; }
+.login-card form { display: grid; gap: 10px; }
+
+@media (max-width: 640px) {
+  .page { padding: 12px 16px; }
+  .hdr-company { display: none; }
+  .row2 { grid-template-columns: 1fr; }
+}
