@@ -33,3 +33,7 @@ button { cursor: pointer; font: inherit; }
 
 /* schvaľovanie – formulár v riadku žiadosti */
 .req-act form { display: contents; }
+
+/* meno v Prehľade je odkaz */
+a.namebtn { text-decoration: none; color: inherit; }
+a.namebtn:hover { color: var(--accent); }

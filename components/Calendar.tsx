@@ -133,6 +133,11 @@ export async function Calendar({
       {view === "month" && !admin && me.contract_type === "TPP" && (
         <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} />
       )}
+      {onlyMe && (
+        <Link className="btn ovbtn" href="/moj-kalendar/prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
+          Prehľad
+        </Link>
+      )}
       <div className="seg" role="group" aria-label="Náhľad">
         {(
           [

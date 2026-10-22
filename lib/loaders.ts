@@ -26,7 +26,7 @@ export type EmpFull = Emp & {
 /** Spoločné dáta firmy (raz za request). */
 export const loadCompany = cache(async () => {
   const supabase = await createClient();
-  const [g, h, e, s, r, ms] = await Promise.all([
+  const [g, h, e, s, r, ms, t] = await Promise.all([
     supabase.from("work_groups").select("*").order("sort"),
     supabase.from("holidays").select("date, name").order("date"),
     supabase
@@ -37,7 +37,10 @@ export const loadCompany = cache(async () => {
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),
     supabase.from("month_status").select("year, month, closed_manually, reopened"),
+    supabase.from("absence_types").select("code, name, kind, parts, enabled, is_health, sort").order("sort"),
   ]);
+  const types = (t.data ?? []) as AbsenceType[];
+  const enabled = types.filter((x) => x.enabled).map((x) => x.code);
   const rights = (r.data ?? []) as RightsGroup[];
   const monthStatus = (ms.data ?? []) as MonthStatusRow[];
   const lockDays = rights.find((x) => x.is_default)?.lock_days ?? 3;
@@ -64,8 +67,18 @@ export const loadCompany = cache(async () => {
     if (today > last) return { s: "grace", lock, last };
     return { s: "open", lock, last };
   };
-  return { groups, holidays, emps, settings, calc, rights, monthStatus, mstatus, lockDays };
+  return { groups, holidays, emps, settings, calc, rights, monthStatus, mstatus, lockDays, types, enabled };
 });
+
+export type AbsenceType = {
+  code: string;
+  name: string;
+  kind: "abs" | "sc" | "work";
+  parts: string[];
+  enabled: boolean;
+  is_health: boolean;
+  sort: number;
+};
 
 export type RightsGroup = {
   id: string;
