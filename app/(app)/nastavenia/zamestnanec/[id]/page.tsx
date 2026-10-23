@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data";
@@ -141,7 +142,24 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <Header me={me} />
+      <Header
+        me={me}
+        center={
+          <div className="mnav">
+            <h2>{init.id ? init.name : "Nový zamestnanec"}</h2>
+          </div>
+        }
+        right={
+          <div className="row">
+            <Link className="btn" href="/nastavenia?open=emp">
+              Zrušiť
+            </Link>
+            <button className="btn primary" form="empform" type="submit">
+              {init.id ? "Uložiť zmeny" : "Pridať zamestnanca"}
+            </button>
+          </div>
+        }
+      />
       <main id="view">
         <EmpForm
           init={init}

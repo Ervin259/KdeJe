@@ -91,7 +91,7 @@ export function EmpForm({
   }
 
   return (
-    <form action={action} className="panel">
+    <form action={action} className="panel" id="empform">
       {init.id && <input type="hidden" name="id" value={init.id} />}
       <input type="hidden" name="active" value={active ? "1" : "0"} />
       <div className="monthbar">
@@ -99,14 +99,6 @@ export function EmpForm({
           <h2>{init.id ? init.name : "Nový zamestnanec"}</h2>
           {init.id && <span className="pill closed">{PP.find((x) => x[0] === init.contract_type)?.[1]}</span>}
           {!init.active && <span className="pill bad">skrytý</span>}
-        </div>
-        <div className="row">
-          <Link className="btn" href="/nastavenia?open=emp">
-            Zrušiť
-          </Link>
-          <button className="btn primary" disabled={pending}>
-            {init.id ? "Uložiť zmeny" : "Pridať zamestnanca"}
-          </button>
         </div>
       </div>
       {state.error && (
@@ -347,6 +339,14 @@ export function EmpForm({
             ))}
           </ul>
         </section>
+      </div>
+      <div className="row" style={{ justifyContent: "flex-end" }}>
+        <Link className="btn" href="/nastavenia?open=emp">
+          Zrušiť
+        </Link>
+        <button className="btn primary" disabled={pending}>
+          {init.id ? "Uložiť zmeny" : "Pridať zamestnanca"}
+        </button>
       </div>
     </form>
   );
