@@ -285,18 +285,18 @@
 .btn.xls{background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);box-shadow:none;font-weight:600}
 .btn.xls:hover{background:color-mix(in srgb,var(--accent) 16%,var(--surface))}
 .empsum{display:flex;align-items:center;gap:6px;margin-right:8px;flex-wrap:wrap;justify-content:flex-end}
-.empsum span{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);color:var(--sec-ico);border:1px solid var(--sec-line);white-space:nowrap}
+.empsum :is(span,a){font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--surface);color:var(--sec-ico);border:1px solid var(--sec-line);white-space:nowrap}
 .empsum b{font-weight:700;margin-left:2px}
 .empsum .tot{background:var(--sec-ico);color:#fff;border-color:var(--sec-ico)}
-.acc.open>.acchead .empsum span{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)}
+.acc.open>.acchead .empsum :is(span,a){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)}
 .acc.open>.acchead .empsum .tot{background:#fff;color:var(--sec-solid);border-color:#fff}
 @media (max-width:700px){.empsum{display:none}}
 .acc>.acchead .empsum b{color:inherit!important;font-size:12.5px!important;letter-spacing:0}
-.empsum span[data-empf]{cursor:pointer;transition:background .12s,color .12s}
-.empsum span[data-empf]:hover{border-color:var(--sec-ico)}
-.acc>.acchead .empsum span.on{background:var(--sec-ico);color:#fff;border-color:var(--sec-ico)}
-.acc.open>.acchead .empsum span[data-empf]:hover{background:rgba(255,255,255,.26)}
-.acc.open>.acchead .empsum span.on{background:#fff!important;color:var(--sec-solid)!important;border-color:#fff!important}
+.empsum :is(span,a)[data-empf]{cursor:pointer;transition:background .12s,color .12s}
+.empsum :is(span,a)[data-empf]:hover{border-color:var(--sec-ico)}
+.acc>.acchead .empsum :is(span,a).on{background:var(--sec-ico);color:#fff;border-color:var(--sec-ico)}
+.acc.open>.acchead .empsum :is(span,a)[data-empf]:hover{background:rgba(255,255,255,.26)}
+.acc.open>.acchead .empsum :is(span,a).on{background:#fff!important;color:var(--sec-solid)!important;border-color:#fff!important}
 .acc.open>.acchead .empsum .tot:not(.on){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)}
 .acc:not(.open)>.acchead .empsum .tot:not(.on){background:var(--surface);color:var(--sec-ico);border-color:var(--sec-line)}
 

@@ -53,11 +53,11 @@ export default async function SettingsPage({
       {PP_ORDER.map((g) => [g, act.filter((e) => e.contract_type === g).length] as const)
         .filter(([, n]) => n)
         .map(([g, n]) => (
-          <Link key={g} href={`/nastavenia?open=emp&f=${g}`} className={filt === g ? "on" : ""} title={`Zobraziť len ${PP_LABEL[g]}`}>
+          <Link key={g} data-empf={g} href={`/nastavenia?open=emp&f=${g}`} className={filt === g ? "on" : ""} title={`Zobraziť len ${PP_LABEL[g]}`}>
             {PP_LABEL[g]} <b>{n}</b>
           </Link>
         ))}
-      <Link href="/nastavenia?open=emp" className={`tot${!filt ? " on" : ""}`} title="Zobraziť všetkých">
+      <Link data-empf="all" href="/nastavenia?open=emp" className={`tot${!filt ? " on" : ""}`} title="Zobraziť všetkých">
         Spolu <b>{act.length}</b>
       </Link>
     </span>
