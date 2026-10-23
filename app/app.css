@@ -43,3 +43,8 @@ a.namebtn:hover { color: var(--accent); }
 
 /* e-mail v tabuľke zamestnancov */
 .emptab td.email { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+/* tmavá hlavička tabuľky zamestnancov (ako v Podklade pre mzdy) */
+.emptab thead th { background: #2F3743 !important; color: #E8ECF2 !important; box-shadow: none !important; border-color: #3D4654 !important; }
+.emptab thead th:first-child { border-top-left-radius: 10px; }
+.emptab thead th:last-child { border-top-right-radius: 10px; }

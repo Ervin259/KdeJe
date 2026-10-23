@@ -39,7 +39,11 @@ export default async function SettingsPage({
   const list = emps
     .filter((e) => (showHidden || e.active) && (!filt || e.contract_type === filt))
     .sort(byLastName);
-  const ordered = PP_ORDER.flatMap((g) => list.filter((e) => e.contract_type === g));
+  // prihlásený admin vždy na prvom mieste, ostatní podľa pracovného pomeru
+  const ordered = [
+    ...list.filter((e) => e.id === me.id),
+    ...PP_ORDER.flatMap((g) => list.filter((e) => e.contract_type === g && e.id !== me.id)),
+  ];
   const noteOf = (id: string) => (notes ?? []).find((n) => n.employee_id === id)?.note;
   const grp = (id: string | null) => groups.find((g) => g.id === id) ?? groups.find((g) => g.is_default)!;
   const hm = (t: string | null) => (t ? t.slice(0, 5) : "");
