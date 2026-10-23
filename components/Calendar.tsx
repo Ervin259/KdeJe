@@ -106,10 +106,10 @@ export async function Calendar({
     ? emps.filter((e) => e.id === me.id)
     : emps.filter(
         (e) =>
-          (!admin && e.id === me.id) ||
+          e.id === me.id ||
           (e.show_in_calendar && e.active && entries.some((x) => x.employee_id === e.id))
       );
-  rows = rows.sort(byLastName).sort((a, b) => Number(!admin && b.id === me.id) - Number(!admin && a.id === me.id));
+  rows = rows.sort(byLastName).sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id));
 
   const st = mstatus(y, m);
   const q = (v: View, d: string) => `${basePath}?v=${v}&d=${d}`;
@@ -322,7 +322,7 @@ function Grid({
             </tr>
           )}
           {rows.map((e) => {
-            const mine = !admin && e.id === meId;
+            const mine = e.id === meId;
             const can = admin || e.id === meId;
             return (
               <tr key={e.id} className={mine ? "me" : undefined}>
@@ -410,7 +410,7 @@ function DayTable({
           )}
           {groups.map(({ e, xs }) =>
             xs.map((x, i) => {
-              const mine = !admin && e.id === meId;
+              const mine = e.id === meId;
               const can = admin || e.id === meId;
               const ds = disp(x);
               const c = can ? "rowclick" : "";
