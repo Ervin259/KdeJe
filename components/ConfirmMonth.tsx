@@ -19,7 +19,9 @@ export async function ConfirmMonthButton({
   last,
   today,
   empId,
+  short = false,
 }: {
+  short?: boolean;
   y: number;
   m: number;
   last: string;
@@ -44,7 +46,7 @@ export async function ConfirmMonthButton({
   if (today <= last)
     return (
       <button className="btn confbtn" disabled title="Mesiac ešte prebieha – odsúhlasiť môžeš po jeho skončení">
-        Odsúhlasiť {MN[m - 1]}
+        {short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`}
       </button>
     );
   return (
@@ -56,7 +58,7 @@ export async function ConfirmMonthButton({
         className="btn confbtn"
         title={`Potvrdíš, že tvoje záznamy za ${MN[m - 1]} sú úplné. Potom sa uzamknú.`}
       >
-        Odsúhlasiť {MN[m - 1]}
+        {short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`}
       </button>
     </form>
   );

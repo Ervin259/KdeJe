@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
 import { NavTabs, type Tab } from "./NavTabs";
@@ -49,9 +48,6 @@ export async function Header({
         <div className="headright">
           <span className="who-name">{me.name}</span>
           {userExtra}
-          <Link className="btn ovbtn" href="/moj-prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
-            Prehľad
-          </Link>
           <form action="/auth/signout" method="post" className="seg" style={{ marginLeft: 10 }}>
             <button type="submit" title="Odhlásiť sa">Odhlásiť</button>
           </form>

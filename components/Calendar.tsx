@@ -150,24 +150,31 @@ export async function Calendar({
   );
 
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
-  const userExtra =
-    view === "month" && me.contract_type === "TPP" ? (
-      <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} />
-    ) : null;
+  // + Prehľad – v riadku prihláseného za menom
+  const meExtra = (
+    <span className="mebtns">
+      {view === "month" && me.contract_type === "TPP" && (
+        <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} short />
+      )}
+      <Link className="btn ovbtn" href="/moj-prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
+        Prehľad
+      </Link>
+    </span>
+  );
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
   const ctx = { calc, admin, meId: me.id, on };
 
   return (
     <>
-      <Header me={me} center={center} right={right} userExtra={userExtra} />
+      <Header me={me} center={center} right={right} />
       <main id="view">
         <div className="panel">
           <CalClick back={back}>
             {view === "day" ? (
               <DayTable d={anchor} rows={rows} {...ctx} onlyMe={onlyMe} emps={emps} />
             ) : (
-              <Grid days={days} wide={view === "week"} rows={rows} {...ctx} />
+              <Grid days={days} wide={view === "week"} rows={rows} meExtra={meExtra} {...ctx} />
             )}
           </CalClick>
           <Legend types={types} />
@@ -279,8 +286,9 @@ function Grid({
   days,
   wide,
   rows,
+  meExtra,
   ...ctx
-}: { days: string[]; wide: boolean; rows: { id: string; name: string }[] } & Ctx) {
+}: { days: string[]; wide: boolean; rows: { id: string; name: string }[]; meExtra?: React.ReactNode } & Ctx) {
   const { calc, admin, meId } = ctx;
   return (
     <div className="gridwrap">
@@ -325,7 +333,14 @@ function Grid({
             return (
               <tr key={e.id} className={mine ? "me" : undefined}>
                 <td className="name" title={e.name}>
-                  {e.name}
+                  {e.id === meId && meExtra ? (
+                    <div className="mename">
+                      <span>{e.name}</span>
+                      {meExtra}
+                    </div>
+                  ) : (
+                    e.name
+                  )}
                 </td>
                 {days.map((d) => {
                   const off = !calc.isWork(d);
