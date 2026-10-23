@@ -44,13 +44,6 @@ export default async function SettingsPage({
   const grp = (id: string | null) => groups.find((g) => g.id === id) ?? groups.find((g) => g.is_default)!;
   const hm = (t: string | null) => (t ? t.slice(0, 5) : "");
 
-  const FLAGS: [keyof (typeof emps)[number], string, string][] = [
-    ["show_in_calendar", "Kalendár", "Zobraziť v spoločnom kalendári"],
-    ["sees_calendar", "Vidí tím", "Vidí spoločný kalendár"],
-    ["in_stats", "Prehľad", "Zobraziť v Prehľade"],
-    ["in_payroll", "Mzdy", "Zobraziť v podkladoch pre mzdy"],
-  ];
-
   const empSum = (
     <span className="empsum">
       {PP_ORDER.map((g) => [g, act.filter((e) => e.contract_type === g).length] as const)
@@ -102,13 +95,13 @@ export default async function SettingsPage({
                 <thead>
                   <tr>
                     <th>Meno</th>
+                    <th>E-mail</th>
                     <th>Pracovný pomer</th>
                     <th>Trvanie pomeru</th>
                     <th>Pracovný čas a SL</th>
                     <th className="c">Prenos z {year - 1}</th>
                     <th className="c">Nárok {year}</th>
                     <th className="c">Zostatok</th>
-                    <th>Zobrazenie</th>
                     <th />
                   </tr>
                 </thead>
@@ -127,8 +120,12 @@ export default async function SettingsPage({
                           {note && <span className="notedot" title={`Poznámka: ${note}`} aria-label="Má poznámku" />}
                           {e.role === "admin" && <span className="pill closed"> admin</span>}
                           {!e.active && <span className="pill bad"> skrytý</span>}
-                          {!e.email && (
-                            <span className="pill warn" title="Bez e-mailu sa nemôže prihlásiť" style={{ marginLeft: 6 }}>
+                        </td>
+                        <td className="email">
+                          {e.email ? (
+                            e.email
+                          ) : (
+                            <span className="pill warn" title="Bez e-mailu sa nemôže prihlásiť">
                               bez e-mailu
                             </span>
                           )}
@@ -166,18 +163,6 @@ export default async function SettingsPage({
                             </td>
                           </>
                         )}
-                        <td>
-                          <div className="flags">
-                            {FLAGS.map(([k, l, t]) => (
-                              <span key={k} className={`flag ${e[k] ? "on" : ""}`} title={`${t}: ${e[k] ? "áno" : "nie"}`}>
-                                {l}
-                              </span>
-                            ))}
-                            <span className={`flag ${g.meal_voucher ? "on" : ""}`} title={`Stravné lístky: ${g.meal_voucher ? "áno" : "nie"}`}>
-                              SL
-                            </span>
-                          </div>
-                        </td>
                         <td style={{ textAlign: "right" }}>
                           <Link className="btn" href={`/nastavenia/zamestnanec/${e.id}`} style={{ height: 30, padding: "0 10px" }}>
                             Upraviť
