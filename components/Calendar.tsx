@@ -101,7 +101,7 @@ export async function Calendar({
   const on = (empId: string, d: string) =>
     entries.filter((x) => x.employee_id === empId && x.date_from <= d && x.date_to >= d);
 
-  // Riadky: Môj kalendár = ja; Kalendár tímu = ľudia so záznamom (zamestnanec vždy prvý)
+  // Riadky: len ja (kto nevidí kalendár tímu); Kalendár tímu = ľudia so záznamom (zamestnanec vždy prvý)
   let rows = onlyMe
     ? emps.filter((e) => e.id === me.id)
     : emps.filter(
@@ -130,14 +130,6 @@ export async function Calendar({
   );
   const right = (
     <div className="row">
-      {view === "month" && (onlyMe || !admin) && me.contract_type === "TPP" && (
-        <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} />
-      )}
-      {onlyMe && (
-        <Link className="btn ovbtn" href="/moj-kalendar/prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
-          Prehľad
-        </Link>
-      )}
       <div className="seg" role="group" aria-label="Náhľad">
         {(
           [
@@ -157,12 +149,18 @@ export async function Calendar({
     </div>
   );
 
+  // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
+  const userExtra =
+    view === "month" && me.contract_type === "TPP" ? (
+      <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} />
+    ) : null;
+
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
   const ctx = { calc, admin, meId: me.id, on };
 
   return (
     <>
-      <Header me={me} center={center} right={right} />
+      <Header me={me} center={center} right={right} userExtra={userExtra} />
       <main id="view">
         <div className="panel">
           <CalClick back={back}>

@@ -189,7 +189,7 @@ export function EmpForm({
                 {(
                   [
                     ["show_in_calendar", "V spoločnom kalendári", "Kolegovia ho vidia v Kalendári tímu"],
-                    ["sees_calendar", "Vidí spoločný kalendár", "Má záložku Kalendár tímu"],
+                    ["sees_calendar", "Vidí spoločný kalendár", "V Kalendári vidí aj kolegov, nielen seba"],
                     ["in_stats", "V Prehľade", "Je v admin záložke Prehľad"],
                     ["in_payroll", "V podkladoch pre mzdy", "Je v Podklade pre mzdy a v exporte"],
                   ] as const

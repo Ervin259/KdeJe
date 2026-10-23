@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
 import { NavTabs, type Tab } from "./NavTabs";
@@ -12,27 +13,28 @@ export async function Header({
   center,
   right,
   stack = false,
+  userExtra,
 }: {
   me: Me;
   center?: React.ReactNode;
   right?: React.ReactNode;
   /** lišta pod záložkami na samostatnom riadku (veľa ovládacích prvkov) */
   stack?: boolean;
+  /** tlačidlá za menom prihláseného (napr. Odsúhlasiť mesiac) */
+  userExtra?: React.ReactNode;
 }) {
   const tabs: Tab[] = [];
   if (me.role === "admin") {
     const pending = await pendingRequestsCount();
     tabs.push(
-      { href: "/kalendar", label: "Kalendár tímu" },
-      { href: "/moj-kalendar", label: "Môj kalendár" },
+      { href: "/kalendar", label: "Kalendár" },
       { href: "/prehlad", label: "Prehľad" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },
       { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
     );
   } else {
-    if (me.sees_calendar) tabs.push({ href: "/kalendar", label: "Kalendár tímu" });
-    tabs.push({ href: "/moj-kalendar", label: "Môj kalendár" });
+    tabs.push({ href: "/kalendar", label: "Kalendár" });
   }
 
   return (
@@ -46,6 +48,10 @@ export async function Header({
         <span className="firm">{me.company_name}</span>
         <div className="headright">
           <span className="who-name">{me.name}</span>
+          {userExtra}
+          <Link className="btn ovbtn" href="/moj-prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
+            Prehľad
+          </Link>
           <form action="/auth/signout" method="post" className="seg" style={{ marginLeft: 10 }}>
             <button type="submit" title="Odhlásiť sa">Odhlásiť</button>
           </form>

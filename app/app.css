@@ -48,3 +48,9 @@ a.namebtn:hover { color: var(--accent); }
 .emptab thead th { background: #2F3743 !important; color: #E8ECF2 !important; box-shadow: none !important; border-color: #3D4654 !important; }
 .emptab thead th:first-child { border-top-left-radius: 10px; }
 .emptab thead th:last-child { border-top-right-radius: 10px; }
+
+/* Prehľad a Odsúhlasiť za menom v hlavičke */
+.headright .btn { padding: 6px 12px; }
+.stickyhead .headright .btn.ovbtn { background: #F1F4FA; color: #161D2B; border-color: #F1F4FA; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.stickyhead .headright .btn.ovbtn:hover { background: #fff; border-color: #fff; }
+.headright form { margin: 0; }

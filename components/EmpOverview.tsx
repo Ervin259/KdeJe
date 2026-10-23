@@ -221,7 +221,7 @@ export async function EmpOverview({ empId, admin }: { empId: string; admin: bool
                         label
                       ) : (
                         <Link
-                          href={`/moj-kalendar?v=month&d=${year}-${String(r.m).padStart(2, "0")}-01`}
+                          href={`/kalendar?v=month&d=${year}-${String(r.m).padStart(2, "0")}-01`}
                           title={`Otvoriť ${MN[r.m - 1]} v kalendári`}
                           style={{ color: "inherit", textDecoration: "none" }}
                         >
