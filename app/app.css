@@ -74,3 +74,12 @@ a.namebtn:hover { color: var(--accent); }
 .viewtog button[aria-checked="true"] .vt-knob { left: 14px; }
 
 .viewtog button:focus-visible .vt-track { outline: 2px solid #8fa7ff; outline-offset: 2px; }
+
+/* pozvánky v tabuľke zamestnancov */
+.invitebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0; }
+.invitebar .fmsg { padding: 4px 10px; font-size: 12.5px; }
+.emptab td.access { white-space: nowrap; }
+.emptab .invchk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.emptab .invchk input, .emptab .acchk input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+.emptab .invd { font-size: 11px; color: var(--warn); font-weight: 600; }
+.emptab .acchk { display: inline-flex; align-items: center; gap: 6px; }

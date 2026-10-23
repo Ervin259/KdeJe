@@ -9,6 +9,8 @@ import {
   setHideHealth,
   setVacation,
   toggleType,
+  inviteEmployees,
+  type InviteState,
   type SetState,
 } from "./actions";
 import { dniTxt, rgTxt, type RG } from "@/lib/rights";
@@ -586,5 +588,52 @@ export function ShowHidden({ on, count }: { on: boolean; count: number }) {
       />
       <span>Zobraziť aj skrytých ({count})</span>
     </label>
+  );
+}
+
+// ---------- pozvánky ----------
+/** Lišta s tlačidlom „Poslať pozvánky“; checkboxy v tabuľke patria do formulára cez atribút form="inviteform". */
+export function InviteBar({ enabled }: { enabled: boolean }) {
+  const [state, action, pending] = useActionState<InviteState, FormData>(inviteEmployees, {});
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const count = () => setN(document.querySelectorAll('input[form="inviteform"][name="emp"]:checked').length);
+    count();
+    document.addEventListener("change", count);
+    return () => document.removeEventListener("change", count);
+  }, []);
+  useEffect(() => {
+    if (state.sent?.length)
+      document.querySelectorAll<HTMLInputElement>('input[form="inviteform"]').forEach((i) => (i.checked = false));
+    setN(0);
+  }, [state]);
+  return (
+    <form id="inviteform" action={action} className="invitebar">
+      <button
+        className="btn"
+        disabled={!enabled || !n || pending}
+        title={enabled ? "Pošle e-mail s odkazom na prihlásenie zaškrtnutým zamestnancom" : "Najprv treba vo Verceli nastaviť SUPABASE_SERVICE_ROLE_KEY"}
+      >
+        {pending ? "Posielam…" : `Poslať pozvánky${n ? ` (${n})` : ""}`}
+      </button>
+      {state.error && <span className="fmsg err">{state.error}</span>}
+      {!!state.sent?.length && <span className="fmsg info">Odoslané: {state.sent.join(", ")}</span>}
+      {!!state.failed?.length && <span className="fmsg err">Nepodarilo sa: {state.failed.join(" · ")}</span>}
+    </form>
+  );
+}
+
+/** Zaškrtnúť všetkých, ktorým sa dá poslať pozvánka. */
+export function InviteAll() {
+  return (
+    <input
+      type="checkbox"
+      title="Vybrať všetkých bez prístupu"
+      aria-label="Vybrať všetkých bez prístupu"
+      onChange={(e) => {
+        document.querySelectorAll<HTMLInputElement>('input[form="inviteform"][name="emp"]').forEach((i) => (i.checked = e.target.checked));
+        document.dispatchEvent(new Event("change"));
+      }}
+    />
   );
 }

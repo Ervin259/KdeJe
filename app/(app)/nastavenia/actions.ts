@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, todayIso } from "@/lib/data";
+import { headers } from "next/headers";
 
 export type SetState = { error?: string[]; ok?: string };
 
@@ -247,3 +248,48 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
 
 const dupMsg = (e: { code?: string; message: string }) =>
   e.code === "23505" ? "Tento e-mail už má iný zamestnanec." : e.message;
+
+// ---------- pozvánky ----------
+export type InviteState = { sent?: string[]; failed?: string[]; error?: string };
+
+/** Pošle pozvánky vybraným zamestnancom (nový účet = pozvánka, existujúci = nový prihlasovací odkaz). */
+export async function inviteEmployees(_p: InviteState, f: FormData): Promise<InviteState> {
+  await requireAdmin();
+  const { adminClient, publicClient } = await import("@/lib/supabase/admin");
+  const admin = adminClient();
+  if (!admin) return { error: "Chýba premenná SUPABASE_SERVICE_ROLE_KEY vo Verceli – pozvánky sa zatiaľ nedajú posielať z aplikácie." };
+  const ids = f.getAll("emp").map(String).filter(Boolean);
+  if (!ids.length) return { error: "Najprv zaškrtnite zamestnancov, ktorým chcete poslať pozvánku." };
+
+  const supabase = await createClient();
+  const { data: emps } = await supabase.from("employees").select("id, name, email").in("id", ids);
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const sent: string[] = [];
+  const failed: string[] = [];
+
+  for (const e of emps ?? []) {
+    if (!e.email) {
+      failed.push(`${e.name}: chýba e-mail`);
+      continue;
+    }
+    const inv = await admin.auth.admin.inviteUserByEmail(e.email, { redirectTo: `${origin}/login` });
+    if (!inv.error) {
+      sent.push(e.name);
+      continue;
+    }
+    // účet už existuje (napr. pozvaný skôr) → pošleme prihlasovací odkaz
+    if (/already|registered|exists/i.test(inv.error.message)) {
+      const otp = await publicClient().auth.signInWithOtp({
+        email: e.email,
+        options: { shouldCreateUser: false, emailRedirectTo: `${origin}/login` },
+      });
+      if (!otp.error) sent.push(`${e.name} (nový prihlasovací odkaz)`);
+      else failed.push(`${e.name}: ${otp.error.message}`);
+    } else failed.push(`${e.name}: ${inv.error.message}`);
+  }
+  await supabase.rpc("link_employee_accounts");
+  if (sent.length) await audit(`Pozvánky odoslané: ${sent.join(", ")}`);
+  revalidatePath("/nastavenia");
+  return { sent, failed };
+}

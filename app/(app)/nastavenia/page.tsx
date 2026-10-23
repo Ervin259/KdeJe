@@ -6,7 +6,8 @@ import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday } from "./actions";
-import { Acc, AccAll, HideHealth, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { Acc, AccAll, HideHealth, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { authUsersByEmail } from "@/lib/supabase/admin";
 
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
 const PARTS_TXT: Record<string, string> = {
@@ -26,7 +27,8 @@ export default async function SettingsPage({
   const supabase = await createClient();
   const year = Number(calc.today.slice(0, 4));
 
-  const [entries, { data: vacs }, { data: notes }] = await Promise.all([
+  const [auth, entries, { data: vacs }, { data: notes }] = await Promise.all([
+    authUsersByEmail(),
     loadEntries(`${year}-01-01`, `${year}-12-31`),
     supabase.from("vacation_years").select("employee_id, entitlement, carry_in").eq("year", year),
     supabase.from("employee_notes").select("employee_id, note"),
@@ -84,10 +86,12 @@ export default async function SettingsPage({
           <Acc k="emp" title="Zamestnanci" extra={empSum} forceOpen={sp.open === "emp"}>
             <div className="row spread emptools">
               <span className="muted" style={{ fontSize: 12.5 }}>
-                Prihlásiť sa môže len zamestnanec s vyplneným e-mailom. Pozvánku pošlete v Supabase (Authentication → Users → Invite
-                user).
+                {auth
+                  ? "Zaškrtnite zamestnancov bez prístupu a pošlite im pozvánku. Zelená fajka = už sa prihlásil."
+                  : "Pozývanie z aplikácie zapnete nastavením SUPABASE_SERVICE_ROLE_KEY vo Verceli. Dovtedy pozvánky posielajte v Supabase."}
               </span>
               <div className="row">
+                <InviteBar enabled={!!auth} />
                 {hiddenN > 0 && <ShowHidden on={showHidden} count={hiddenN} />}
                 <Link className="btn primary" href="/nastavenia/zamestnanec/novy">
                   + Pridať zamestnanca
@@ -106,6 +110,11 @@ export default async function SettingsPage({
                     <th className="c">Prenos z {year - 1}</th>
                     <th className="c">Nárok {year}</th>
                     <th className="c">Zostatok</th>
+                    <th className="c" title="Stav prístupu do aplikácie">
+                      <span className="acchk">
+                        Prístup {auth && <InviteAll />}
+                      </span>
+                    </th>
                     <th />
                   </tr>
                 </thead>
@@ -167,6 +176,9 @@ export default async function SettingsPage({
                             </td>
                           </>
                         )}
+                        <td className="c access">
+                          <Access email={e.email} info={auth} empId={e.id} active={e.active} />
+                        </td>
                         <td style={{ textAlign: "right" }}>
                           <Link className="btn" href={`/nastavenia/zamestnanec/${e.id}`} style={{ height: 30, padding: "0 10px" }}>
                             Upraviť
@@ -244,5 +256,40 @@ export default async function SettingsPage({
         </div>
       </main>
     </>
+  );
+}
+
+const fdt = (t: string) => {
+  const d = new Date(t);
+  return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`;
+};
+
+/** Stav prístupu: ✓ prihlásený · checkbox na pozvánku (s poznámkou „pozvaný“, ak už pozvánku dostal). */
+function Access({
+  email,
+  info,
+  empId,
+  active,
+}: {
+  email: string | null;
+  info: Map<string, { invited_at: string | null; last_sign_in_at: string | null }> | null;
+  empId: string;
+  active: boolean;
+}) {
+  if (!email) return <span className="muted" title="Bez e-mailu sa nemôže prihlásiť">—</span>;
+  if (!info) return <span className="muted" title="Stav sa zobrazí po nastavení SUPABASE_SERVICE_ROLE_KEY">?</span>;
+  const u = info.get(email.toLowerCase());
+  if (u?.last_sign_in_at)
+    return (
+      <span className="okdot yes" title={`Aktívny – naposledy prihlásený ${fdt(u.last_sign_in_at)}`}>
+        ✓
+      </span>
+    );
+  if (!active) return <span className="muted">—</span>;
+  return (
+    <label className="invchk" title={u?.invited_at ? `Pozvaný ${fdt(u.invited_at)}, ešte sa neprihlásil – zaškrtnite na opätovné poslanie` : "Ešte nemá prístup – zaškrtnite a pošlite pozvánku"}>
+      <input type="checkbox" name="emp" value={empId} form="inviteform" />
+      {u?.invited_at && <span className="invd">pozvaný</span>}
+    </label>
   );
 }
