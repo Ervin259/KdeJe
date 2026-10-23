@@ -64,7 +64,7 @@ a.namebtn:hover { color: var(--accent); }
 .cal td.name .mebtns .btn.ovbtn:hover { background: var(--accent); color: #fff; }
 
 /* meno + prepínač pohľadu admina */
-.headright .whobox { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.headright .whobox { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .viewtog { margin: 0; }
 .viewtog button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #AEB8C7; }
 .viewtog button:hover { color: #fff; }

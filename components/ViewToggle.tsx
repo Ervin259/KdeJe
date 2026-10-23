@@ -20,11 +20,7 @@ export function ViewToggle({ empView }: { empView: boolean }) {
         role="switch"
         aria-checked={!empView}
         aria-label="Admin"
-        title={
-          empView
-            ? "Admin: vypnutý – vidíte aplikáciu ako zamestnanec. Kliknutím admina zapnete."
-            : "Admin: zapnutý. Kliknutím ho vypnete a uvidíte aplikáciu z pohľadu zamestnanca."
-        }
+        title="Admin ON/OFF"
       >
         <span className="vt-track">
           <span className="vt-knob" />
