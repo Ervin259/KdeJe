@@ -62,3 +62,15 @@ a.namebtn:hover { color: var(--accent); }
 .cal td.name .mebtns .btn, .cal td.name .mebtns .pill { font-size: 11.5px; padding: 3px 9px; min-height: 0; height: auto; line-height: 1.4; }
 .cal td.name .mebtns .btn.ovbtn { background: var(--surface); color: var(--accent); border-color: var(--accent); }
 .cal td.name .mebtns .btn.ovbtn:hover { background: var(--accent); color: #fff; }
+
+/* meno + prepínač pohľadu admina */
+.headright .whobox { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.viewtog { margin: 0; }
+.viewtog button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #AEB8C7; }
+.viewtog button:hover { color: #fff; }
+.viewtog .vt-track { width: 26px; height: 14px; border-radius: 7px; background: #4A5568; position: relative; transition: background .15s; flex: none; }
+.viewtog .vt-knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
+.viewtog button[aria-checked="true"] .vt-track { background: #E8590C; }
+.viewtog button[aria-checked="true"] .vt-knob { left: 14px; }
+.viewtog button[aria-checked="true"] { color: #FFB27A; }
+.viewtog button:focus-visible .vt-track { outline: 2px solid #8fa7ff; outline-offset: 2px; }

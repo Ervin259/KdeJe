@@ -52,7 +52,7 @@ export async function Calendar({
   onlyMe?: boolean;
 }) {
   const admin = me.role === "admin";
-  const { calc, emps, mstatus, settings } = await loadCompany();
+  const { calc, emps, mstatus, settings, types: absTypes } = await loadCompany();
   const supabase = await createClient();
 
   const y = Number(anchor.slice(0, 4));
@@ -96,6 +96,14 @@ export async function Calendar({
   } else {
     const { data } = await supabase.from("team_calendar").select("*").lte("date_from", last).gte("date_to", first);
     entries = (data ?? []) as CalEntry[];
+  }
+
+  // Admin v pohľade zamestnanca: databáza mu vracia všetko, GDPR maskovanie preto doplníme tu
+  if (me.realRole === "admin" && !admin && settings.hide_health) {
+    const health = new Set(absTypes.filter((t) => t.is_health).map((t) => t.code));
+    entries = entries.map((x) =>
+      x.employee_id !== me.id && health.has(x.type) ? { ...x, type: "MIMO", note: null } : x
+    );
   }
 
   const on = (empId: string, d: string) =>

@@ -2,6 +2,7 @@ import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
 import { NavTabs, type Tab } from "./NavTabs";
 import { TopBar } from "./TopBar";
+import { ViewToggle } from "./ViewToggle";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -47,7 +48,10 @@ export async function Header({
         </div>
         <span className="firm">{me.company_name}</span>
         <div className="headright">
-          <span className="who-name">{me.name}</span>
+          <span className="whobox">
+            <span className="who-name">{me.name}</span>
+            {me.realRole === "admin" && <ViewToggle empView={me.role !== "admin"} />}
+          </span>
           {userExtra}
           <form action="/auth/signout" method="post" className="seg" style={{ marginLeft: 10 }}>
             <button type="submit" title="Odhlásiť sa">Odhlásiť</button>

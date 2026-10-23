@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type ContractType = "TPP" | "DOH" | "ZIV" | "SRO";
@@ -7,7 +8,10 @@ export type ContractType = "TPP" | "DOH" | "ZIV" | "SRO";
 export type Me = {
   id: string;
   name: string;
+  /** rola, s ktorou sa aplikácia práve zobrazuje (admin si môže prepnúť pohľad zamestnanca) */
   role: "admin" | "employee";
+  /** skutočná rola v databáze */
+  realRole: "admin" | "employee";
   contract_type: ContractType;
   sees_calendar: boolean;
   company_id: string;
@@ -36,6 +40,9 @@ export const CONTRACT_LABEL: Record<ContractType, string> = {
   SRO: "s.r.o.",
 };
 
+/** Cookie s pohľadom admina: „emp“ = vidí aplikáciu ako zamestnanec. */
+export const VIEW_COOKIE = "kdeje-view";
+
 /** Prihlásený zamestnanec (raz za request). Bez prihlásenia → /login. */
 export const getMe = cache(async (): Promise<Me | null> => {
   const supabase = await createClient();
@@ -53,10 +60,12 @@ export const getMe = cache(async (): Promise<Me | null> => {
 
   if (!data) return null;
   const company = data.companies as unknown as { name: string } | null;
+  const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
   return {
     id: data.id,
     name: data.name,
-    role: data.role,
+    role: empView ? "employee" : data.role,
+    realRole: data.role,
     contract_type: data.contract_type,
     sees_calendar: data.sees_calendar,
     company_id: data.company_id,
