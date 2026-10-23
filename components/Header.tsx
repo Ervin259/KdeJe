@@ -28,14 +28,14 @@ export async function Header({
     const pending = await pendingRequestsCount();
     tabs.push(
       { href: "/kalendar", label: "Kalendár" },
-      { href: "/moj-prehlad", label: "Môj prehľad", onlyActive: true },
+      { href: "/moj-prehlad", label: "Môj prehľad" },
       { href: "/prehlad", label: "Prehľad" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },
       { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
     );
   } else {
-    tabs.push({ href: "/kalendar", label: "Kalendár" }, { href: "/moj-prehlad", label: "Môj prehľad", onlyActive: true });
+    tabs.push({ href: "/kalendar", label: "Kalendár" }, { href: "/moj-prehlad", label: "Môj prehľad" });
   }
 
   return (

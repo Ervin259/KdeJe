@@ -158,17 +158,14 @@ export async function Calendar({
   );
 
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
-  // + Prehľad – v riadku prihláseného za menom
-  const meExtra = (
-    <span className="mebtns">
-      {view === "month" && me.contract_type === "TPP" && (
+  // v riadku prihláseného za menom
+  const meExtra =
+    view === "month" && me.contract_type === "TPP" ? (
+      <span className="mebtns">
         <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} short />
-      )}
-      <Link className="btn ovbtn" href="/moj-prehlad" title="Dovolenka, lekár, OČR a rok po mesiacoch">
-        Prehľad
-      </Link>
-    </span>
-  );
+      </span>
+    ) : null;
+
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
   const ctx = { calc, admin, meId: me.id, on };
