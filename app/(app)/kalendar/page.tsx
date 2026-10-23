@@ -10,6 +10,6 @@ export default async function TeamCalendarPage({
 }) {
   const me = await requireMe();
   if (!me.sees_calendar && me.role !== "admin") redirect("/moj-kalendar");
-  const { view, anchor } = calParams(await searchParams);
+  const { view, anchor } = calParams(await searchParams, "month");
   return <Calendar me={me} view={view} anchor={anchor} basePath="/kalendar" />;
 }
