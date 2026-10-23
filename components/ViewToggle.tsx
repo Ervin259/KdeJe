@@ -18,17 +18,17 @@ export function ViewToggle({ empView }: { empView: boolean }) {
       <button
         type="submit"
         role="switch"
-        aria-checked={empView}
+        aria-checked={!empView}
+        aria-label="Admin"
         title={
           empView
-            ? "Práve vidíte aplikáciu ako zamestnanec. Kliknutím sa vrátite do pohľadu admina."
-            : "Kliknutím uvidíte aplikáciu z pohľadu zamestnanca (bez admin záložiek, zdravotné dôvody kolegov ako MIMO)."
+            ? "Admin: vypnutý – vidíte aplikáciu ako zamestnanec. Kliknutím admina zapnete."
+            : "Admin: zapnutý. Kliknutím ho vypnete a uvidíte aplikáciu z pohľadu zamestnanca."
         }
       >
         <span className="vt-track">
           <span className="vt-knob" />
         </span>
-        <span className="vt-lbl">{empView ? "Pohľad zamestnanca" : "Admin"}</span>
       </button>
     </form>
   );
