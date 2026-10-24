@@ -330,7 +330,8 @@ create or replace function create_company(
 language plpgsql security definer set search_path = public as $$
 declare c uuid; wg uuid; rg uuid;
 begin
-  if not is_platform_admin() then raise exception 'Len pre superadmina'; end if;
+  -- superadmin v aplikácii, alebo priamo v Supabase SQL Editore (tam auth.uid() je prázdne)
+  if auth.uid() is not null and not is_platform_admin() then raise exception 'Len pre superadmina'; end if;
 
   insert into companies (name, ico, status, trial_until)
   values (p_name, p_ico, 'trial', (current_date + make_interval(months => p_trial_months))::date)
