@@ -1,8 +1,9 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/data";
+import { requireLead } from "@/lib/data";
 import { loadCompany } from "@/lib/loaders";
+import { requestLocked } from "@/lib/requests";
 import { TYPE_NAME, eachDay, fd, fdw, partTxt, type Entry } from "@/lib/calc";
 
 export type ActState = { error?: string; ok?: string };
@@ -23,7 +24,7 @@ export async function rejectRequest(prev: ActState, form: FormData) {
 }
 
 async function decide(_prev: ActState, form: FormData, approve: boolean): Promise<ActState> {
-  const me = await requireAdmin();
+  const me = await requireLead();
   const supabase = await createClient();
   const { calc, emps } = await loadCompany();
   const id = String(form.get("id"));
@@ -31,6 +32,11 @@ async function decide(_prev: ActState, form: FormData, approve: boolean): Promis
 
   const { data: r } = await supabase.from("requests").select("*").eq("id", id).maybeSingle();
   if (!r || r.status !== "pending") return { error: "Žiadosť už bola vybavená." };
+  if (me.role !== "admin") {
+    // vedúci: len žiadosti svojich ľudí a len mimo uzávierky
+    if (r.employee_id === me.id || !me.managed.includes(r.employee_id)) return { error: "Túto žiadosť vybavuje admin." };
+    if (await requestLocked(r)) return { error: "Zmena je po uzávierke – žiadosť vybaví admin." };
+  }
   const name = emps.find((e) => e.id === r.employee_id)?.name ?? "";
   const rec = r.payload as Entry;
   const old = (r.original as Entry | null) ?? null;
@@ -104,3 +110,4 @@ async function decide(_prev: ActState, form: FormData, approve: boolean): Promis
   revalidatePath("/", "layout");
   return { ok: approve ? "Žiadosť schválená, zmena je uložená" : "Žiadosť zamietnutá" };
 }
+

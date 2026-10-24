@@ -7,6 +7,8 @@ import {
   saveRightsGroup,
   saveWorkGroup,
   setHideHealth,
+  setManaged,
+  saveCompany,
   setVacation,
   toggleType,
   inviteEmployees,
@@ -50,6 +52,27 @@ const ICO: Record<string, React.ReactNode> = {
     <>
       <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6Z" />
       <path d="M9.5 12l2 2 3.5-3.5" />
+    </>
+  ),
+  roles: (
+    <>
+      <circle cx="12" cy="6.5" r="2.6" />
+      <path d="M7.5 13.5c.5-2 2.2-3.3 4.5-3.3s4 1.3 4.5 3.3" />
+      <path d="M12 13.5V16M6 19v-3h12v3" />
+      <circle cx="6" cy="20" r=".6" />
+      <circle cx="18" cy="20" r=".6" />
+    </>
+  ),
+  firm: (
+    <>
+      <rect x="5" y="4" width="14" height="16" rx="1.5" />
+      <path d="M9 8h2M13 8h2M9 12h2M13 12h2M10.5 20v-3.5h3V20" />
+    </>
+  ),
+  plan: (
+    <>
+      <rect x="3.5" y="6" width="17" height="12" rx="2" />
+      <path d="M3.5 10h17M7 14.5h4" />
     </>
   ),
 };
@@ -120,7 +143,7 @@ export function AccAll() {
         setAll(o);
         window.dispatchEvent(new CustomEvent("kdeje-accall", { detail: o }));
         try {
-          localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(["emp", "work", "types", "appr", "hol", "gdpr"].map((x) => [x, o]))));
+          localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(["emp", "roles", "work", "types", "appr", "hol", "firm", "gdpr", "plan"].map((x) => [x, o]))));
         } catch {}
       }}
     >
@@ -635,5 +658,81 @@ export function InviteAll() {
         document.dispatchEvent(new Event("change"));
       }}
     />
+  );
+}
+
+// ---------- vedúci a ich ľudia ----------
+type TeamEmp = { id: string; name: string; pp: string };
+
+/** Čip „N ľudí ▾“ pri vedúcom: zaškrtnutím pridá alebo odoberie zamestnanca. */
+export function ManagerTeam({ managerId, people, managed }: { managerId: string; people: TeamEmp[]; managed: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [, start] = useTransition();
+  const [sel, setSel] = useState(new Set(managed));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => setSel(new Set(managed)), [managed]);
+  useEffect(() => {
+    const c = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", c);
+    return () => document.removeEventListener("mousedown", c);
+  }, []);
+  const toggle = (id: string, on: boolean) => {
+    const n = new Set(sel);
+    if (on) n.add(id);
+    else n.delete(id);
+    setSel(n);
+    start(() => setManaged(managerId, id, on));
+  };
+  const list = people.filter((p) => p.id !== managerId);
+  return (
+    <div className="ypdd gmdd" ref={ref}>
+      <button className="gmchip" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(!open)} title="Ľudia, ktorých spravuje">
+        {PEOPLE}
+        <span>{cntTxt(sel.size)}</span>
+        <span className="caret">▾</span>
+      </button>
+      {open && (
+        <div className="yppanel gmpanel teampanel" role="dialog">
+          <div className="gmhd">Spravuje</div>
+          <div className="teamlist">
+            {list.map((p) => (
+              <label key={p.id} className="teamrow">
+                <input type="checkbox" checked={sel.has(p.id)} onChange={(e) => toggle(p.id, e.target.checked)} />
+                <span>{p.name}</span>
+                <span className="muted">{p.pp}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- údaje o firme ----------
+export function CompanyForm({ name, ico, address }: { name: string; ico: string; address: string }) {
+  const [st, act, pending] = useActionState<SetState, FormData>(saveCompany, {});
+  return (
+    <form action={act} className="compform">
+      <label>
+        <span>Názov firmy</span>
+        <input name="name" defaultValue={name} required />
+      </label>
+      <label>
+        <span>IČO</span>
+        <input name="ico" defaultValue={ico} inputMode="numeric" style={{ maxWidth: 160 }} />
+      </label>
+      <label>
+        <span>Adresa sídla</span>
+        <input name="address" defaultValue={address} />
+      </label>
+      <div className="row">
+        <button className="btn primary" disabled={pending}>
+          Uložiť
+        </button>
+        {st.ok && <span className="fmsg ok">{st.ok}</span>}
+        {st.error && <span className="fmsg err">{st.error.join(" ")}</span>}
+      </div>
+    </form>
   );
 }

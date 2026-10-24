@@ -26,19 +26,21 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const e = isNew ? null : emps.find((x) => x.id === id);
   if (!isNew && !e) notFound();
 
-  const [{ data: vac }, { data: ch }, { data: note }, { data: link }] = await Promise.all([
+  const [{ data: vac }, { data: ch }, { data: note }, { data: link }, { data: asg }] = await Promise.all([
     supabase.from("vacation_years").select("*").eq("employee_id", id).eq("year", year).maybeSingle(),
     supabase.from("contract_hours").select("*").eq("employee_id", id).maybeSingle(),
     supabase.from("employee_notes").select("note").eq("employee_id", id).maybeSingle(),
     isNew ? Promise.resolve({ data: null }) : supabase.from("employees").select("user_id").eq("id", id).maybeSingle(),
+    supabase.from("manager_assignments").select("manager_id, employee_id"),
   ]);
+  const assign = (asg ?? []) as { manager_id: string; employee_id: string }[];
 
   const init: EmpInit = {
     id: e?.id ?? null,
     name: e?.name ?? "",
     email: e?.email ?? "",
     contract_type: e?.contract_type ?? "TPP",
-    firm: e?.firm ?? "Euro Data Distribution s.r.o.",
+    firm: e?.firm ?? me.company_name,
     date_from: e?.date_from ?? "",
     date_to: e?.date_to ?? "",
     active: e?.active ?? true,
@@ -49,6 +51,15 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     in_stats: e?.in_stats ?? true,
     in_payroll: e?.in_payroll ?? true,
     is_admin: e?.role === "admin",
+    is_manager: !!e?.is_manager,
+    manages: isNew ? [] : assign.filter((a) => a.manager_id === id).map((a) => a.employee_id),
+    managedBy: isNew
+      ? []
+      : assign
+          .filter((a) => a.employee_id === id)
+          .map((a) => emps.find((x) => x.id === a.manager_id))
+          .filter((x) => x?.is_manager && x.active)
+          .map((x) => x!.name),
     linked: !!link?.user_id,
     entitlement_full: Number(vac?.entitlement_full ?? 20),
     entitlement: Number(vac?.entitlement ?? 20),
@@ -126,6 +137,10 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
         init.in_payroll ? "v podkladoch pre mzdy" : "nie je v podkladoch pre mzdy",
       ].join(" · ")}.`
     );
+    if (init.is_manager)
+      rules.push(
+        `<b>Vedúci:</b> spravuje ${init.manages.length} ${init.manages.length === 1 ? "človeka" : "ľudí"} – zapisuje za nich do uzávierky, vidí ich v Prehľade a vybavuje ich žiadosti.`
+      );
     rules.push(
       `<b>Prihlásenie:</b> ${
         init.email ? `e-mailom ${esc(init.email)}${init.linked ? " (účet prepojený)" : " – ešte sa neprihlásil(a)"}` : "bez e-mailu sa nemôže prihlásiť"
@@ -170,6 +185,10 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           nextYear={ny}
           rules={rules}
           meId={me.id}
+          people={emps
+            .filter((x) => x.active)
+            .sort((a, b) => a.name.localeCompare(b.name, "sk"))
+            .map((x) => ({ id: x.id, name: x.name, pp: PP_LABEL[x.contract_type] }))}
         />
       </main>
     </>

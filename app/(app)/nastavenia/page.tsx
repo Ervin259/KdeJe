@@ -5,8 +5,8 @@ import { loadCompany, loadEntries } from "@/lib/loaders";
 import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
-import { addHoliday, deleteHoliday } from "./actions";
-import { Acc, AccAll, HideHealth, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
+import { Acc, AccAll, CompanyForm, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
 
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
@@ -19,7 +19,7 @@ const PARTS_TXT: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ f?: string; open?: string; skryti?: string; flash?: string }>;
+  searchParams: Promise<{ f?: string; open?: string; skryti?: string; flash?: string; rok?: string }>;
 }) {
   const me = await requireAdmin();
   const sp = await searchParams;
@@ -27,11 +27,14 @@ export default async function SettingsPage({
   const supabase = await createClient();
   const year = Number(calc.today.slice(0, 4));
 
-  const [auth, entries, { data: vacs }, { data: notes }] = await Promise.all([
+  const [auth, entries, { data: vacs }, { data: notes }, { data: company }, { data: assign }, { data: stateHol }] = await Promise.all([
     authUsersByEmail(),
     loadEntries(`${year}-01-01`, `${year}-12-31`),
     supabase.from("vacation_years").select("employee_id, entitlement, carry_in").eq("year", year),
     supabase.from("employee_notes").select("employee_id, note"),
+    supabase.from("companies").select("name, ico, address, status, trial_until").eq("id", me.company_id).maybeSingle(),
+    supabase.from("manager_assignments").select("manager_id, employee_id"),
+    supabase.from("state_holidays").select("date"),
   ]);
 
   const act = emps.filter((e) => e.active);
@@ -68,7 +71,21 @@ export default async function SettingsPage({
   const members = (key: "work_group_id" | "rights_group_id", def: string | undefined) =>
     act.map((e) => ({ id: e.id, name: e.name, group: (e[key] as string | null) ?? def ?? "" }));
 
-  const hol = holidays.filter((h) => h.date.startsWith(`${year}-`));
+  // sviatky po rokoch: roky so sviatkami + aktuálny a nasledujúci
+  const years = [...new Set([year, year + 1, ...holidays.map((h) => Number(h.date.slice(0, 4)))])].sort((a, b) => a - b);
+  const stateYears = new Set((stateHol ?? []).map((h) => Number(h.date.slice(0, 4))));
+  const openYear = Number(sp.rok) || year;
+
+  // vedúci a ich ľudia
+  const asg = (assign ?? []) as { manager_id: string; employee_id: string }[];
+  const managers = act.filter((e) => e.is_manager).sort(byLastName);
+  const admins = act.filter((e) => e.role === "admin").sort(byLastName);
+  const teamOf = (id: string) => asg.filter((a) => a.manager_id === id).map((a) => a.employee_id);
+  const people = [...act].sort(byLastName).map((e) => ({ id: e.id, name: e.name, pp: PP_LABEL[e.contract_type] }));
+  const nameOf = (id: string) => emps.find((e) => e.id === id)?.name ?? "";
+  const noLead = act.filter((e) => !asg.some((a) => a.employee_id === e.id) && e.role !== "admin");
+
+  const STATUS: Record<string, string> = { trial: "Skúšobná doba", active: "Aktívne", suspended: "Pozastavené" };
 
   return (
     <>
@@ -83,6 +100,7 @@ export default async function SettingsPage({
       />
       <main id="view">
         <div className="panel setpanel">
+          <h3 className="setgroup">Ľudia</h3>
           <Acc k="emp" title="Zamestnanci" extra={empSum} forceOpen={sp.open === "emp"}>
             <div className="row spread emptools">
               <span className="muted" style={{ fontSize: 12.5 }}>
@@ -132,6 +150,7 @@ export default async function SettingsPage({
                           </Link>
                           {note && <span className="notedot" title={`Poznámka: ${note}`} aria-label="Má poznámku" />}
                           {e.role === "admin" && <span className="pill closed"> admin</span>}
+                          {e.is_manager && <span className="pill lead"> vedúci</span>}
                           {!e.active && <span className="pill bad"> skrytý</span>}
                         </td>
                         <td className="email">
@@ -192,7 +211,69 @@ export default async function SettingsPage({
             </div>
           </Acc>
 
-          <Acc k="work" title="Pracovný pomer a pracovná doba">
+          <Acc
+            k="roles"
+            title="Roly a prístupy"
+            forceOpen={sp.open === "roles"}
+            extra={
+              <span className="empsum">
+                <span>
+                  Admini <b>{admins.length}</b>
+                </span>
+                <span>
+                  Vedúci <b>{managers.length}</b>
+                </span>
+              </span>
+            }
+          >
+            <p className="muted sethelp">
+              Admin vidí a mení všetko vo firme. Vedúci vidí Prehľad a Schvaľovanie len pre svojich ľudí a zapisuje za nich dochádzku do
+              uzávierky; po uzávierke len cez žiadosť adminovi. Rolu nastavíte na karte zamestnanca.
+            </p>
+            <div className="tblwrap">
+              <table className="t roletab">
+                <thead>
+                  <tr>
+                    <th>Meno</th>
+                    <th>Rola</th>
+                    <th>Spravuje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...admins, ...managers.filter((m) => m.role !== "admin")].map((e) => (
+                    <tr key={e.id}>
+                      <td>
+                        <Link className="namebtn" href={`/nastavenia/zamestnanec/${e.id}`}>
+                          {e.name}
+                        </Link>
+                      </td>
+                      <td>
+                        {e.role === "admin" && <span className="pill closed">admin</span>} {e.is_manager && <span className="pill lead">vedúci</span>}
+                      </td>
+                      <td>
+                        {e.is_manager ? (
+                          <div className="teamcell">
+                            <ManagerTeam managerId={e.id} people={people} managed={teamOf(e.id)} />
+                            <span className="muted teamnames">{teamOf(e.id).map(nameOf).sort().join(", ")}</span>
+                          </div>
+                        ) : (
+                          <span className="muted">celá firma</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {managers.length > 0 && noLead.length > 0 && (
+              <p className="muted sethelp" style={{ marginTop: 10 }}>
+                <b>Bez vedúceho ({noLead.length}):</b> {noLead.sort(byLastName).map((e) => e.name).join(", ")}
+              </p>
+            )}
+          </Acc>
+
+          <h3 className="setgroup">Pravidlá</h3>
+          <Acc k="work" title="Pracovná doba">
             <WorkGroups
               groups={groups as WG[]}
               members={members("work_group_id", groups.find((g) => g.is_default)?.id)}
@@ -211,47 +292,113 @@ export default async function SettingsPage({
             </div>
           </Acc>
 
-          <Acc k="appr" title="Schvaľovanie a prístupové práva">
+          <Acc k="appr" title="Uzávierka a úpravy">
+            <p className="muted sethelp">Kedy sa mesiac zamkne, či zápisy schvaľuje oprávnená osoba a čo smie zamestnanec meniť po uzávierke.</p>
             <RightsGroups groups={rights as RG[]} members={members("rights_group_id", rights.find((r) => r.is_default)?.id)} />
           </Acc>
 
-          <Acc k="hol" title={`Sviatky ${year}`}>
-            <div className="hollist">
-              {hol.length ? (
-                hol.map((h) => {
-                  const w = dow(h.date);
-                  return (
-                    <div key={h.date} className={`holrow${w === 0 || w === 6 ? " wk" : ""}`}>
-                      <span className="hold num">
-                        {Number(h.date.slice(8))}. {Number(h.date.slice(5, 7))}.
-                      </span>
-                      <span className="holw">{WD[w]}</span>
-                      <span className="holn">{h.name}</span>
-                      <form action={deleteHoliday} style={{ display: "contents" }}>
-                        <input type="hidden" name="date" value={h.date} />
-                        <button className="iconx" title="Odstrániť" aria-label={`Odstrániť ${h.date}`}>
-                          ×
-                        </button>
-                      </form>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="muted">Žiadne sviatky.</p>
-              )}
-            </div>
-            <form action={addHoliday} className="row holadd">
-              <input name="date" type="date" min={`${year}-01-01`} max={`${year + 1}-12-31`} aria-label="Nový sviatok" required />
-              <input name="name" type="text" placeholder="Názov (nepovinné)" style={{ maxWidth: 220 }} />
-              <button className="btn">+ Pridať deň</button>
-              <span className="muted" style={{ fontSize: 12 }}>
-                Sviatok cez víkend sa nepočíta ako voľný deň navyše.
-              </span>
-            </form>
+          <h3 className="setgroup">Kalendár</h3>
+          <Acc k="hol" title="Sviatky" forceOpen={sp.open === "hol"}>
+            {years.map((y) => {
+              const hol = holidays.filter((h) => h.date.startsWith(`${y}-`));
+              const loaded = hol.some((h) => h.is_state);
+              return (
+                <details key={y} className="holyear" open={y === openYear}>
+                  <summary>
+                    <b>{y}</b>
+                    <span className="muted">
+                      {hol.length ? `${hol.length} ${hol.length === 1 ? "deň" : hol.length < 5 ? "dni" : "dní"}` : "zatiaľ bez sviatkov"}
+                    </span>
+                  </summary>
+                  {!loaded && stateYears.has(y) && (
+                    <form action={loadStateHolidays} className="row holload">
+                      <input type="hidden" name="year" value={y} />
+                      <button className="btn primary">Načítať štátne sviatky {y}</button>
+                    </form>
+                  )}
+                  {!loaded && !stateYears.has(y) && (
+                    <p className="muted sethelp">Štátne sviatky {y} zatiaľ nie sú pripravené. Pridať ich môžete aj ručne.</p>
+                  )}
+                  <div className="hollist">
+                    {hol.map((h) => {
+                      const w = dow(h.date);
+                      return (
+                        <div key={h.date} className={`holrow${w === 0 || w === 6 ? " wk" : ""}`}>
+                          <span className="hold num">
+                            {Number(h.date.slice(8))}. {Number(h.date.slice(5, 7))}.
+                          </span>
+                          <span className="holw">{WD[w]}</span>
+                          <span className="holn">
+                            {h.name}
+                            {!h.is_state && <span className="pill lead"> vlastné voľno</span>}
+                          </span>
+                          {h.is_state ? (
+                            <span className="iconx lockd" title="Štátny sviatok sa nedá odstrániť" aria-hidden="true">
+                              🔒
+                            </span>
+                          ) : (
+                            <form action={deleteHoliday} style={{ display: "contents" }}>
+                              <input type="hidden" name="date" value={h.date} />
+                              <button className="iconx" title="Odstrániť" aria-label={`Odstrániť ${h.date}`}>
+                                ×
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <form action={addHoliday} className="row holadd">
+                    <input name="date" type="date" min={`${y}-01-01`} max={`${y}-12-31`} aria-label={`Nový voľný deň ${y}`} required />
+                    <input name="name" type="text" placeholder="Názov, napr. firemné voľno" style={{ maxWidth: 240 }} />
+                    <button className="btn">+ Pridať voľný deň</button>
+                  </form>
+                </details>
+              );
+            })}
+            <p className="muted sethelp" style={{ marginTop: 8 }}>
+              Štátne sviatky sú zamknuté. Vlastné voľné dni firmy (napr. medzi sviatkami) sa dajú pridať aj odstrániť. Sviatok cez víkend sa
+              nepočíta ako voľný deň navyše.
+            </p>
+          </Acc>
+
+          <h3 className="setgroup">Firma</h3>
+          <Acc k="firm" title="Údaje o firme">
+            <CompanyForm name={company?.name ?? me.company_name} ico={company?.ico ?? ""} address={company?.address ?? ""} />
           </Acc>
 
           <Acc k="gdpr" title="Súkromie (GDPR)">
             <HideHealth on={settings.hide_health} />
+          </Acc>
+
+          <Acc
+            k="plan"
+            title="Predplatné"
+            extra={<span className={`pill ${company?.status === "suspended" ? "bad" : company?.status === "trial" ? "warn" : "open"}`}>{STATUS[company?.status ?? "active"]}</span>}
+          >
+            <div className="plangrid">
+              <div>
+                <span className="muted">Stav</span>
+                <b>{STATUS[company?.status ?? "active"]}</b>
+              </div>
+              {company?.trial_until && (
+                <div>
+                  <span className="muted">Zdarma do</span>
+                  <b>{fdate(company.trial_until)}</b>
+                </div>
+              )}
+              <div>
+                <span className="muted">Aktívni zamestnanci</span>
+                <b>{act.length}</b>
+              </div>
+              <div>
+                <span className="muted">Cena po skúšobnej dobe</span>
+                <b>{act.length} € mesačne</b>
+              </div>
+            </div>
+            <p className="muted sethelp">
+              1 € za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Prvých 12 mesiacov od registrácie zdarma.
+            </p>
           </Acc>
         </div>
       </main>

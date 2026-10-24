@@ -25,13 +25,21 @@ export async function Header({
 }) {
   const tabs: Tab[] = [];
   if (me.role === "admin") {
-    const pending = await pendingRequestsCount();
+    const pending = await pendingRequestsCount(me.id);
     tabs.push(
       { href: "/kalendar", label: "Kalendár" },
       { href: "/moj-prehlad", label: "Môj prehľad" },
       { href: "/prehlad", label: "Prehľad" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },
+      { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
+    );
+  } else if (me.isManager) {
+    const pending = await pendingRequestsCount(me.id);
+    tabs.push(
+      { href: "/kalendar", label: "Kalendár" },
+      { href: "/moj-prehlad", label: "Môj prehľad" },
+      { href: "/prehlad", label: "Prehľad" },
       { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
     );
   } else {

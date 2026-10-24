@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/data";
+import { requireLead } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
 import { MNC, TYPE_NAME, balance, byLastName, monthRange, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER, isOn, payCols, valsIn, type Vals } from "@/lib/report";
@@ -19,9 +19,11 @@ function monthsLabel(sel: string[]) {
 }
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ m?: string; pp?: string }> }) {
-  const me = await requireAdmin();
+  const me = await requireLead();
   const sp = await searchParams;
-  const { calc, emps, settings, enabled } = await loadCompany();
+  const { calc, emps: allEmps, settings, enabled } = await loadCompany();
+  // vedúci vidí len svojich ľudí
+  const emps = me.role === "admin" ? allEmps : allEmps.filter((e) => me.managed.includes(e.id));
   const supabase = await createClient();
   const year = Number(calc.today.slice(0, 4));
   const cur = Number(calc.today.slice(5, 7));

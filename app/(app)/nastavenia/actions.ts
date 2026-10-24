@@ -146,9 +146,48 @@ export async function deleteHoliday(f: FormData) {
   await requireAdmin();
   const supabase = await createClient();
   const date = str(f, "date");
-  await supabase.from("holidays").delete().eq("date", date);
+  // štátne sviatky sa nemažú, odstrániť sa dajú len vlastné voľné dni firmy
+  await supabase.from("holidays").delete().eq("date", date).eq("is_state", false);
   await audit(`Sviatok ${date} odstránený`);
   done();
+}
+
+/** Načíta štátne sviatky roka (spravuje ich superadmin pre všetky firmy). */
+export async function loadStateHolidays(f: FormData) {
+  await requireAdmin();
+  const y = Number(str(f, "year"));
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) return;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("load_state_holidays", { p_year: y });
+  await audit(`Štátne sviatky ${y} načítané (${data ?? 0})`);
+  done();
+  redirect(`/nastavenia?open=hol&rok=${y}`);
+}
+
+// ---------- vedúci a ich ľudia ----------
+/** Pridá alebo odoberie zamestnanca vedúcemu (sekcia Roly a prístupy). */
+export async function setManaged(managerId: string, empId: string, on: boolean) {
+  await requireAdmin();
+  if (managerId === empId) return;
+  const supabase = await createClient();
+  if (on) await supabase.from("manager_assignments").upsert({ manager_id: managerId, employee_id: empId });
+  else await supabase.from("manager_assignments").delete().eq("manager_id", managerId).eq("employee_id", empId);
+  done();
+}
+
+// ---------- firma ----------
+export async function saveCompany(_p: SetState, f: FormData): Promise<SetState> {
+  const me = await requireAdmin();
+  const supabase = await createClient();
+  const row = { name: str(f, "name"), ico: str(f, "ico") || null, address: str(f, "address") || null };
+  if (!row.name) return { error: ["Vyplňte názov firmy."] };
+  if (row.ico && !/^\d{6,8}$/.test(row.ico.replace(/\s/g, ""))) return { error: ["IČO má 6 až 8 číslic."] };
+  if (row.ico) row.ico = row.ico.replace(/\s/g, "");
+  const { error } = await supabase.from("companies").update(row).eq("id", me.company_id);
+  if (error) return { error: [error.message] };
+  await audit("Údaje o firme upravené");
+  done();
+  return { ok: "Uložené" };
 }
 
 export async function setHideHealth(on: boolean) {
@@ -194,6 +233,7 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     in_stats: bool(f, "in_stats"),
     in_payroll: bool(f, "in_payroll"),
     role: bool(f, "is_admin") ? "admin" : "employee",
+    is_manager: bool(f, "is_manager"),
   };
   const err: string[] = [];
   if (!row.name) err.push("Vyplňte meno a priezvisko.");
@@ -211,6 +251,14 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     const res = await supabase.from("employees").insert(row).select("id").single();
     if (res.error) return { error: [dupMsg(res.error)] };
     empId = res.data.id;
+  }
+
+  // ľudia, ktorých vedúci spravuje
+  const want = row.is_manager ? f.getAll("manages").map(String).filter((x) => x && x !== empId) : [];
+  await supabase.from("manager_assignments").delete().eq("manager_id", empId);
+  if (want.length) {
+    const res = await supabase.from("manager_assignments").insert(want.map((employee_id) => ({ manager_id: empId, employee_id })));
+    if (res.error) return { error: ["Zoznam ľudí vedúceho sa nepodarilo uložiť: " + res.error.message] };
   }
 
   // ak už existuje účet s týmto e-mailom, prepojí sa pri ďalšom prihlásení cez trigger;

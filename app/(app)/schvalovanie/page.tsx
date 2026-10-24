@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/data";
+import { requireLead } from "@/lib/data";
 import { loadCompany } from "@/lib/loaders";
 import { fd, fdw, type Entry } from "@/lib/calc";
 import { Header } from "@/components/Header";
 import { RecChip } from "@/components/ui";
 import { DecideForm } from "./DecideForm";
+import { requestLocked } from "@/lib/requests";
 
 type Req = {
   id: string;
@@ -72,7 +73,8 @@ const entryTxt = (x: Entry) =>
   `${x.type} ${x.date_from === x.date_to ? fd(x.date_from) : fd(x.date_from) + "–" + fd(x.date_to)}`;
 
 export default async function ApprovalsPage() {
-  const me = await requireAdmin();
+  const me = await requireLead();
+  const admin = me.role === "admin";
   const supabase = await createClient();
   const { emps } = await loadCompany();
   const nameOf = (id: string | null) => emps.find((e) => e.id === id)?.name ?? "";
@@ -87,8 +89,11 @@ export default async function ApprovalsPage() {
       .order("at", { ascending: false })
       .limit(300),
   ]);
-  const all = (reqs ?? []) as Req[];
+  // vedúci: len žiadosti svojich ľudí (vlastné vybavuje niekto iný)
+  const all = ((reqs ?? []) as Req[]).filter((r) => admin || (r.employee_id !== me.id && me.managed.includes(r.employee_id)));
   const pend = all.filter((r) => r.status === "pending").reverse();
+  const lockedIds = new Set<string>();
+  if (!admin) for (const r of pend) if (await requestLocked(r)) lockedIds.add(r.id);
   const done = all.filter((r) => r.status === "approved" || r.status === "rejected");
 
   // História: textové záznamy + zmeny záznamov po uzávierke (bez tých, ktoré vznikli schválením žiadosti)
@@ -135,7 +140,13 @@ export default async function ApprovalsPage() {
                     </div>
                     <div className="muted req-why">„{r.reason}“</div>
                   </div>
-                  <DecideForm id={r.id} />
+                  {lockedIds.has(r.id) ? (
+                    <div className="req-act muted" style={{ fontSize: 12.5 }}>
+                      Po uzávierke – žiadosť vybaví admin.
+                    </div>
+                  ) : (
+                    <DecideForm id={r.id} />
+                  )}
                 </div>
               ))}
               {!pend.length && <div className="empty-note">Žiadne čakajúce žiadosti.</div>}

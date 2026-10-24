@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireMe } from "@/lib/data";
+import { canManage, requireMe, type Me } from "@/lib/data";
 import { loadCompany } from "@/lib/loaders";
 import { TYPE_NAME, eachDay, fdw, nf, partTxt, toMin, type Entry, type Part } from "@/lib/calc";
 import { safeBack } from "@/lib/params";
@@ -16,11 +16,13 @@ const s = (f: FormData, k: string) => {
 
 type Row = Omit<Entry, "id">;
 
-function readRow(form: FormData, meId: string, admin: boolean): Row {
+function readRow(form: FormData, me: Me): Row {
   const part = (s(form, "part") ?? "full") as Part;
   const dateFrom = s(form, "date_from") ?? "";
+  const emp = s(form, "employee_id");
   return {
-    employee_id: admin ? s(form, "employee_id") ?? meId : meId,
+    // admin za kohokoľvek, vedúci za svojich ľudí, inak len za seba
+    employee_id: emp && canManage(me, emp) ? emp : me.id,
     type: s(form, "type") ?? "",
     part,
     date_from: dateFrom,
@@ -91,7 +93,7 @@ async function validate(row: Row, skipId: string | null): Promise<string[]> {
 
 async function makeRequest(
   kind: "new" | "edit" | "delete",
-  meId: string,
+  empId: string,
   row: Row | null,
   original: Entry | null,
   reason: string | null
@@ -113,7 +115,7 @@ async function makeRequest(
     if (pend?.length) return { error: ["K tomuto záznamu už čaká žiadosť na admina."] };
   }
   const { error } = await supabase.from("requests").insert({
-    employee_id: meId,
+    employee_id: empId,
     kind,
     target_entry_id: original?.id ?? null,
     payload: row ?? {},
@@ -131,7 +133,7 @@ export async function saveEntry(_prev: FormState, form: FormData): Promise<FormS
   const back = safeBack(s(form, "spat") ?? undefined);
   const id = s(form, "id");
   const reason = s(form, "reason");
-  const row = readRow(form, me.id, admin);
+  const row = readRow(form, me);
 
   let original: Entry | null = null;
   if (id) {
@@ -160,7 +162,7 @@ export async function saveEntry(_prev: FormState, form: FormData): Promise<FormS
 
   if (!ok) {
     if (admin) return { error: ["Záznam sa nepodarilo uložiť."] };
-    const r = await makeRequest(id ? "edit" : "new", me.id, row, original, reason);
+    const r = await makeRequest(id ? "edit" : "new", row.employee_id, row, original, reason);
     if (r) return r;
     revalidatePath("/", "layout");
     redirect(back + (back.includes("?") ? "&" : "?") + "ziadost=1");
@@ -187,7 +189,7 @@ export async function deleteEntry(_prev: FormState, form: FormData): Promise<For
   if (error && error.code !== "42501") return { error: ["Záznam sa nepodarilo vymazať: " + error.message] };
   if (!data?.length) {
     if (admin) return { error: ["Záznam sa nepodarilo vymazať."] };
-    const r = await makeRequest("delete", me.id, null, original as Entry, reason);
+    const r = await makeRequest("delete", (original as Entry).employee_id, null, original as Entry, reason);
     if (r) return r;
     revalidatePath("/", "layout");
     redirect(back + (back.includes("?") ? "&" : "?") + "ziadost=1");
