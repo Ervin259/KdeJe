@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { loadCompany, loadEntries } from "@/lib/loaders";
-import { MN, MNC, TYPE_NAME, balance, dayWord, nf, typeClass, type Entry } from "@/lib/calc";
+import { MN, MNC, TYPE_NAME, balance, nf, typeClass, type Entry } from "@/lib/calc";
 import { monthVals, payCols } from "@/lib/report";
 
 /**
@@ -110,20 +110,27 @@ export async function EmpOverview({ empId, admin }: { empId: string; admin: bool
                 <b className="num">{nf(Math.max(0, b.left))}</b>
               </div>
             </div>
-            <div className="meter labeled" style={{ height: 20 }}>
-              <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />
-              <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />
-              <i className="needseg" style={{ width: `${pct(b.over)}%` }} title={`Dočerpať: ${nf(b.over)} ${dayWord(b.over)}`}>
-                <span>{nf(b.over)} dočerpať</span>
-              </i>
-              <i
-                className="carryseg"
-                style={{ width: `${pct(Math.max(0, b.left - b.over))}%`, background: "var(--rest)" }}
-                title={`Môže sa preniesť: ${nf(Math.max(0, b.left - b.over))} (limit ${settings.carry_max} dní)`}
-              >
-                <span>{b.over > 0 ? `max. ${nf(settings.carry_max)}` : nf(Math.max(0, b.left))} na prenos</span>
-              </i>
+            <div className="meter vbar" role="img" aria-label={`Vyčerpané ${nf(b.taken)}, naplánované ${nf(b.planned)}, zostatok ${nf(Math.max(0, b.left))}`}>
+              {b.taken > 0 && <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />}
+              {b.planned > 0 && <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />}
+              {b.over > 0 && <i style={{ width: `${pct(b.over)}%`, background: "var(--need)" }} />}
+              {b.left - b.over > 0 && <i style={{ width: `${pct(b.left - b.over)}%`, background: "var(--rest)" }} />}
             </div>
+            {b.left > 0 && (
+              <div className="restleg">
+                {b.over > 0 && (
+                  <span className="rl" title={`Firemné odporúčanie: do nového roka najviac ${nf(settings.carry_max)} dní`}>
+                    <i style={{ background: "var(--need)" }} />
+                    <b>{nf(b.over)}</b> dočerpať do 31. 12.
+                  </span>
+                )}
+                <span className="rl">
+                  <i style={{ background: "var(--rest)" }} />
+                  <b>{nf(b.left - b.over)}</b> na prenos do {year + 1}
+                  {b.over > 0 ? ` · max. ${nf(settings.carry_max)}` : ""}
+                </span>
+              </div>
+            )}
             <dl className="kv" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
               <dt>Nárok {year}</dt>
               <dd>{nf(b.ent)}</dd>

@@ -120,3 +120,13 @@ a.namebtn:hover { color: var(--accent); }
 .plangrid > div { border: 1px solid var(--grid); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
 .plangrid .muted { font-size: 12px; }
 .plangrid b { font-size: 15px; }
+
+/* ---------- Dovolenka: lišta bez textu, zostatok rozpísaný pod ňou ---------- */
+.meter.vbar { height: 12px; gap: 2px; background: transparent; }
+.meter.vbar i { border-radius: 3px; min-width: 4px; }
+.meter.vbar i:first-child { border-top-left-radius: 99px; border-bottom-left-radius: 99px; }
+.meter.vbar i:last-child { border-top-right-radius: 99px; border-bottom-right-radius: 99px; }
+.restleg { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted); margin-top: -4px; }
+.restleg .rl { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.restleg i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.restleg b { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
