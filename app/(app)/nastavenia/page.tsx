@@ -89,15 +89,7 @@ export default async function SettingsPage({
 
   return (
     <>
-      <Header
-        me={me}
-        center={
-          <div className="mnav">
-            <h2>Nastavenia</h2>
-          </div>
-        }
-        right={<AccAll />}
-      />
+      <Header me={me} right={<AccAll />} />
       <main id="view">
         <div className="panel setpanel">
           <h3 className="setgroup">Ľudia</h3>

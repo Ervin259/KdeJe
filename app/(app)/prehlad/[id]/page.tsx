@@ -21,9 +21,6 @@ export default async function EmpDetailPage({ params }: { params: Promise<{ id: 
 
   const center = (
     <div className="mnav">
-      <Link className="btn" href="/prehlad" style={{ marginRight: 6 }}>
-        ‹ Celý tím
-      </Link>
       <Link className="icon-btn" href={`/prehlad/${prev.id}`} aria-label="Predchádzajúci zamestnanec">
         ‹
       </Link>
