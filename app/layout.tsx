@@ -4,7 +4,7 @@ import "./app.css";
 
 export const metadata: Metadata = {
   title: "KdeJe",
-  description: "Evidencia neprítomností – Euro Data Distribution s.r.o.",
+  description: "Evidencia dochádzky a neprítomností pre firmy",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -179,3 +179,6 @@ a.namebtn:hover { color: var(--accent); }
 .setgrp .acc.open > .acchead .empsum .tot,
 .setgrp .acc > .acchead .empsum :is(span,a).on { background: var(--sec-ico); color: #fff; border-color: var(--sec-ico); }
 @media (max-width: 700px) { .setgrphead { padding: 14px; } .grpt span { display: none; } .setgrpbody { padding: 10px; } }
+
+.loginmore { font-size: 13px; margin-top: 18px; }
+.loginmore a { color: var(--accent); font-weight: 600; }

@@ -20,6 +20,8 @@ export type Me = {
   isManager: boolean;
   /** id zamestnancov, ktorých spravuje (vedúci) */
   managed: string[];
+  /** superadmin celej aplikácie (vývojár) */
+  isPlatform: boolean;
 };
 
 export type CalEntry = {
@@ -65,6 +67,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
   if (!data) return null;
   const company = data.companies as unknown as { name: string } | null;
   const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
+  const { data: platform } = await supabase.rpc("is_platform_admin");
   let managed: string[] = [];
   if (data.is_manager && !empView) {
     const { data: rows } = await supabase.from("manager_assignments").select("employee_id").eq("manager_id", data.id);
@@ -81,6 +84,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
     company_name: company?.name ?? "",
     isManager: !!data.is_manager && !empView,
     managed,
+    isPlatform: platform === true,
   };
 });
 
@@ -93,6 +97,13 @@ export async function requireMe(): Promise<Me> {
 export async function requireAdmin(): Promise<Me> {
   const me = await requireMe();
   if (me.role !== "admin") redirect("/kalendar");
+  return me;
+}
+
+/** Superadmin celej aplikácie (stránka Firmy). */
+export async function requirePlatform(): Promise<Me> {
+  const me = await requireMe();
+  if (!me.isPlatform) redirect("/kalendar");
   return me;
 }
 
