@@ -1,5 +1,6 @@
 import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
+import { createClient } from "@/lib/supabase/server";
 import { NavTabs, type Tab } from "./NavTabs";
 import { TopBar } from "./TopBar";
 import { ViewToggle } from "./ViewToggle";
@@ -44,6 +45,12 @@ export async function Header({
     );
   } else {
     tabs.push({ href: "/kalendar", label: "Kalendár" }, { href: "/moj-prehlad", label: "Môj prehľad" });
+  }
+
+  if (me.isPlatform) {
+    const supabase = await createClient();
+    const { count } = await supabase.from("company_signups").select("id", { count: "exact", head: true }).eq("status", "pending");
+    tabs.push({ href: "/firmy", label: "Firmy", badge: count || undefined });
   }
 
   return (

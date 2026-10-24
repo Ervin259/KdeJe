@@ -53,7 +53,7 @@ export default function LoginPage() {
       setError(
         error.message.toLowerCase().includes("signups not allowed") ||
           error.message.toLowerCase().includes("not found")
-          ? "Tento e-mail nemá v KdeJe účet. Obráťte sa na administrátora."
+          ? "Tento e-mail nemá v KdeJe účet. Obráťte sa na administrátora vašej firmy."
           : error.message
       );
     } else {
@@ -69,7 +69,7 @@ export default function LoginPage() {
             Kde<b>Je</b>
           </h1>
         </div>
-        <p className="muted">Euro Data Distribution s.r.o.</p>
+        <p className="muted">Prihlásenie do aplikácie</p>
 
         {state === "sent" ? (
           <p className="okmsg">
@@ -93,6 +93,9 @@ export default function LoginPage() {
             {state === "error" && <p className="err">{error}</p>}
           </form>
         )}
+        <p className="muted loginmore">
+          Vaša firma ešte nepoužíva KdeJe? <a href="/registracia">Požiadajte o zriadenie</a>
+        </p>
       </div>
     </main>
   );
