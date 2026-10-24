@@ -70,7 +70,7 @@ a.namebtn:hover { color: var(--accent); }
 .viewtog button:hover { color: #fff; }
 .viewtog .vt-track { width: 26px; height: 14px; border-radius: 7px; background: #4A5568; position: relative; transition: background .15s; flex: none; }
 .viewtog .vt-knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
-.viewtog button[aria-checked="true"] .vt-track { background: #E8590C; }
+.viewtog button[aria-checked="true"] .vt-track { background: #8EA2FF; }
 .viewtog button[aria-checked="true"] .vt-knob { left: 14px; }
 
 .viewtog button:focus-visible .vt-track { outline: 2px solid #8fa7ff; outline-offset: 2px; }
