@@ -110,27 +110,30 @@ export async function EmpOverview({ empId, admin }: { empId: string; admin: bool
                 <b className="num">{nf(Math.max(0, b.left))}</b>
               </div>
             </div>
-            <div className="meter vbar" role="img" aria-label={`Vyčerpané ${nf(b.taken)}, naplánované ${nf(b.planned)}, zostatok ${nf(Math.max(0, b.left))}`}>
-              {b.taken > 0 && <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />}
-              {b.planned > 0 && <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />}
-              {b.over > 0 && <i style={{ width: `${pct(b.over)}%`, background: "var(--need)" }} />}
-              {b.left - b.over > 0 && <i style={{ width: `${pct(b.left - b.over)}%`, background: "var(--rest)" }} />}
-            </div>
-            {b.left > 0 && (
-              <div className="restleg">
+            <div className="vbarwrap">
+              <div className="meter vbar" role="img" aria-label={`Vyčerpané ${nf(b.taken)}, naplánované ${nf(b.planned)}, dočerpať ${nf(b.over)}, na prenos ${nf(Math.max(0, b.left - b.over))}`}>
+                {b.taken > 0 && <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />}
+                {b.planned > 0 && <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />}
                 {b.over > 0 && (
-                  <span className="rl" title={`Firemné odporúčanie: do nového roka najviac ${nf(settings.carry_max)} dní`}>
-                    <i style={{ background: "var(--need)" }} />
-                    <b>{nf(b.over)}</b> dočerpať do 31. 12.
-                  </span>
+                  <i className="need" style={{ width: `${pct(b.over)}%` }} title={`Dočerpať do 31. 12.: ${nf(b.over)}`}>
+                    {nf(b.over)}
+                  </i>
                 )}
-                <span className="rl">
-                  <i style={{ background: "var(--rest)" }} />
-                  <b>{nf(b.left - b.over)}</b> na prenos do {year + 1}
-                  {b.over > 0 ? ` · max. ${nf(settings.carry_max)}` : ""}
-                </span>
+                {b.left - b.over > 0 && (
+                  <i className="carry" style={{ width: `${pct(b.left - b.over)}%` }} title={`Na prenos do ${year + 1}: ${nf(b.left - b.over)}`}>
+                    {nf(b.left - b.over)}
+                  </i>
+                )}
               </div>
-            )}
+              {b.over > 0 && (
+                <span
+                  className="needcap"
+                  style={{ left: `clamp(48px, ${pct(b.taken) + pct(b.planned) + pct(b.over) / 2}%, calc(100% - 48px))` }}
+                >
+                  dočerpať do 31. 12.
+                </span>
+              )}
+            </div>
             <dl className="kv" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
               <dt>Nárok {year}</dt>
               <dd>{nf(b.ent)}</dd>
