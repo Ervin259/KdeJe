@@ -85,8 +85,6 @@ a.namebtn:hover { color: var(--accent); }
 .emptab .acchk { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- Nastavenia: bloky, roly, sviatky po rokoch, firma ---------- */
-.setgroup { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 2px 2px; }
-.setgroup:first-child { margin-top: 0; }
 .sethelp { font-size: 12.5px; margin: 0 0 12px; max-width: 760px; }
 .pill.lead { background: var(--accent-soft); color: var(--accent); }
 .fmsg.ok { background: var(--sunk); color: var(--ink); }
@@ -139,3 +137,45 @@ a.namebtn:hover { color: var(--accent); }
   .gridwrap > .t.yt.team thead th:first-child { border-top-left-radius: 12px; }
   .gridwrap > .t.yt.team thead th:last-child { border-top-right-radius: 12px; }
 }
+
+/* ---------- Nastavenia: hlavné kategórie (výrazné) a podkategórie (jemnejšie) ---------- */
+.setpanel { gap: 14px; }
+.setgrp { background: var(--surface); border: 1px solid var(--sec-line); border-radius: 14px; box-shadow: var(--shadow); }
+.setgrphead { display: flex; align-items: center; gap: 16px; padding: 18px 20px; cursor: pointer; border-radius: 14px; transition: background .15s; }
+.setgrphead:hover { background: var(--sec-hover2); }
+.setgrphead:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.setgrphead:focus:not(:focus-visible) { outline: none; }
+.grpico { flex: none; width: 42px; height: 42px; border-radius: 11px; background: var(--sec-solid); color: var(--sec-solid-ink); display: grid; place-items: center; }
+.grpico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.grpt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.grpt b { font-size: 18px; font-weight: 700; letter-spacing: -.01em; color: var(--ink); }
+.grpt span { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.setgrphead .chev { width: 10px; height: 10px; border-color: var(--sec-ico); }
+.setgrp.open { border-color: var(--sec-solid); box-shadow: 0 6px 18px rgba(41,68,194,.12); }
+.setgrp.open > .setgrphead { background: var(--sec-solid); border-radius: 13px 13px 0 0; }
+.setgrp.open > .setgrphead b { color: var(--sec-solid-ink); }
+.setgrp.open > .setgrphead .grpt span { color: rgba(255,255,255,.75); }
+.setgrp.open > .setgrphead .grpico { background: rgba(255,255,255,.18); }
+.setgrp.open > .setgrphead .chev { border-color: var(--sec-solid-ink); transform: rotate(-135deg) translate(-2px,-2px); }
+.setgrp.open > .setgrphead:hover { filter: brightness(1.06); }
+.setgrpbody { padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--thead); border-radius: 0 0 13px 13px; }
+
+/* podkategórie: biele karty, menšie písmo, bez plnej farby */
+.setgrp .acc { border-color: var(--grid); box-shadow: none; border-radius: 10px; }
+.setgrp .acc > .acchead { background: var(--surface); box-shadow: none; padding: 11px 16px; gap: 12px; }
+.setgrp .acc:not(.open) > .acchead:hover { background: var(--sec-hover); }
+.setgrp .acc > .acchead b { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.setgrp .acc > .acchead .accico { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+.setgrp .acc > .acchead .accico svg { width: 16px; height: 16px; }
+.setgrp .acc > .acchead .chev { border-color: var(--muted); }
+.setgrp .acc.open { border-color: var(--sec-line); box-shadow: none; }
+.setgrp .acc.open > .acchead { background: var(--sec-open) !important; border-bottom: 1px solid var(--sec-line) !important; box-shadow: inset 3px 0 0 var(--sec-ico); }
+.setgrp .acc.open > .acchead b { color: var(--sec-ico); }
+.setgrp .acc.open > .acchead .accico { background: var(--sec-ico); color: var(--sec-ico-ink); }
+.setgrp .acc.open > .acchead .chev { border-color: var(--sec-ico); }
+.setgrp .acc.open > .acchead:hover { filter: none; }
+.setgrp .acc > .acchead .empsum :is(span,a) { font-size: 12px; }
+.setgrp .acc.open > .acchead .empsum :is(span,a) { background: var(--surface); color: var(--sec-ico); border-color: var(--sec-line); }
+.setgrp .acc.open > .acchead .empsum .tot,
+.setgrp .acc > .acchead .empsum :is(span,a).on { background: var(--sec-ico); color: #fff; border-color: var(--sec-ico); }
+@media (max-width: 700px) { .setgrphead { padding: 14px; } .grpt span { display: none; } .setgrpbody { padding: 10px; } }

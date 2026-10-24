@@ -69,6 +69,12 @@ const ICO: Record<string, React.ReactNode> = {
       <path d="M9 8h2M13 8h2M9 12h2M13 12h2M10.5 20v-3.5h3V20" />
     </>
   ),
+  rules: (
+    <>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" />
+    </>
+  ),
   plan: (
     <>
       <rect x="3.5" y="6" width="17" height="12" rx="2" />
@@ -77,16 +83,8 @@ const ICO: Record<string, React.ReactNode> = {
   ),
 };
 
-const KEY = "kdeje-setopen";
-const readOpen = (): Record<string, boolean> => {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "{}");
-  } catch {
-    return {};
-  }
-};
 
-/** Rozbaľovacia sekcia Nastavení; pri otvorení stránky sú všetky zbalené (stav si pamätá prehliadač). */
+/** Rozbaľovacia sekcia Nastavení; pri otvorení stránky sú všetky zbalené. */
 export function Acc({
   k,
   title,
@@ -102,18 +100,11 @@ export function Acc({
 }) {
   const [open, setOpen] = useState(!!forceOpen);
   useEffect(() => {
-    if (!forceOpen && readOpen()[k]) setOpen(true);
     const h = (e: Event) => setOpen((e as CustomEvent<boolean>).detail);
     window.addEventListener("kdeje-accall", h);
     return () => window.removeEventListener("kdeje-accall", h);
-  }, [k, forceOpen]);
-  const toggle = () => {
-    const o = !open;
-    setOpen(o);
-    try {
-      localStorage.setItem(KEY, JSON.stringify({ ...readOpen(), [k]: o }));
-    } catch {}
-  };
+  }, []);
+  const toggle = () => setOpen(!open);
   return (
     <section className={`acc${open ? " open" : ""}`} id={`acc-${k}`}>
       <div className="acchead" role="button" tabIndex={0} aria-expanded={open} onClick={toggle} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle()}>
@@ -142,9 +133,6 @@ export function AccAll() {
         const o = !all;
         setAll(o);
         window.dispatchEvent(new CustomEvent("kdeje-accall", { detail: o }));
-        try {
-          localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(["emp", "roles", "work", "types", "appr", "hol", "firm", "gdpr", "plan"].map((x) => [x, o]))));
-        } catch {}
       }}
     >
       {all ? "Zbaliť všetko" : "Rozbaliť všetko"}
@@ -734,5 +722,46 @@ export function CompanyForm({ name, ico, address }: { name: string; ico: string;
         {st.error && <span className="fmsg err">{st.error.join(" ")}</span>}
       </div>
     </form>
+  );
+}
+
+/** Hlavná kategória Nastavení (Ľudia, Pravidlá, Kalendár, Firma) – rozbaľovacia, štandardne zbalená. */
+export function SetGroup({
+  k,
+  title,
+  sub,
+  forceOpen,
+  children,
+}: {
+  k: string;
+  title: string;
+  sub: string;
+  forceOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(!!forceOpen);
+  useEffect(() => {
+    const h = (e: Event) => setOpen((e as CustomEvent<boolean>).detail);
+    window.addEventListener("kdeje-accall", h);
+    return () => window.removeEventListener("kdeje-accall", h);
+  }, []);
+  const toggle = () => setOpen(!open);
+  const ico = k === "people" ? "emp" : k === "cal" ? "hol" : k;
+  return (
+    <section className={`setgrp${open ? " open" : ""}`} id={`grp-${k}`}>
+      <div className="setgrphead" role="button" tabIndex={0} aria-expanded={open} onClick={toggle} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggle()}>
+        <span className="grpico">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            {ICO[ico]}
+          </svg>
+        </span>
+        <span className="grpt">
+          <b>{title}</b>
+          <span>{sub}</span>
+        </span>
+        <span className="chev" aria-hidden="true" />
+      </div>
+      {open && <div className="setgrpbody">{children}</div>}
+    </section>
   );
 }

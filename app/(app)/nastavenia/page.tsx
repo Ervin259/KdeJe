@@ -6,7 +6,7 @@ import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
-import { Acc, AccAll, CompanyForm, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { Acc, AccAll, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
 
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
@@ -92,7 +92,7 @@ export default async function SettingsPage({
       <Header me={me} right={<AccAll />} />
       <main id="view">
         <div className="panel setpanel">
-          <h3 className="setgroup">Ľudia</h3>
+          <SetGroup k="people" title="Ľudia" sub="Zamestnanci · Roly a prístupy" forceOpen={["emp","roles"].includes(sp.open ?? "")}>
           <Acc k="emp" title="Zamestnanci" extra={empSum} forceOpen={sp.open === "emp"}>
             <div className="row spread emptools">
               <span className="muted" style={{ fontSize: 12.5 }}>
@@ -263,8 +263,8 @@ export default async function SettingsPage({
               </p>
             )}
           </Acc>
-
-          <h3 className="setgroup">Pravidlá</h3>
+          </SetGroup>
+          <SetGroup k="rules" title="Pravidlá" sub="Pracovná doba · Typy neprítomností · Uzávierka a úpravy" forceOpen={["work","types","appr"].includes(sp.open ?? "")}>
           <Acc k="work" title="Pracovná doba">
             <WorkGroups
               groups={groups as WG[]}
@@ -288,8 +288,8 @@ export default async function SettingsPage({
             <p className="muted sethelp">Kedy sa mesiac zamkne, či zápisy schvaľuje oprávnená osoba a čo smie zamestnanec meniť po uzávierke.</p>
             <RightsGroups groups={rights as RG[]} members={members("rights_group_id", rights.find((r) => r.is_default)?.id)} />
           </Acc>
-
-          <h3 className="setgroup">Kalendár</h3>
+          </SetGroup>
+          <SetGroup k="cal" title="Kalendár" sub="Sviatky" forceOpen={["hol"].includes(sp.open ?? "")}>
           <Acc k="hol" title="Sviatky" forceOpen={sp.open === "hol"}>
             {years.map((y) => {
               const hol = holidays.filter((h) => h.date.startsWith(`${y}-`));
@@ -353,8 +353,8 @@ export default async function SettingsPage({
               nepočíta ako voľný deň navyše.
             </p>
           </Acc>
-
-          <h3 className="setgroup">Firma</h3>
+          </SetGroup>
+          <SetGroup k="firm" title="Firma" sub="Údaje o firme · Súkromie (GDPR) · Predplatné" forceOpen={["firm","gdpr","plan"].includes(sp.open ?? "")}>
           <Acc k="firm" title="Údaje o firme">
             <CompanyForm name={company?.name ?? me.company_name} ico={company?.ico ?? ""} address={company?.address ?? ""} />
           </Acc>
@@ -392,6 +392,7 @@ export default async function SettingsPage({
               1 € za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Prvých 12 mesiacov od registrácie zdarma.
             </p>
           </Acc>
+          </SetGroup>
         </div>
       </main>
     </>
