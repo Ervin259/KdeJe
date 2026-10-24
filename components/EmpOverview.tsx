@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { loadCompany, loadEntries } from "@/lib/loaders";
-import { MN, MNC, TYPE_NAME, balance, dayWord, nf, typeClass, type Entry } from "@/lib/calc";
+import { MN, MNC, TYPE_NAME, balance, nf, typeClass, type Entry } from "@/lib/calc";
 import { monthVals, payCols } from "@/lib/report";
 
 /**
@@ -110,19 +110,29 @@ export async function EmpOverview({ empId, admin }: { empId: string; admin: bool
                 <b className="num">{nf(Math.max(0, b.left))}</b>
               </div>
             </div>
-            <div className="meter labeled" style={{ height: 20 }}>
-              <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />
-              <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />
-              <i className="needseg" style={{ width: `${pct(b.over)}%` }} title={`Dočerpať: ${nf(b.over)} ${dayWord(b.over)}`}>
-                <span>{nf(b.over)} dočerpať</span>
-              </i>
-              <i
-                className="carryseg"
-                style={{ width: `${pct(Math.max(0, b.left - b.over))}%`, background: "var(--rest)" }}
-                title={`Môže sa preniesť: ${nf(Math.max(0, b.left - b.over))} (limit ${settings.carry_max} dní)`}
-              >
-                <span>{b.over > 0 ? `max. ${nf(settings.carry_max)}` : nf(Math.max(0, b.left))} na prenos</span>
-              </i>
+            <div className="vbarwrap">
+              <div className="meter vbar" role="img" aria-label={`Vyčerpané ${nf(b.taken)}, naplánované ${nf(b.planned)}, dočerpať ${nf(b.over)}, na prenos ${nf(Math.max(0, b.left - b.over))}`}>
+                {b.taken > 0 && <i style={{ width: `${pct(b.taken)}%`, background: "var(--dov)" }} />}
+                {b.planned > 0 && <i style={{ width: `${pct(b.planned)}%`, background: "var(--dov)", opacity: 0.45 }} />}
+                {b.over > 0 && (
+                  <i className="need" style={{ width: `${pct(b.over)}%` }} title={`Dočerpať do 31. 12.: ${nf(b.over)}`}>
+                    {nf(b.over)}
+                  </i>
+                )}
+                {b.left - b.over > 0 && (
+                  <i className="carry" style={{ width: `${pct(b.left - b.over)}%` }} title={`Na prenos do ${year + 1}: ${nf(b.left - b.over)}`}>
+                    {nf(b.left - b.over)}
+                  </i>
+                )}
+              </div>
+              {b.over > 0 && (
+                <span
+                  className="needcap"
+                  style={{ left: `clamp(48px, ${pct(b.taken) + pct(b.planned) + pct(b.over) / 2}%, calc(100% - 48px))` }}
+                >
+                  dočerpať do 31. 12.
+                </span>
+              )}
             </div>
             <dl className="kv" style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
               <dt>Nárok {year}</dt>

@@ -120,3 +120,14 @@ a.namebtn:hover { color: var(--accent); }
 .plangrid > div { border: 1px solid var(--grid); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
 .plangrid .muted { font-size: 12px; }
 .plangrid b { font-size: 15px; }
+
+/* ---------- Dovolenka: čísla v lište, „dočerpať“ pod červeným segmentom ---------- */
+.vbarwrap { position: relative; }
+.vbarwrap:has(.needcap) { padding-bottom: 18px; }
+.meter.vbar { height: 14px; gap: 2px; background: transparent; }
+.meter.vbar i { border-radius: 3px; min-width: 4px; font-style: normal; font-size: 10px; font-weight: 700; line-height: 14px; text-align: center; overflow: hidden; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.meter.vbar i:first-child { border-top-left-radius: 99px; border-bottom-left-radius: 99px; }
+.meter.vbar i:last-child { border-top-right-radius: 99px; border-bottom-right-radius: 99px; }
+.meter.vbar i.need { background: var(--need); color: #fff; min-width: 16px; }
+.meter.vbar i.carry { background: var(--rest); color: var(--ink); min-width: 16px; }
+.needcap { position: absolute; top: 18px; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--need); white-space: nowrap; }
