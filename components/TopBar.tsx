@@ -17,9 +17,17 @@ export function TopBar({ stack, children }: { stack?: boolean; children: React.R
       const [t, l, r] = [bar.querySelector("nav.tabs"), bar.querySelector(".bl"), bar.querySelector(".br")];
       if (ov(t) || ov(l) || ov(r) || ov(bar)) bar.classList.add("tstack");
     };
-    layout();
-    const ro = new ResizeObserver(layout);
+    // výška fixnej hlavičky → --headH, aby sa hlavička tabuľky kalendára prilepila hneď pod ňu
+    const head = document.getElementById("stickyhead");
+    const setH = () => head && document.documentElement.style.setProperty("--headH", `${head.offsetHeight}px`);
+    const update = () => {
+      layout();
+      setH();
+    };
+    update();
+    const ro = new ResizeObserver(update);
     ro.observe(document.body);
+    if (head) ro.observe(head);
     return () => ro.disconnect();
   }, [stack]);
   return (
