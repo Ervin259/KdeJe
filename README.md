@@ -1,6 +1,13 @@
 # KdeJe
 
-Evidencia neprítomností pre Euro Data Distribution s.r.o. – Next.js (Vercel) + Supabase.
+Evidencia neprítomností pre viac firiem – Next.js (Vercel) + Supabase. Prvý zákazník: Euro Data Distribution s.r.o.
+
+## Roly
+
+- **Superadmin** (tabuľka `platform_admins`) – zakladá firmy (`create_company`), mení stav predplatného (`set_company_status`), štátne sviatky a moduly firiem.
+- **Admin firmy** – Nastavenia, Podklad pre mzdy, všetky záznamy vo firme.
+- **Vedúci** (`employees.is_manager` + `manager_assignments`) – Prehľad a Schvaľovanie pre svojich ľudí, zápis za nich do uzávierky.
+- **Zamestnanec** – vlastný kalendár a prehľad; bez e-mailu sa neprihlasuje a zapisuje za neho vedúci alebo admin.
 
 ## Čo je hotové
 
@@ -14,9 +21,10 @@ Evidencia neprítomností pre Euro Data Distribution s.r.o. – Next.js (Vercel)
 
 1. Supabase → SQL Editor → spustiť `supabase/migrations/20261022000001_kdeje_schema.sql`
 2. Potom `supabase/seed.sql` (najprv doplniť e-maily zamestnancov)
-3. Authentication → Sign In / Providers: Email zapnutý, „Allow new users to sign up“ vypnuté
-4. Zamestnancov pozývať cez Authentication → Users → Invite user (účet sa prepojí podľa e-mailu)
-5. Authentication → URL Configuration: Site URL = adresa na Verceli, Redirect URLs = `https://<adresa>/**`
+3. Migrácie v poradí: `20261023000001_migracia2.sql`, `20261024000001_migracia3.sql` (viac firiem, vedúci, superadmin)
+4. Authentication → Sign In / Providers: Email zapnutý, „Allow new users to sign up“ vypnuté
+5. Zamestnancov pozývať cez Authentication → Users → Invite user (účet sa prepojí podľa e-mailu)
+6. Authentication → URL Configuration: Site URL = adresa na Verceli, Redirect URLs = `https://<adresa>/**`
 
 ## Premenné prostredia
 

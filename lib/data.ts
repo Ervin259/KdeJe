@@ -16,6 +16,10 @@ export type Me = {
   sees_calendar: boolean;
   company_id: string;
   company_name: string;
+  /** vedúci – spravuje vybraných zamestnancov */
+  isManager: boolean;
+  /** id zamestnancov, ktorých spravuje (vedúci) */
+  managed: string[];
 };
 
 export type CalEntry = {
@@ -53,7 +57,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
 
   const { data } = await supabase
     .from("employees")
-    .select("id, name, role, contract_type, sees_calendar, company_id, companies(name)")
+    .select("id, name, role, is_manager, contract_type, sees_calendar, company_id, companies(name)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -61,6 +65,11 @@ export const getMe = cache(async (): Promise<Me | null> => {
   if (!data) return null;
   const company = data.companies as unknown as { name: string } | null;
   const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
+  let managed: string[] = [];
+  if (data.is_manager && !empView) {
+    const { data: rows } = await supabase.from("manager_assignments").select("employee_id").eq("manager_id", data.id);
+    managed = (rows ?? []).map((r) => r.employee_id as string);
+  }
   return {
     id: data.id,
     name: data.name,
@@ -70,6 +79,8 @@ export const getMe = cache(async (): Promise<Me | null> => {
     sees_calendar: data.sees_calendar,
     company_id: data.company_id,
     company_name: company?.name ?? "",
+    isManager: !!data.is_manager && !empView,
+    managed,
   };
 });
 
@@ -84,6 +95,16 @@ export async function requireAdmin(): Promise<Me> {
   if (me.role !== "admin") redirect("/kalendar");
   return me;
 }
+
+/** Admin alebo vedúci (Prehľad, Schvaľovanie). */
+export async function requireLead(): Promise<Me> {
+  const me = await requireMe();
+  if (me.role !== "admin" && !me.isManager) redirect("/kalendar");
+  return me;
+}
+
+/** Smie prihlásený zapisovať a spravovať tohto zamestnanca? (admin všetkých, vedúci svojich, každý seba) */
+export const canManage = (me: Me, empId: string) => me.role === "admin" || empId === me.id || me.managed.includes(empId);
 
 // ---------- dátumy (bez časových pásiem, len YYYY-MM-DD) ----------
 export const MONTHS = [

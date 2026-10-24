@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/data";
+import { requireLead } from "@/lib/data";
 import { loadCompany } from "@/lib/loaders";
 import { byLastName } from "@/lib/calc";
 import { Header } from "@/components/Header";
@@ -8,9 +8,11 @@ import { EmpOverview } from "@/components/EmpOverview";
 import { EmpSelect } from "@/components/EmpSelect";
 
 export default async function EmpDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const me = await requireAdmin();
+  const me = await requireLead();
   const { id } = await params;
-  const { emps } = await loadCompany();
+  const { emps: allEmps } = await loadCompany();
+  // vedúci vidí len svojich ľudí
+  const emps = me.role === "admin" ? allEmps : allEmps.filter((e) => me.managed.includes(e.id));
   const list = emps.filter((e) => e.active).sort(byLastName);
   const i = list.findIndex((e) => e.id === id);
   if (i < 0) notFound();

@@ -21,6 +21,7 @@ export type EmpFull = Emp & {
   in_stats: boolean;
   in_payroll: boolean;
   role: "admin" | "employee";
+  is_manager: boolean;
 };
 
 /** Spoločné dáta firmy (raz za request). */
@@ -28,11 +29,11 @@ export const loadCompany = cache(async () => {
   const supabase = await createClient();
   const [g, h, e, s, r, ms, t] = await Promise.all([
     supabase.from("work_groups").select("*").order("sort"),
-    supabase.from("holidays").select("date, name").order("date"),
+    supabase.from("holidays").select("date, name, is_state").order("date"),
     supabase
       .from("employees")
       .select(
-        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role"
+        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager"
       ),
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),
@@ -45,7 +46,7 @@ export const loadCompany = cache(async () => {
   const monthStatus = (ms.data ?? []) as MonthStatusRow[];
   const lockDays = rights.find((x) => x.is_default)?.lock_days ?? 3;
   const groups = (g.data ?? []) as WorkGroup[];
-  const holidays = (h.data ?? []) as { date: string; name: string }[];
+  const holidays = (h.data ?? []) as { date: string; name: string; is_state: boolean }[];
   const emps = (e.data ?? []) as EmpFull[];
   const settings: Settings = {
     hide_health: s.data?.hide_health ?? false,
@@ -113,8 +114,13 @@ export async function loadEntries(from: string, to: string): Promise<Entry[]> {
   return out;
 }
 
-export async function pendingRequestsCount(): Promise<number> {
+/** Čakajúce žiadosti na vybavenie (bez vlastných – tie vybavuje niekto iný). */
+export async function pendingRequestsCount(meId: string): Promise<number> {
   const supabase = await createClient();
-  const { count } = await supabase.from("requests").select("id", { count: "exact", head: true }).eq("status", "pending");
+  const { count } = await supabase
+    .from("requests")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .neq("employee_id", meId);
   return count ?? 0;
 }

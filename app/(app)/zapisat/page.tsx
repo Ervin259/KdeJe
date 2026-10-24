@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireMe, todayIso } from "@/lib/data";
+import { canManage, requireMe, todayIso } from "@/lib/data";
 import { loadCompany } from "@/lib/loaders";
 import { byLastName, hhmm, type Entry } from "@/lib/calc";
 import { safeBack } from "@/lib/params";
@@ -14,6 +14,8 @@ export default async function EntryPage({
 }) {
   const me = await requireMe();
   const admin = me.role === "admin";
+  /** admin alebo vedúci – môže vybrať, za koho zapisuje */
+  const lead = admin || me.isManager;
   const supabase = await createClient();
   const sp = await searchParams;
   const back = safeBack(sp.spat);
@@ -51,17 +53,20 @@ export default async function EntryPage({
       note: x.note ?? "",
     };
     if (!admin) {
-      const { data: can } = await supabase.rpc("employee_can_write", {
-        p_emp: x.employee_id,
-        p_from: x.date_from,
-        p_to: x.date_to,
-        p_change: true,
-      });
+      const mgr = x.employee_id !== me.id && me.managed.includes(x.employee_id);
+      const { data: can } = mgr
+        ? await supabase.rpc("manager_can_write", { p_emp: x.employee_id, p_from: x.date_from, p_to: x.date_to })
+        : await supabase.rpc("employee_can_write", {
+            p_emp: x.employee_id,
+            p_from: x.date_from,
+            p_to: x.date_to,
+            p_change: true,
+          });
       locked = can === false;
     }
   } else {
     const d = sp.d && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) ? sp.d : todayIso();
-    const empId = admin && sp.emp && emps.some((e) => e.id === sp.emp) ? sp.emp : me.id;
+    const empId = lead && sp.emp && emps.some((e) => e.id === sp.emp) && canManage(me, sp.emp) ? sp.emp : me.id;
     const sc = calc.sched(empId);
     init = {
       id: null,
@@ -87,7 +92,7 @@ export default async function EntryPage({
             <h3 style={{ marginBottom: 14 }}>{init.id ? "Upraviť záznam" : "Zapísať neprítomnosť"}</h3>
             <EntryForm
               types={(types ?? []) as { code: string; name: string; parts: string[] }[]}
-              people={admin ? active.map((e) => ({ id: e.id, name: e.name })) : null}
+              people={lead ? active.filter((e) => canManage(me, e.id)).map((e) => ({ id: e.id, name: e.name })) : null}
               subs={active.map((e) => ({ id: e.id, name: e.name }))}
               init={init}
               back={back}

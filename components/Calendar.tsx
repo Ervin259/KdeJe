@@ -168,7 +168,7 @@ export async function Calendar({
 
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
-  const ctx = { calc, admin, meId: me.id, on };
+  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on };
 
   return (
     <>
@@ -198,6 +198,8 @@ type Ctx = {
   calc: Calc;
   admin: boolean;
   meId: string;
+  /** ľudia, ktorých prihlásený spravuje ako vedúci */
+  managed: Set<string>;
   on: (empId: string, d: string) => CalEntry[];
 };
 
@@ -294,7 +296,7 @@ function Grid({
   meExtra,
   ...ctx
 }: { days: string[]; wide: boolean; rows: { id: string; name: string }[]; meExtra?: React.ReactNode } & Ctx) {
-  const { calc, admin, meId } = ctx;
+  const { calc, admin, meId, managed } = ctx;
   return (
     <div className="gridwrap">
       <table className={`cal ${wide ? "wide" : ""}`}>
@@ -334,7 +336,7 @@ function Grid({
           )}
           {rows.map((e) => {
             const mine = e.id === meId;
-            const can = admin || e.id === meId;
+            const can = admin || e.id === meId || managed.has(e.id);
             return (
               <tr key={e.id} className={mine ? "me" : undefined}>
                 <td className="name" title={e.name}>
@@ -376,7 +378,7 @@ function DayTable({
   emps,
   ...ctx
 }: { d: string; rows: { id: string; name: string }[]; onlyMe: boolean; emps: { id: string; name: string }[] } & Ctx) {
-  const { calc, admin, meId, on } = ctx;
+  const { calc, admin, meId, managed, on } = ctx;
   if (!calc.isWork(d)) {
     let nw = d;
     while (!calc.isWork(nw)) nw = plus(nw, 1);
@@ -429,7 +431,7 @@ function DayTable({
           {groups.map(({ e, xs }) =>
             xs.map((x, i) => {
               const mine = e.id === meId;
-              const can = admin || e.id === meId;
+              const can = admin || e.id === meId || managed.has(e.id);
               const ds = disp(x);
               const c = can ? "rowclick" : "";
               const at = can ? { "data-edit": x.id } : {};

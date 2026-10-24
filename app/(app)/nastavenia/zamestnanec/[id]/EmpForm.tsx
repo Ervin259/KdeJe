@@ -19,6 +19,11 @@ export type EmpInit = {
   in_stats: boolean;
   in_payroll: boolean;
   is_admin: boolean;
+  is_manager: boolean;
+  /** id ľudí, ktorých spravuje (ak je vedúci) */
+  manages: string[];
+  /** mená vedúcich, ktorí spravujú tohto zamestnanca */
+  managedBy: string[];
   linked: boolean;
   entitlement_full: number;
   entitlement: number;
@@ -61,6 +66,7 @@ export function EmpForm({
   nextYear,
   rules,
   meId,
+  people,
 }: {
   init: EmpInit;
   workGroups: Opt[];
@@ -70,6 +76,8 @@ export function EmpForm({
   nextYear: { carry: number; ent: number; total: number } | null;
   rules: string[];
   meId: string;
+  /** aktívni zamestnanci firmy (výber ľudí pre vedúceho) */
+  people: { id: string; name: string; pp: string }[];
 }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveEmployee, {});
   const [pp, setPp] = useState(init.contract_type);
@@ -79,6 +87,9 @@ export function EmpForm({
   const [from, setFrom] = useState(init.date_from);
   const [full, setFull] = useState(init.entitlement_full);
   const [ent, setEnt] = useState(String(init.entitlement));
+  const [lead, setLead] = useState(init.is_manager);
+  const [team, setTeam] = useState(new Set(init.manages));
+  const [teamQ, setTeamQ] = useState("");
   const joined = from && Number(from.slice(0, 4)) === year;
 
   // pomerná časť: 1/12 za každý celý kalendárny mesiac do konca roka, nahor na pol dňa
@@ -199,12 +210,57 @@ export function EmpForm({
                     <span>{l}</span>
                   </label>
                 ))}
+              </div>
+            </Kf>
+            <Kf label="Rola" hint="Admin vidí a mení všetko. Vedúci vidí Prehľad a Schvaľovanie len pre svojich ľudí a zapisuje za nich do uzávierky.">
+              <div className="kchks">
                 <label className="kchk" title="Vidí admin záložky a môže meniť všetko">
                   <input type="checkbox" name="is_admin" defaultChecked={init.is_admin} disabled={init.id === meId} />
                   <span>Administrátor</span>
                 </label>
                 {init.id === meId && <input type="hidden" name="is_admin" value="on" />}
+                <label className="kchk" title="Spravuje vybraných zamestnancov">
+                  <input type="checkbox" name="is_manager" checked={lead} onChange={(e) => setLead(e.target.checked)} />
+                  <span>Vedúci</span>
+                </label>
               </div>
+            </Kf>
+            {lead && (
+              <Kf label={`Spravuje (${team.size})`} hint="Za týchto ľudí zapisuje dochádzku, vidí ich v Prehľade a vybavuje ich žiadosti.">
+                <div className="teambox">
+                  {people.length > 8 && (
+                    <input type="search" placeholder="Hľadať meno…" value={teamQ} onChange={(e) => setTeamQ(e.target.value)} className="teamq" />
+                  )}
+                  <div className="teamlist">
+                    {people
+                      .filter((x) => x.id !== init.id)
+                      .map((x) => {
+                        const hide = teamQ && !x.name.toLowerCase().includes(teamQ.toLowerCase()) && !team.has(x.id);
+                        return (
+                          <label key={x.id} className="teamrow" style={hide ? { display: "none" } : undefined}>
+                            <input
+                              type="checkbox"
+                              name="manages"
+                              value={x.id}
+                              checked={team.has(x.id)}
+                              onChange={(e) => {
+                                const n = new Set(team);
+                                if (e.target.checked) n.add(x.id);
+                                else n.delete(x.id);
+                                setTeam(n);
+                              }}
+                            />
+                            <span>{x.name}</span>
+                            <span className="muted">{x.pp}</span>
+                          </label>
+                        );
+                      })}
+                  </div>
+                </div>
+              </Kf>
+            )}
+            <Kf label="Vedúci">
+              <span className={init.managedBy.length ? "" : "muted"}>{init.managedBy.length ? init.managedBy.join(", ") : "nemá vedúceho"}</span>
             </Kf>
             <small className="muted klink">
               Časy, stravné lístky a práva sa menia pre celú skupinu v <Link href="/nastavenia" className="linkbtn">Nastaveniach</Link>.
