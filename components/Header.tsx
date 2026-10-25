@@ -53,8 +53,33 @@ export async function Header({
     tabs.push({ href: "/firmy", label: "Firmy", badge: count || undefined });
   }
 
+  // upozornenie na neuhradenú faktúru (admin) alebo obmedzenie firmy (všetci)
+  let notice: React.ReactNode = null;
+  if (me.readOnly) {
+    notice = (
+      <div className="billnotice bad">
+        <b>Aplikácia je len na čítanie.</b> Predplatné vašej firmy nie je uhradené. Údaje si môžete pozrieť aj exportovať, nové zápisy budú
+        možné po úhrade{me.realRole === "admin" ? <> – <a href="/nastavenia?open=plan">platobné údaje</a></> : " – obráťte sa na admina firmy"}.
+      </div>
+    );
+  } else if (me.realRole === "admin") {
+    const supabase = await createClient();
+    const { data: inv } = await supabase.from("invoices").select("vs, amount, due_on").eq("status", "issued").order("due_on").limit(1);
+    const i = inv?.[0];
+    if (i) {
+      const late = i.due_on < new Date().toISOString().slice(0, 10);
+      notice = (
+        <div className={`billnotice${late ? " bad" : ""}`}>
+          Faktúra za KdeJe {i.vs} na {Number(i.amount).toLocaleString("sk-SK")} € {late ? "je po splatnosti" : "čaká na úhradu"} (splatná{" "}
+          {Number(i.due_on.slice(8))}. {Number(i.due_on.slice(5, 7))}. {i.due_on.slice(0, 4)}). <a href="/nastavenia?open=plan">Platobné údaje</a>
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="stickyhead" id="stickyhead">
+      {notice}
       <header className="top headrow">
         <div className="brand">
           <h1>

@@ -115,7 +115,12 @@ export default function Home() {
                 <li>Neobmedzený počet adminov a vedúcich</li>
                 <li>Rátajú sa aj ľudia, ktorí sa neprihlasujú</li>
                 <li>Prihlásenie odkazom do e-mailu, bez hesiel</li>
+                <li>Export všetkých dát kedykoľvek</li>
               </ul>
+              <p className="price-fine">
+                Fakturujeme raz ročne vopred, najmenej za 5 zamestnancov (60 € ročne). Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
+                <Link href="/podmienky">Obchodné podmienky</Link>
+              </p>
               <Link className="btn primary big-btn" href="/registracia">
                 Požiadať o zriadenie
               </Link>
