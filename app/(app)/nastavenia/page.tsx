@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
 import { Acc, AccAll, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
+import { eur, loadPlatformSettings, yearlyPrice, type Invoice } from "@/lib/billing";
 
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
 const PARTS_TXT: Record<string, string> = {
@@ -27,15 +28,23 @@ export default async function SettingsPage({
   const supabase = await createClient();
   const year = Number(calc.today.slice(0, 4));
 
-  const [auth, entries, { data: vacs }, { data: notes }, { data: company }, { data: assign }, { data: stateHol }] = await Promise.all([
+  const [auth, entries, { data: vacs }, { data: notes }, { data: company }, { data: assign }, { data: stateHol }, { data: invs }, ps] = await Promise.all([
     authUsersByEmail(),
     loadEntries(`${year}-01-01`, `${year}-12-31`),
     supabase.from("vacation_years").select("employee_id, entitlement, carry_in").eq("year", year),
     supabase.from("employee_notes").select("employee_id, note"),
-    supabase.from("companies").select("name, ico, address, status, trial_until").eq("id", me.company_id).maybeSingle(),
+    supabase
+      .from("companies")
+      .select("name, ico, address, status, trial_until, paid_until, billing_exempt, billing_name, billing_street, billing_city, billing_zip, billing_dic, billing_email")
+      .eq("id", me.company_id)
+      .maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
     supabase.from("state_holidays").select("date"),
+    supabase.from("invoices").select("*").order("issued_on", { ascending: false }),
+    loadPlatformSettings(),
   ]);
+  const invoices = (invs ?? []) as Invoice[];
+
 
   const act = emps.filter((e) => e.active);
   const hiddenN = emps.length - act.length;
@@ -86,6 +95,8 @@ export default async function SettingsPage({
   const noLead = act.filter((e) => !asg.some((a) => a.employee_id === e.id) && e.role !== "admin");
 
   const STATUS: Record<string, string> = { trial: "Skúšobná doba", active: "Aktívne", suspended: "Pozastavené" };
+  const yp = yearlyPrice(act.length, ps);
+  const openInv = invoices.filter((i) => i.status === "issued");
 
   return (
     <>
@@ -355,8 +366,35 @@ export default async function SettingsPage({
           </Acc>
           </SetGroup>
           <SetGroup k="firm" title="Firma" sub="Údaje o firme · Súkromie (GDPR) · Predplatné" forceOpen={["firm","gdpr","plan"].includes(sp.open ?? "")}>
-          <Acc k="firm" title="Údaje o firme">
-            <CompanyForm name={company?.name ?? me.company_name} ico={company?.ico ?? ""} address={company?.address ?? ""} />
+          <Acc k="firm" title="Údaje o firme" forceOpen={sp.open === "firm"}>
+            <CompanyForm
+              name={company?.name ?? me.company_name}
+              ico={company?.ico ?? ""}
+              address={company?.address ?? ""}
+              billing={{
+                billing_name: company?.billing_name ?? "",
+                billing_street: company?.billing_street ?? "",
+                billing_city: company?.billing_city ?? "",
+                billing_zip: company?.billing_zip ?? "",
+                billing_dic: company?.billing_dic ?? "",
+                billing_email: company?.billing_email ?? "",
+              }}
+            />
+            <div className="exportbox">
+              <b>Export dát</b>
+              <span className="muted">Vaše dáta si môžete kedykoľvek stiahnuť, napríklad do vlastnej zálohy. Súbory CSV sa otvoria v Exceli.</span>
+              <div className="row">
+                <a className="btn" href="/nastavenia/export?typ=zamestnanci" download>
+                  Zamestnanci (CSV)
+                </a>
+                <a className="btn" href="/nastavenia/export?typ=zaznamy" download>
+                  Záznamy dochádzky (CSV)
+                </a>
+                <a className="btn" href="/nastavenia/export?typ=dovolenky" download>
+                  Dovolenky po rokoch (CSV)
+                </a>
+              </div>
+            </div>
           </Acc>
 
           <Acc k="gdpr" title="Súkromie (GDPR)">
@@ -366,31 +404,97 @@ export default async function SettingsPage({
           <Acc
             k="plan"
             title="Predplatné"
+            forceOpen={sp.open === "plan"}
             extra={<span className={`pill ${company?.status === "suspended" ? "bad" : company?.status === "trial" ? "warn" : "open"}`}>{STATUS[company?.status ?? "active"]}</span>}
           >
             <div className="plangrid">
               <div>
                 <span className="muted">Stav</span>
-                <b>{STATUS[company?.status ?? "active"]}</b>
+                <b>{company?.billing_exempt ? "Bez poplatku" : STATUS[company?.status ?? "active"]}</b>
               </div>
-              {company?.trial_until && (
+              {company?.trial_until && !company?.paid_until && (
                 <div>
                   <span className="muted">Zdarma do</span>
                   <b>{fdate(company.trial_until)}</b>
+                </div>
+              )}
+              {company?.paid_until && (
+                <div>
+                  <span className="muted">Uhradené do</span>
+                  <b>{fdate(company.paid_until)}</b>
                 </div>
               )}
               <div>
                 <span className="muted">Aktívni zamestnanci</span>
                 <b>{act.length}</b>
               </div>
-              <div>
-                <span className="muted">Cena po skúšobnej dobe</span>
-                <b>{act.length} € mesačne</b>
-              </div>
+              {!company?.billing_exempt && (
+                <div>
+                  <span className="muted">Ročne{yp.qty > act.length ? ` (minimum ${ps.min_employees})` : ""}</span>
+                  <b>{eur(yp.amount)}</b>
+                </div>
+              )}
             </div>
             <p className="muted sethelp">
-              1 € za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Prvých 12 mesiacov od registrácie zdarma.
+              {eur(ps.price_month)} za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Fakturujeme raz ročne
+              vopred, najmenej za {ps.min_employees} zamestnancov. Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
+              <a href="/podmienky" target="_blank" className="linkbtn">
+                Obchodné podmienky
+              </a>
             </p>
+            {openInv.map((i) => (
+              <div key={i.id} className={`paynote${i.due_on < calc.today ? " late" : ""}`}>
+                <b>
+                  Faktúra {i.vs} na {eur(Number(i.amount))} – splatná {fdate(i.due_on)}
+                </b>
+                <dl className="kv">
+                  <dt>IBAN</dt>
+                  <dd className="num">{ps.iban ?? "—"}</dd>
+                  <dt>Variabilný symbol</dt>
+                  <dd className="num">{i.vs}</dd>
+                  <dt>Suma</dt>
+                  <dd className="num">{eur(Number(i.amount))}</dd>
+                  <dt>Príjemca</dt>
+                  <dd>{ps.supplier_name ?? "—"}</dd>
+                </dl>
+              </div>
+            ))}
+            {invoices.length > 0 && (
+              <div className="tblwrap" style={{ marginTop: 12 }}>
+                <table className="t">
+                  <thead>
+                    <tr>
+                      <th>Faktúra (VS)</th>
+                      <th>Obdobie</th>
+                      <th className="r">Suma</th>
+                      <th>Splatná</th>
+                      <th>Stav</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((i) => (
+                      <tr key={i.id}>
+                        <td className="num">{i.vs}</td>
+                        <td className="num">
+                          {fdate(i.period_from)} – {fdate(i.period_to)}
+                        </td>
+                        <td className="r">{eur(Number(i.amount))}</td>
+                        <td className="num">{fdate(i.due_on)}</td>
+                        <td>
+                          {i.status === "paid" ? (
+                            <span className="pill open">Uhradená {fdate(i.paid_on)}</span>
+                          ) : i.status === "cancelled" ? (
+                            <span className="pill closed">Stornovaná</span>
+                          ) : (
+                            <span className={`pill ${i.due_on < calc.today ? "bad" : "warn"}`}>Čaká na úhradu</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Acc>
           </SetGroup>
         </div>

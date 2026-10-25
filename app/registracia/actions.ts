@@ -12,7 +12,7 @@ const str = (f: FormData, k: string) => {
 export async function submitSignup(_p: SignupState, f: FormData): Promise<SignupState> {
   // pasca na roboty: skryté pole vyplní len automat
   if (str(f, "web")) return { ok: true };
-  if (!f.get("consent")) return { error: "Potvrďte súhlas so spracovaním údajov." };
+  if (!f.get("consent")) return { error: "Potvrďte súhlas s obchodnými podmienkami." };
   const ico = str(f, "ico").replace(/\s/g, "");
   if (ico && !/^\d{6,8}$/.test(ico)) return { error: "IČO má 6 až 8 číslic." };
   const n = Number(str(f, "employees"));

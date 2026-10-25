@@ -16,6 +16,7 @@ export async function SiteHeader() {
         <nav className="site-nav">
           <a href="/#funkcie">Funkcie</a>
           <a href="/#cena">Cena</a>
+          <Link href="/navod">Návod</Link>
           {user ? (
             <Link className="btn" href="/kalendar">
               Otvoriť aplikáciu
@@ -38,7 +39,12 @@ export function SiteFooter() {
         <span>
           Kde<b>Je</b> · evidencia dochádzky a neprítomností
         </span>
-        <span>© {new Date().getFullYear()}</span>
+        <nav className="foot-nav">
+          <Link href="/navod">Návod</Link>
+          <Link href="/podmienky">Obchodné podmienky</Link>
+          <Link href="/ochrana-udajov">Ochrana údajov</Link>
+          <span>© {new Date().getFullYear()}</span>
+        </nav>
       </div>
     </footer>
   );

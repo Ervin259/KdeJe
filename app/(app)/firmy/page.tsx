@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { requirePlatform } from "@/lib/data";
+import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
-import { DecideSignup, ResendInvite } from "./ui";
+import { eur, fdate, loadPlatformSettings, nextInvoice, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
+import { DecideSignup, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
   id: string;
@@ -17,18 +18,9 @@ type Signup = {
   decided_at: string | null;
   reject_reason: string | null;
 };
-type Company = {
-  id: string;
-  name: string;
-  ico: string | null;
-  status: string;
-  trial_until: string | null;
-  created_at: string;
-  employees: number;
-  admins: string | null;
-};
+type Company = BillingCompany;
 
-const fd = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
+const fd = fdate;
 const STATUS: Record<string, [string, string]> = {
   trial: ["Skúšobná doba", "warn"],
   active: ["Aktívna", "open"],
@@ -39,16 +31,25 @@ const STATUS: Record<string, [string, string]> = {
 export default async function CompaniesPage() {
   const me = await requirePlatform();
   const supabase = await createClient();
-  const [{ data: su }, { data: co }] = await Promise.all([
+  const [{ data: su }, { data: co }, { data: inv }, ps] = await Promise.all([
     supabase.from("company_signups").select("*").order("created_at", { ascending: false }).limit(200),
     supabase.rpc("platform_companies"),
+    supabase.from("invoices").select("*").order("issued_on", { ascending: false }).limit(500),
+    loadPlatformSettings(),
   ]);
+  const today = todayIso();
+  const invoices = (inv ?? []) as Invoice[];
   const signups = (su ?? []) as Signup[];
   const pend = signups.filter((s) => s.status === "pending").reverse();
   const done = signups.filter((s) => s.status !== "pending");
   const companies = (co ?? []) as Company[];
   const emailOf = (admins: string | null) => admins?.match(/<([^>]+)>/)?.[1] ?? null;
   const total = companies.filter((c) => c.status !== "suspended").reduce((a, c) => a + Number(c.employees), 0);
+  const due = companies.map((c) => ({ c, n: nextInvoice(c, invoices, ps, today) })).filter((x) => x.n);
+  const cname = (id: string) => companies.find((c) => c.id === id)?.name ?? "";
+  const notExported = invoices.filter((i) => i.status !== "cancelled" && !i.exported_at).length;
+  const supplierMissing = !ps.supplier_name || !ps.supplier_ico || !ps.iban;
+  const INV: Record<string, [string, string]> = { issued: ["Vystavená", "warn"], paid: ["Uhradená", "open"], cancelled: ["Stornovaná", "closed"] };
 
   return (
     <>
@@ -102,8 +103,10 @@ export default async function CompaniesPage() {
                     <th>Firma</th>
                     <th>Stav</th>
                     <th>Zdarma do</th>
+                    <th>Uhradené do</th>
                     <th className="r">Zamestnanci</th>
-                    <th className="r">Mesačne po skúške</th>
+                    <th className="r">Ročne</th>
+                    <th>Fakturácia</th>
                     <th>Admin</th>
                     <th>Založená</th>
                   </tr>
@@ -122,8 +125,13 @@ export default async function CompaniesPage() {
                           <span className={`pill ${cls}`}>{lbl}</span>
                         </td>
                         <td className="num">{fd(c.trial_until)}</td>
+                        <td className="num">{fd(c.paid_until)}</td>
                         <td className="r">{c.employees}</td>
-                        <td className="r">{c.employees} €</td>
+                        <td className="r">{c.billing_exempt ? "—" : eur(yearlyPrice(Number(c.employees), ps).amount)}</td>
+                        <td>
+                          <ExemptToggle id={c.id} exempt={c.billing_exempt} />
+                          {!c.writable && <span className="pill bad"> len čítanie</span>}
+                        </td>
                         <td>
                           {c.admins ?? <span className="muted">—</span>}
                           {email && c.id !== me.company_id && <ResendInvite email={email} />}
@@ -135,6 +143,91 @@ export default async function CompaniesPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="box">
+            <div className="row spread" style={{ marginBottom: 10 }}>
+              <h3>Fakturácia</h3>
+              <div className="row" style={{ gap: 10 }}>
+                {notExported > 0 && (
+                  <a className="btn" href="/firmy/pohoda" download>
+                    Stiahnuť XML pre Pohodu ({notExported})
+                  </a>
+                )}
+                <IssueInvoices count={supplierMissing ? 0 : due.length} />
+              </div>
+            </div>
+            {supplierMissing && (
+              <div className="fmsg err" style={{ marginBottom: 10 }}>
+                Pred prvou faktúrou vyplňte nižšie obchodné meno, IČO a IBAN dodávateľa.
+              </div>
+            )}
+            {due.length > 0 && (
+              <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>
+                <b>Na fakturáciu:</b>{" "}
+                {due.map(({ c, n }) => `${c.name} – ${n!.qty} × 12 × ${eur(ps.price_month)} = ${eur(n!.amount)} (${fd(n!.from)} – ${fd(n!.to)})`).join(" · ")}
+              </p>
+            )}
+            {invoices.length ? (
+              <div className="tblwrap">
+                <table className="t">
+                  <thead>
+                    <tr>
+                      <th>VS</th>
+                      <th>Firma</th>
+                      <th>Obdobie</th>
+                      <th className="r">Počet</th>
+                      <th className="r">Suma</th>
+                      <th>Vystavená</th>
+                      <th>Splatná</th>
+                      <th>Stav</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.map((i) => {
+                      const [lbl, cls] = INV[i.status];
+                      const late = i.status === "issued" && i.due_on < today;
+                      return (
+                        <tr key={i.id}>
+                          <td className="num">
+                            {i.vs}
+                            <div>
+                              <a className="linkbtn" href={`/firmy/pohoda?id=${i.id}`} download style={{ fontSize: 11.5 }}>
+                                XML
+                              </a>
+                              {i.exported_at && <span className="muted" style={{ fontSize: 11.5 }}> · v Pohode</span>}
+                            </div>
+                          </td>
+                          <td>{cname(i.company_id)}</td>
+                          <td className="num">
+                            {fd(i.period_from)} – {fd(i.period_to)}
+                          </td>
+                          <td className="r">{i.billed_qty}</td>
+                          <td className="r">{eur(Number(i.amount))}</td>
+                          <td className="num">{fd(i.issued_on)}</td>
+                          <td className="num" style={late ? { color: "var(--bad)", fontWeight: 600 } : undefined}>
+                            {fd(i.due_on)}
+                          </td>
+                          <td>
+                            <span className={`pill ${late ? "bad" : cls}`}>{late ? "Po splatnosti" : lbl}</span>
+                            {i.paid_on && <div className="muted" style={{ fontSize: 11.5 }}>{fd(i.paid_on)}</div>}
+                          </td>
+                          <td>{i.status === "issued" && <InvoiceActions id={i.id} today={today} />}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-note">Zatiaľ žiadne faktúry. Faktúry sa navrhnú 30 dní pred koncom skúšobnej doby.</div>
+            )}
+          </div>
+
+          <div className="box">
+            <h3 style={{ marginBottom: 12 }}>Dodávateľ a pravidlá fakturácie</h3>
+            <SupplierForm s={ps} />
           </div>
 
           {done.length > 0 && (

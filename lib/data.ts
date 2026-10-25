@@ -22,6 +22,8 @@ export type Me = {
   managed: string[];
   /** superadmin celej aplikácie (vývojár) */
   isPlatform: boolean;
+  /** firma je obmedzená (neuhradená faktúra po splatnosti alebo pozastavenie) – len čítanie */
+  readOnly: boolean;
 };
 
 export type CalEntry = {
@@ -67,7 +69,10 @@ export const getMe = cache(async (): Promise<Me | null> => {
   if (!data) return null;
   const company = data.companies as unknown as { name: string } | null;
   const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
-  const { data: platform } = await supabase.rpc("is_platform_admin");
+  const [{ data: platform }, { data: writable }] = await Promise.all([
+    supabase.rpc("is_platform_admin"),
+    supabase.rpc("company_writable", { p_company: data.company_id }),
+  ]);
   let managed: string[] = [];
   if (data.is_manager && !empView) {
     const { data: rows } = await supabase.from("manager_assignments").select("employee_id").eq("manager_id", data.id);
@@ -85,6 +90,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
     isManager: !!data.is_manager && !empView,
     managed,
     isPlatform: platform === true,
+    readOnly: writable === false,
   };
 });
 

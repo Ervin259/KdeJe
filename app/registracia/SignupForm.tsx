@@ -51,7 +51,10 @@ export function SignupForm() {
       <input name="web" tabIndex={-1} autoComplete="off" className="hp" aria-hidden="true" />
       <label className="signup-consent">
         <input type="checkbox" name="consent" required />
-        <span>Súhlasím so spracovaním uvedených údajov na účel zriadenia služby KdeJe.</span>
+        <span>
+          Súhlasím s <a href="/podmienky" target="_blank">obchodnými podmienkami</a> a beriem na vedomie{" "}
+          <a href="/ochrana-udajov" target="_blank">spracúvanie osobných údajov</a>.
+        </span>
       </label>
       {st.error && <div className="fmsg err">{st.error}</div>}
       <button className="btn primary big-btn" disabled={pending}>

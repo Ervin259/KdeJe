@@ -698,8 +698,16 @@ export function ManagerTeam({ managerId, people, managed }: { managerId: string;
 }
 
 // ---------- údaje o firme ----------
-export function CompanyForm({ name, ico, address }: { name: string; ico: string; address: string }) {
+type Billing = { billing_name: string; billing_street: string; billing_city: string; billing_zip: string; billing_dic: string; billing_email: string };
+
+export function CompanyForm({ name, ico, address, billing }: { name: string; ico: string; address: string; billing: Billing }) {
   const [st, act, pending] = useActionState<SetState, FormData>(saveCompany, {});
+  const inp = (k: keyof Billing, label: string, extra?: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <label>
+      <span>{label}</span>
+      <input name={k} defaultValue={billing[k]} {...extra} />
+    </label>
+  );
   return (
     <form action={act} className="compform">
       <label>
@@ -714,6 +722,17 @@ export function CompanyForm({ name, ico, address }: { name: string; ico: string;
         <span>Adresa sídla</span>
         <input name="address" defaultValue={address} />
       </label>
+      <h4 className="formsub">Fakturačné údaje</h4>
+      {inp("billing_name", "Odberateľ na faktúre", { placeholder: name })}
+      {inp("billing_street", "Ulica a číslo")}
+      <div className="row" style={{ gap: 10, alignItems: "end" }}>
+        {inp("billing_zip", "PSČ", { style: { maxWidth: 110 } })}
+        {inp("billing_city", "Mesto")}
+      </div>
+      <div className="row" style={{ gap: 10, alignItems: "end" }}>
+        {inp("billing_dic", "DIČ", { style: { maxWidth: 160 } })}
+        {inp("billing_email", "E-mail na faktúry", { type: "email" })}
+      </div>
       <div className="row">
         <button className="btn primary" disabled={pending}>
           Uložiť

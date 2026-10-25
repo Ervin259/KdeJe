@@ -179,7 +179,17 @@ export async function setManaged(managerId: string, empId: string, on: boolean) 
 export async function saveCompany(_p: SetState, f: FormData): Promise<SetState> {
   const me = await requireAdmin();
   const supabase = await createClient();
-  const row = { name: str(f, "name"), ico: str(f, "ico") || null, address: str(f, "address") || null };
+  const row = {
+    name: str(f, "name"),
+    ico: str(f, "ico") || null,
+    address: str(f, "address") || null,
+    billing_name: str(f, "billing_name") || null,
+    billing_street: str(f, "billing_street") || null,
+    billing_city: str(f, "billing_city") || null,
+    billing_zip: str(f, "billing_zip") || null,
+    billing_dic: str(f, "billing_dic") || null,
+    billing_email: str(f, "billing_email").toLowerCase() || null,
+  };
   if (!row.name) return { error: ["Vyplňte názov firmy."] };
   if (row.ico && !/^\d{6,8}$/.test(row.ico.replace(/\s/g, ""))) return { error: ["IČO má 6 až 8 číslic."] };
   if (row.ico) row.ico = row.ico.replace(/\s/g, "");

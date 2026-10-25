@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/env";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/registracia"];
+const PUBLIC_PATHS = ["/login", "/auth", "/registracia", "/podmienky", "/ochrana-udajov", "/navod"];
 
 /** Obnovuje prihlásenie v cookies a neprihlásených posiela na /login. */
 export async function middleware(request: NextRequest) {
