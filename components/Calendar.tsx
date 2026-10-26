@@ -171,7 +171,7 @@ export async function Calendar({
 
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
-  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on };
+  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on, basePath };
 
   return (
     <>
@@ -204,6 +204,8 @@ type Ctx = {
   /** ľudia, ktorých prihlásený spravuje ako vedúci */
   managed: Set<string>;
   on: (empId: string, d: string) => CalEntry[];
+  /** cesta kalendára (klik na deň v hlavičke → denný náhľad) */
+  basePath: string;
 };
 
 const disp = (x: CalEntry) => ({ cls: typeClass(x.type), code: x.type, name: TYPE_NAME[x.type] ?? x.type });
@@ -310,6 +312,7 @@ function Grid({
               const off = !calc.isWork(d);
               return (
                 <th key={d} className={`${off ? "off" : ""} ${d === calc.today ? "tdy" : ""}`} title={calc.isHol(d) ? "Sviatok" : undefined}>
+                  <Link className="daylink" href={`${ctx.basePath}?v=day&d=${d}`} title={`Zobraziť deň ${fd(d)}`}>
                   {wide ? (
                     <>
                       <span className="dn">
@@ -324,6 +327,7 @@ function Grid({
                       <span className="dn">{WD[dow(d)]}</span>
                     </>
                   )}
+                  </Link>
                 </th>
               );
             })}
