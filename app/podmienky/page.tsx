@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { SupplierBlock } from "@/components/site/Supplier";
-import { eur, loadPlatformSettings } from "@/lib/billing";
+import { eur, loadPlatformSettings, months } from "@/lib/billing";
 import "../site.css";
 
 export const metadata = { title: "Obchodné podmienky – KdeJe" };
@@ -19,8 +19,8 @@ export default async function TermsPage() {
           <p className="doc-ver">Verzia 1 · platné od 25. 10. 2026</p>
           <h1>Obchodné podmienky služby KdeJe</h1>
           <p className="lead">
-            Stručne: prvých {s.trial_months} mesiacov zdarma, potom {price} za aktívneho zamestnanca mesačne, fakturované raz ročne vopred. Dáta
-            patria vám a môžete si ich kedykoľvek stiahnuť.
+            Stručne: prvé {months(s.trial_months)} zdarma, potom {price} za aktívneho užívateľa mesačne, fakturované raz ročne vopred. Dáta patria
+            vám a môžete si ich kedykoľvek stiahnuť.
           </p>
 
           <nav className="doc-toc" aria-label="Obsah">
@@ -64,7 +64,8 @@ export default async function TermsPage() {
           <h2 id="skuska">3. Skúšobné obdobie</h2>
           <ul>
             <li>
-              Prvých <b>{s.trial_months} mesiacov</b> odo dňa zriadenia je služba bezplatná a v plnom rozsahu, bez obmedzenia počtu zamestnancov.
+              Skúšobné obdobie trvá <b>{months(s.trial_months)}</b> odo dňa zriadenia. Počas neho je služba bezplatná a v plnom rozsahu, bez
+              obmedzenia počtu užívateľov.
             </li>
             <li>Najneskôr 30 dní pred koncom skúšobného obdobia dostane zákazník faktúru na nasledujúcich 12 mesiacov.</li>
             <li>Ak zákazník nechce pokračovať, stačí to oznámiť e-mailom alebo faktúru neuhradiť. Žiadne poplatky ani sankcie nevznikajú.</li>
@@ -73,14 +74,16 @@ export default async function TermsPage() {
           <h2 id="cena">4. Cena</h2>
           <ul>
             <li>
-              <b>{price} za aktívneho zamestnanca mesačne</b>, teda {eur(12 * s.price_month)} za zamestnanca ročne.
+              <b>{price} za aktívneho užívateľa mesačne</b>, teda {eur(12 * s.price_month)} za užívateľa ročne. Iné zľavy ani balíky
+              neponúkame.
             </li>
             <li>
-              Aktívny zamestnanec je každý, kto je v aplikácii vedený ako aktívny, aj keď sa do aplikácie sám neprihlasuje (jeho dochádzku vedie
-              vedúci alebo admin). Skrytí a vyradení zamestnanci sa nerátajú.
+              Aktívny užívateľ je každý zamestnanec alebo iná osoba, ktorú zákazník vedie v aplikácii ako aktívnu – aj keď sa do aplikácie sama
+              neprihlasuje a jej dochádzku zapisuje vedúci alebo admin. Skrytí (odregistrovaní) užívatelia a správcovia, ktorí nie sú zamestnancami
+              firmy, sa nerátajú.
             </li>
             <li>
-              Účtuje sa najmenej <b>{s.min_employees} zamestnancov</b>, teda najmenej {minYear} ročne.
+              Účtuje sa najmenej <b>{s.min_employees} užívateľov</b>, teda najmenej {minYear} ročne.
             </li>
             <li>
               Ceny sú konečné. Dodávateľ nie je platiteľ DPH. Ak by sa ním stal, cena sa zvýši o DPH v zákonnej výške; zákazníkovi to oznámi
@@ -91,10 +94,17 @@ export default async function TermsPage() {
 
           <h2 id="fakturacia">5. Fakturácia a platby</h2>
           <ul>
-            <li>Služba sa fakturuje raz ročne vopred, vždy na 12 mesiacov.</li>
             <li>
-              Počet zamestnancov sa určí podľa stavu v aplikácii v deň vystavenia faktúry. Zmeny počtu počas roka sa zohľadnia až pri ďalšej
-              ročnej faktúre – nič sa nedoplácia ani nevracia.
+              Služba sa fakturuje <b>raz ročne vopred</b>, vždy na 12 mesiacov, podľa počtu aktívnych užívateľov v deň vystavenia faktúry (najmenej{" "}
+              {s.min_employees}).
+            </li>
+            <li>
+              <b>Užívatelia pridaní počas roka</b> nad zaplatený počet sa doúčtujú pri ďalšej ročnej faktúre – za každý kalendárny mesiac, v ktorom
+              boli aktívni. Ak užívateľa počas roka odregistrujete (skryjete), platí sa za neho len do konca mesiaca, v ktorom bol ešte aktívny.
+            </li>
+            <li>
+              Ak počet užívateľov počas roka klesne, zaplatená cena sa nevracia a dobropisy sa nevystavujú. Nižší počet sa prejaví v ďalšej ročnej
+              faktúre.
             </li>
             <li>
               Faktúra sa posiela e-mailom a zákazník ju vidí aj v aplikácii (Nastavenia → Firma → Predplatné) spolu s platobnými údajmi.
@@ -138,7 +148,7 @@ export default async function TermsPage() {
             </li>
             <li>Zákazník zodpovedá za správnosť zadaných údajov a za to, že ich smie spracúvať.</li>
             <li>
-              Admin si môže kedykoľvek stiahnuť zamestnancov, záznamy dochádzky a dovolenky vo formáte CSV (Nastavenia → Firma → Export dát),
+              Admin si môže kedykoľvek stiahnuť užívateľov, záznamy dochádzky a dovolenky vo formáte CSV (Nastavenia → Firma → Export dát),
               napríklad do vlastnej zálohy.
             </li>
             <li>Dodávateľ zálohuje databázu najmenej raz denne a zálohy uchováva 30 dní.</li>

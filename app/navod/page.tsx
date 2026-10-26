@@ -70,15 +70,15 @@ export default function GuidePage() {
               <b>Nastavenia → Kalendár → Sviatky:</b> načítajte štátne sviatky na rok a pridajte prípadné firemné voľno.
             </li>
             <li>
-              <b>Nastavenia → Ľudia → Zamestnanci:</b> pridajte zamestnancov (meno, e-mail, pracovný pomer, nárok na dovolenku a prenos z minulého
+              <b>Nastavenia → Užívatelia → Zamestnanci:</b> pridajte zamestnancov (meno, e-mail, pracovný pomer, nárok na dovolenku a prenos z minulého
               roka). Kto nemá e-mail, môže byť v aplikácii aj tak – zapisuje zaňho vedúci alebo admin.
             </li>
             <li>
               <b>Pozvánky:</b> v zozname zamestnancov zaškrtnite ľudí v stĺpci Prístup a pošlite im pozvánku.
             </li>
             <li>
-              <b>Vedúci:</b> na karte zamestnanca zapnite „Vedúci“ a zaškrtnite ľudí, ktorých spravuje. Prehľad je v Nastavenia → Ľudia → Roly a
-              prístupy.
+              <b>Vedúci:</b> na karte zamestnanca zapnite „Vedúci“ a zaškrtnite ľudí, ktorých spravuje. Prehľad je v Nastavenia → Užívatelia → Roly
+              a prístupy.
             </li>
           </ol>
 

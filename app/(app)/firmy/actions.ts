@@ -121,6 +121,18 @@ export async function issueInvoices(_p: FirmState, _f: FormData): Promise<FirmSt
   for (const c of (co ?? []) as import("@/lib/billing").BillingCompany[]) {
     const n = nextInvoice(c, invoices, s, today);
     if (!n) continue;
+    // doúčtovanie užívateľov pridaných v predchádzajúcom období (nad zaplatený počet)
+    let extra = 0;
+    if (n.prev) {
+      const { data: u } = await supabase.rpc("billing_extra_units", {
+        p_company: c.id,
+        p_from: n.prev.period_from,
+        p_to: n.prev.period_to,
+        p_paid: n.prev.billed_qty,
+      });
+      extra = Number(u ?? 0);
+    }
+    const extraAmount = Math.round(extra * s.price_month * 100) / 100;
     seq += 1;
     rows.push({
       company_id: c.id,
@@ -133,7 +145,11 @@ export async function issueInvoices(_p: FirmState, _f: FormData): Promise<FirmSt
       billed_qty: n.qty,
       months: 12,
       unit_price: s.price_month,
-      amount: n.amount,
+      amount: Math.round((n.amount + extraAmount) * 100) / 100,
+      extra_units: extra,
+      extra_amount: extraAmount,
+      extra_from: n.prev?.period_from ?? null,
+      extra_to: n.prev?.period_to ?? null,
     });
   }
   if (!rows.length) return { ok: "Momentálne netreba vystaviť žiadnu faktúru." };

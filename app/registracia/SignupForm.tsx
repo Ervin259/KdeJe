@@ -26,7 +26,7 @@ export function SignupForm() {
           <input name="ico" inputMode="numeric" maxLength={12} />
         </label>
         <label>
-          <span>Počet zamestnancov</span>
+          <span>Počet užívateľov</span>
           <input name="employees" type="number" min={1} max={10000} />
         </label>
       </div>

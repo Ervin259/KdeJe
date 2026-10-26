@@ -426,7 +426,7 @@ export default async function SettingsPage({
                 </div>
               )}
               <div>
-                <span className="muted">Aktívni zamestnanci</span>
+                <span className="muted">Aktívni užívatelia</span>
                 <b>{act.length}</b>
               </div>
               {!company?.billing_exempt && (
@@ -437,8 +437,8 @@ export default async function SettingsPage({
               )}
             </div>
             <p className="muted sethelp">
-              {eur(ps.price_month)} za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Fakturujeme raz ročne
-              vopred, najmenej za {ps.min_employees} zamestnancov. Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
+              {eur(ps.price_month)} za aktívneho užívateľa mesačne, fakturované raz ročne vopred, najmenej za {ps.min_employees} užívateľov.
+              Užívateľov pridaných počas roka doúčtujeme pri ďalšej faktúre. Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
               <a href="/podmienky" target="_blank" className="linkbtn">
                 Obchodné podmienky
               </a>
@@ -479,7 +479,14 @@ export default async function SettingsPage({
                         <td className="num">
                           {fdate(i.period_from)} – {fdate(i.period_to)}
                         </td>
-                        <td className="r">{eur(Number(i.amount))}</td>
+                        <td className="r">
+                          {eur(Number(i.amount))}
+                          {i.extra_units > 0 && (
+                            <div className="muted" style={{ fontSize: 11.5 }} title="Užívatelia pridaní v predchádzajúcom období nad zaplatený počet">
+                              z toho doúčtovanie {eur(Number(i.extra_amount))}
+                            </div>
+                          )}
+                        </td>
                         <td className="num">{fdate(i.due_on)}</td>
                         <td>
                           {i.status === "paid" ? (

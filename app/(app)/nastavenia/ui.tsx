@@ -694,7 +694,7 @@ export function ManagerTeam({ managerId, people, managed }: { managerId: string;
   const list = people.filter((p) => p.id !== managerId);
   return (
     <div className="ypdd gmdd" ref={ref}>
-      <button ref={btn} className="gmchip" aria-expanded={!!pos} aria-haspopup="true" onClick={openPanel} title="Ľudia, ktorých spravuje">
+      <button ref={btn} className="gmchip" aria-expanded={!!pos} aria-haspopup="true" onClick={openPanel} title="Užívatelia, ktorých spravuje">
         {PEOPLE}
         <span>{cntTxt(sel.size)}</span>
         <span className="caret">▾</span>

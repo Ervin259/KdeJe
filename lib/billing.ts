@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   iban: null,
   price_month: 1,
   min_employees: 5,
-  trial_months: 12,
+  trial_months: 3,
   due_days: 14,
   grace_days: 14,
   delete_after_days: 90,
@@ -61,6 +61,11 @@ export type Invoice = {
   paid_on: string | null;
   exported_at: string | null;
   note: string | null;
+  /** doúčtovanie: užívateľo-mesiace nad zaplatený počet v predchádzajúcom období */
+  extra_units: number;
+  extra_amount: number;
+  extra_from: string | null;
+  extra_to: string | null;
 };
 
 export type BillingCompany = {
@@ -116,8 +121,13 @@ export function nextInvoice(c: BillingCompany, invoices: Invoice[], s: PlatformS
   const from = addDays(end, 1) > today ? addDays(end, 1) : today;
   const to = addDays(addMonths(from, 12), -1);
   const { qty, amount } = yearlyPrice(Number(c.employees), s);
-  return { from, to, qty, amount, employees: Number(c.employees) };
+  // predchádzajúce zaplatené obdobie – z neho sa doúčtujú pridaní užívatelia
+  const prev = invoices.find((i) => i.company_id === c.id && i.status !== "cancelled" && i.period_to === end) ?? null;
+  return { from, to, qty, amount, employees: Number(c.employees), prev };
 }
+
+/** Plurál: 1 mesiac, 2–4 mesiace, 5+ mesiacov. */
+export const months = (n: number) => `${n} ${n === 1 ? "mesiac" : n >= 2 && n <= 4 ? "mesiace" : "mesiacov"}`;
 
 // ---------- export do Pohody (XML, schéma version_2) ----------
 const x = (v: string | number | null | undefined) =>
@@ -157,18 +167,31 @@ export function pohodaXml(invoices: Invoice[], companies: BillingCompany[], s: P
         <inv:paymentType>
           <typ:paymentType>draft</typ:paymentType>
         </inv:paymentType>
-        <inv:note>${x(`KdeJe · ${i.employees} aktívnych zamestnancov, účtovaných ${i.billed_qty}`)}</inv:note>
+        <inv:note>${x(`KdeJe · ${i.employees} aktívnych užívateľov, účtovaných ${i.billed_qty}`)}</inv:note>
       </inv:invoiceHeader>
       <inv:invoiceDetail>
         <inv:invoiceItem>
           <inv:text>${x(`Predplatné aplikácie KdeJe, ${period}`)}</inv:text>
           <inv:quantity>${i.billed_qty * i.months}</inv:quantity>
-          <inv:unit>${x("zam./mes.")}</inv:unit>
+          <inv:unit>${x("už./mes.")}</inv:unit>
           <inv:rateVAT>none</inv:rateVAT>
           <inv:homeCurrency>
             <typ:unitPrice>${Number(i.unit_price).toFixed(2)}</typ:unitPrice>
           </inv:homeCurrency>
-        </inv:invoiceItem>
+        </inv:invoiceItem>${
+          i.extra_units > 0
+            ? `
+        <inv:invoiceItem>
+          <inv:text>${x(`Doúčtovanie užívateľov pridaných v období ${fdate(i.extra_from)} – ${fdate(i.extra_to)}`)}</inv:text>
+          <inv:quantity>${i.extra_units}</inv:quantity>
+          <inv:unit>${x("už./mes.")}</inv:unit>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>${Number(i.unit_price).toFixed(2)}</typ:unitPrice>
+          </inv:homeCurrency>
+        </inv:invoiceItem>`
+            : ""
+        }
       </inv:invoiceDetail>
     </inv:invoice>
   </dat:dataPackItem>`;
