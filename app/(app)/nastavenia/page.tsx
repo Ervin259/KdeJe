@@ -438,7 +438,8 @@ export default async function SettingsPage({
             </div>
             <p className="muted sethelp">
               {eur(ps.price_month)} za aktívneho užívateľa mesačne, fakturované raz ročne vopred, najmenej za {ps.min_employees} užívateľov.
-              Užívateľov pridaných počas roka doúčtujeme pri ďalšej faktúre. Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
+              Pri ďalšej faktúre sa vyrovná skutočný počet užívateľov po mesiacoch – doplatok aj odpočet. Ceny sú konečné, dodávateľ nie je
+              platiteľ DPH.{" "}
               <a href="/podmienky" target="_blank" className="linkbtn">
                 Obchodné podmienky
               </a>
@@ -481,9 +482,10 @@ export default async function SettingsPage({
                         </td>
                         <td className="r">
                           {eur(Number(i.amount))}
-                          {i.extra_units > 0 && (
-                            <div className="muted" style={{ fontSize: 11.5 }} title="Užívatelia pridaní v predchádzajúcom období nad zaplatený počet">
-                              z toho doúčtovanie {eur(Number(i.extra_amount))}
+                          {(i.extra_units !== 0 || Number(i.carry_in) < 0) && (
+                            <div className="muted" style={{ fontSize: 11.5 }} title="Vyrovnanie podľa skutočného počtu užívateľov v predchádzajúcom období">
+                              {i.extra_units !== 0 && <>vyrovnanie {Number(i.extra_amount) > 0 ? "+" : "−"}{eur(Math.abs(Number(i.extra_amount)))}</>}
+                              {Number(i.carry_in) < 0 && <> · prenesený odpočet −{eur(-Number(i.carry_in))}</>}
                             </div>
                           )}
                         </td>

@@ -16,7 +16,7 @@ export default async function TermsPage() {
       <SiteHeader />
       <main className="site-sec">
         <article className="site-in doc">
-          <p className="doc-ver">Verzia 1 · platné od 25. 10. 2026</p>
+          <p className="doc-ver">Verzia 2 · platné od 26. 10. 2026</p>
           <h1>Obchodné podmienky služby KdeJe</h1>
           <p className="lead">
             Stručne: prvé {months(s.trial_months)} zdarma, potom {price} za aktívneho užívateľa mesačne, fakturované raz ročne vopred. Dáta patria
@@ -96,15 +96,20 @@ export default async function TermsPage() {
           <ul>
             <li>
               Služba sa fakturuje <b>raz ročne vopred</b>, vždy na 12 mesiacov, podľa počtu aktívnych užívateľov v deň vystavenia faktúry (najmenej{" "}
-              {s.min_employees}).
+              {s.min_employees}). Prvá faktúra prichádza najneskôr 30 dní pred koncom skúšobného obdobia.
             </li>
             <li>
-              <b>Užívatelia pridaní počas roka</b> nad zaplatený počet sa doúčtujú pri ďalšej ročnej faktúre – za každý kalendárny mesiac, v ktorom
-              boli aktívni. Ak užívateľa počas roka odregistrujete (skryjete), platí sa za neho len do konca mesiaca, v ktorom bol ešte aktívny.
+              <b>Ročné vyrovnanie.</b> Pri ďalšej ročnej faktúre porovnáme, za koľko užívateľov ste zaplatili a koľko ste ich v jednotlivých
+              mesiacoch naozaj mali. Za každý mesiac obdobia sa ráta skutočný počet aktívnych užívateľov, najmenej {s.min_employees}. Užívateľ sa
+              ráta v mesiaci, v ktorom bol aktívny aspoň jeden deň – ak ho odregistrujete (skryjete), platí sa za neho len do konca mesiaca, v
+              ktorom bol ešte aktívny.
             </li>
             <li>
-              Ak počet užívateľov počas roka klesne, zaplatená cena sa nevracia a dobropisy sa nevystavujú. Nižší počet sa prejaví v ďalšej ročnej
-              faktúre.
+              Ak ste mali viac užívateľov, než ste zaplatili, rozdiel sa <b>pripočíta</b> k ďalšej faktúre. Ak menej, rozdiel sa{" "}
+              <b>odpočíta</b> z ďalšej faktúry. Peniaze sa nevracajú a dobropisy sa nevystavujú – preplatok sa vždy vyrovná na ďalšej faktúre.
+            </li>
+            <li>
+              Faktúra nikdy neklesne pod nulu. Ak je odpočet vyšší ako nová faktúra, zvyšok sa prenesie na nasledujúcu faktúru.
             </li>
             <li>
               Faktúra sa posiela e-mailom a zákazník ju vidí aj v aplikácii (Nastavenia → Firma → Predplatné) spolu s platobnými údajmi.
@@ -130,7 +135,10 @@ export default async function TermsPage() {
 
           <h2 id="ukoncenie">7. Ukončenie</h2>
           <ul>
-            <li>Zákazník môže službu kedykoľvek ukončiť e-mailom. Služba potom beží do konca zaplateného obdobia; zaplatená cena sa nevracia.</li>
+            <li>
+              Zákazník môže službu kedykoľvek ukončiť e-mailom. Služba potom beží do konca zaplateného obdobia. Zaplatená cena ani nevyčerpaný
+              odpočet z ročného vyrovnania sa nevracajú, pretože už nie je ďalšia faktúra, z ktorej by sa odpočítali.
+            </li>
             <li>
               Dodávateľ môže zmluvu vypovedať s výpovednou lehotou 3 mesiace. V takom prípade vráti pomernú časť ceny za celé nevyčerpané mesiace.
             </li>

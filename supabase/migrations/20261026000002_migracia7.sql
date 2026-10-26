@@ -1,5 +1,5 @@
 -- =====================================================================
--- KdeJe – migrácia 7: skúšobná doba 3 mesiace, doúčtovanie pridaných užívateľov
+-- KdeJe – migrácia 7: skúšobná doba 3 mesiace, ročné vyrovnanie počtu užívateľov
 -- Spustenie: Supabase → SQL Editor → vložiť CELÝ OBSAH súboru → Run.
 -- Predpoklad: migrácie 3–6. Dá sa spustiť aj opakovane.
 -- =====================================================================
@@ -49,27 +49,40 @@ drop trigger if exists employees_track_active on employees;
 create trigger employees_track_active before insert or update of active on employees
   for each row execute function track_active();
 
--- 3) Doúčtovanie na faktúre
-alter table invoices add column if not exists extra_units  int not null default 0;          -- užívateľo-mesiace nad zaplatený počet
-alter table invoices add column if not exists extra_amount numeric(10,2) not null default 0;
-alter table invoices add column if not exists extra_from   date;
+-- 3) Ročné vyrovnanie na ďalšej faktúre (oboma smermi, bez dobropisov)
+alter table invoices add column if not exists extra_units  int not null default 0;            -- vyrovnanie v užívateľo-mesiacoch (+ doplatok / − odpočet)
+alter table invoices add column if not exists extra_amount numeric(10,2) not null default 0;  -- vyrovnanie v €
+alter table invoices add column if not exists extra_from   date;                              -- obdobie, za ktoré sa vyrovnáva
 alter table invoices add column if not exists extra_to     date;
+alter table invoices add column if not exists carry_in     numeric(10,2) not null default 0;  -- nevyčerpaný odpočet z predchádzajúcej faktúry (≤ 0)
+alter table invoices add column if not exists carry_out    numeric(10,2) not null default 0;  -- odpočet, ktorý sa nezmestil, prenáša sa ďalej (≤ 0)
+alter table invoices drop constraint if exists invoices_amount_check;
+alter table invoices add constraint invoices_amount_check check (amount >= 0);
 
--- Užívateľo-mesiace nad zaplatený počet v období: za každý mesiac
--- max(0, počet aktívnych v tom mesiaci − zaplatený počet).
--- Užívateľ sa ráta v mesiaci, v ktorom bol aspoň jeden deň aktívny.
-create or replace function billing_extra_units(p_company uuid, p_from date, p_to date, p_paid int) returns int
+drop function if exists billing_extra_units(uuid,date,date,int);
+
+-- Vyrovnanie za obdobie: Σ po 12 mesiacoch obdobia max(aktívni v mesiaci, minimum) − zaplatený počet × 12.
+-- Užívateľ sa ráta v mesiaci obdobia, v ktorom bol aspoň jeden deň aktívny.
+-- Kladné = doplatok, záporné = odpočet.
+create or replace function billing_settlement_units(p_company uuid, p_from date, p_to date, p_paid int, p_min int)
+returns int
 language sql stable security definer set search_path = public as $$
-  select case when not is_platform_admin() then 0 else coalesce(sum(greatest(0, n - p_paid)), 0)::int end
+  select case when not is_platform_admin() then 0 else
+    coalesce(sum(greatest(n, p_min)), 0)::int - p_paid * count(*)::int end
   from (
-    select m, (select count(*) from employees e
-               where e.company_id = p_company and not e.is_external
-                 and coalesce(e.activated_on, e.created_at::date) <= (m + interval '1 month - 1 day')::date
-                 and (e.deactivated_on is null or e.deactivated_on >= m)) as n
-    from generate_series(date_trunc('month', p_from)::date, date_trunc('month', p_to)::date, interval '1 month') g(m)
+    select (select count(*) from employees e
+            where e.company_id = p_company and not e.is_external
+              and coalesce(e.activated_on, e.created_at::date) <= least(s.m_end, p_to)
+              and (e.deactivated_on is null or e.deactivated_on >= s.m_start)) as n
+    from (
+      select (p_from + make_interval(months => i))::date as m_start,
+             (p_from + make_interval(months => i + 1) - interval '1 day')::date as m_end
+      from generate_series(0, 11) i
+      where (p_from + make_interval(months => i))::date <= p_to
+    ) s
   ) x
 $$;
-revoke execute on function billing_extra_units(uuid,date,date,int) from public, anon;
-grant execute on function billing_extra_units(uuid,date,date,int) to authenticated;
+revoke execute on function billing_settlement_units(uuid,date,date,int,int) from public, anon;
+grant execute on function billing_settlement_units(uuid,date,date,int,int) to authenticated;
 
 commit;

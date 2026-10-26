@@ -61,12 +61,21 @@ export type Invoice = {
   paid_on: string | null;
   exported_at: string | null;
   note: string | null;
-  /** doúčtovanie: užívateľo-mesiace nad zaplatený počet v predchádzajúcom období */
+  /** ročné vyrovnanie za predchádzajúce obdobie: + doplatok / − odpočet (užívateľo-mesiace a €) */
   extra_units: number;
   extra_amount: number;
   extra_from: string | null;
   extra_to: string | null;
+  /** nevyčerpaný odpočet z predchádzajúcej faktúry (≤ 0) a odpočet prenesený na ďalšiu (≤ 0) */
+  carry_in: number;
+  carry_out: number;
 };
+
+/** Suma faktúry: predplatné + vyrovnanie + prenesený odpočet; nikdy pod nulu, zvyšok odpočtu sa prenáša ďalej. */
+export function settle(base: number, extraAmount: number, carryIn: number) {
+  const total = Math.round((base + extraAmount + carryIn) * 100) / 100;
+  return { amount: Math.max(0, total), carry_out: Math.min(0, total) };
+}
 
 export type BillingCompany = {
   id: string;
@@ -179,10 +188,24 @@ export function pohodaXml(invoices: Invoice[], companies: BillingCompany[], s: P
             <typ:unitPrice>${Number(i.unit_price).toFixed(2)}</typ:unitPrice>
           </inv:homeCurrency>
         </inv:invoiceItem>${
-          i.extra_units > 0
+          Number(i.carry_in) < 0
             ? `
         <inv:invoiceItem>
-          <inv:text>${x(`Doúčtovanie užívateľov pridaných v období ${fdate(i.extra_from)} – ${fdate(i.extra_to)}`)}</inv:text>
+          <inv:text>${x("Odpočet preplatku prenesený z predchádzajúcej faktúry")}</inv:text>
+          <inv:quantity>1</inv:quantity>
+          <inv:rateVAT>none</inv:rateVAT>
+          <inv:homeCurrency>
+            <typ:unitPrice>${Number(i.carry_in).toFixed(2)}</typ:unitPrice>
+          </inv:homeCurrency>
+        </inv:invoiceItem>`
+            : ""
+        }${
+          i.extra_units !== 0
+            ? `
+        <inv:invoiceItem>
+          <inv:text>${x(
+            `Vyrovnanie počtu užívateľov za obdobie ${fdate(i.extra_from)} – ${fdate(i.extra_to)} (${i.extra_units > 0 ? "doplatok" : "odpočet"})`
+          )}</inv:text>
           <inv:quantity>${i.extra_units}</inv:quantity>
           <inv:unit>${x("už./mes.")}</inv:unit>
           <inv:rateVAT>none</inv:rateVAT>

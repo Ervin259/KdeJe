@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
-import { eur, fdate, loadPlatformSettings, nextInvoice, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
+import { eur, fdate, loadPlatformSettings, nextInvoice, settle, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
 import { DecideSignup, EnterCompany, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
@@ -52,15 +52,18 @@ export default async function CompaniesPage() {
       .map(async (x) => {
         let extra = 0;
         if (x.n!.prev) {
-          const { data } = await supabase.rpc("billing_extra_units", {
+          const { data } = await supabase.rpc("billing_settlement_units", {
             p_company: x.c.id,
             p_from: x.n!.prev.period_from,
             p_to: x.n!.prev.period_to,
             p_paid: x.n!.prev.billed_qty,
+            p_min: ps.min_employees,
           });
           extra = Number(data ?? 0);
         }
-        return { ...x, extra };
+        const carry = Number(x.n!.prev?.carry_out ?? 0);
+        const total = settle(x.n!.amount, extra * ps.price_month, carry).amount;
+        return { ...x, extra, carry, total };
       })
   );
   const cname = (id: string) => companies.find((c) => c.id === id)?.name ?? "";
@@ -184,10 +187,10 @@ export default async function CompaniesPage() {
                 <b>Na fakturáciu:</b>{" "}
                 {due
                   .map(
-                    ({ c, n, extra }) =>
-                      `${c.name} – ${n!.qty} × 12 × ${eur(ps.price_month)}${extra ? ` + doúčtovanie ${extra} × ${eur(ps.price_month)}` : ""} = ${eur(
-                        n!.amount + extra * ps.price_month
-                      )} (${fd(n!.from)} – ${fd(n!.to)})`
+                    ({ c, n, extra, carry, total }) =>
+                      `${c.name} – ${n!.qty} × 12 × ${eur(ps.price_month)}${
+                        extra ? ` ${extra > 0 ? "+" : "−"} vyrovnanie ${Math.abs(extra)} × ${eur(ps.price_month)}` : ""
+                      }${carry ? ` − prenesený odpočet ${eur(-carry)}` : ""} = ${eur(total)} (${fd(n!.from)} – ${fd(n!.to)})`
                   )
                   .join(" · ")}
               </p>
@@ -229,7 +232,12 @@ export default async function CompaniesPage() {
                           </td>
                           <td className="r">
                             {i.billed_qty}
-                            {i.extra_units > 0 && <div className="muted" style={{ fontSize: 11.5 }}>+ {i.extra_units} už./mes.</div>}
+                            {i.extra_units !== 0 && (
+                              <div className="muted" style={{ fontSize: 11.5 }}>
+                                vyrovnanie {i.extra_units > 0 ? "+" : "−"}
+                                {Math.abs(i.extra_units)} už./mes.
+                              </div>
+                            )}
                           </td>
                           <td className="r">{eur(Number(i.amount))}</td>
                           <td className="num">{fd(i.issued_on)}</td>
