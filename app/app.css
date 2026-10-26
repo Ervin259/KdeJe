@@ -237,3 +237,14 @@ a.namebtn:hover { color: var(--accent); }
 .mpick-grid button:hover { border-color: var(--accent); }
 .mpick-grid button.now { border-color: var(--accent); }
 .mpick-grid button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dpick { min-width: 290px !important; }
+.dpick-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.dpick-dow { font-size: 11px; font-weight: 700; color: var(--muted); text-align: center; padding: 4px 0; }
+.dpick-dow.wk { opacity: .6; }
+.dpick-grid button { border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 7px; height: 32px; font-size: 13px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dpick-grid button:hover { border-color: var(--accent); }
+.dpick-grid button.wk { color: var(--muted); }
+.dpick-grid button.now { border-color: var(--accent); }
+.dpick-grid button.wsel { background: var(--accent-soft); }
+.dpick-grid button.on { background: var(--accent); color: #fff; }
+.dpick-today { align-self: center; font-size: 12.5px; }

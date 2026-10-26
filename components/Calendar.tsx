@@ -131,7 +131,7 @@ export async function Calendar({
   const center = (
     <div className="mnav">
       <Link className="icon-btn" href={q(view, prev)} aria-label="Dozadu">‹</Link>
-      <MonthPicker y={y} m={m} today={calc.today} basePath={basePath} view={view}>
+      <MonthPicker y={y} m={m} anchor={anchor} today={calc.today} basePath={basePath} view={view}>
         {title}
       </MonthPicker>
       <Link className="icon-btn" href={q(view, next)} aria-label="Dopredu">›</Link>
