@@ -105,6 +105,7 @@ export function SupplierForm({ s }: { s: PlatformSettings }) {
         {f("supplier_email", "E-mail pre zákazníkov", { type: "email" })}
         {f("supplier_phone", "Telefón")}
         {f("iban", "IBAN na úhrady")}
+        {f("notify_email", "Upozornenia (nové žiadosti) posielať na", { type: "email" })}
       </div>
       <div className="supgrid small">
         {f("price_month", "Cena € / zamestnanec / mesiac", { inputMode: "decimal" })}

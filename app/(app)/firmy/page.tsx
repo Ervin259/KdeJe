@@ -13,6 +13,11 @@ type Signup = {
   phone: string | null;
   employees_est: number | null;
   note: string | null;
+  dic: string | null;
+  icdph: string | null;
+  street: string | null;
+  city: string | null;
+  zip: string | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
   decided_at: string | null;
@@ -98,7 +103,17 @@ export default async function CompaniesPage() {
                       {s.phone && <> · {s.phone}</>}
                     </div>
                     <div className="muted" style={{ fontSize: 12.5 }}>
-                      {[s.ico && `IČO ${s.ico}`, s.employees_est && `${s.employees_est} zamestnancov`].filter(Boolean).join(" · ") || "bez IČO"}
+                      {[
+                        s.ico && `IČO ${s.ico}`,
+                        s.dic && `DIČ ${s.dic}`,
+                        s.icdph && `IČ DPH ${s.icdph}`,
+                        s.employees_est && `${s.employees_est} užívateľov`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "bez IČO"}
+                    </div>
+                    <div className="muted" style={{ fontSize: 12.5 }}>
+                      {[s.street, [s.zip, s.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
                     </div>
                     {s.note && <div className="muted req-why">„{s.note}“</div>}
                   </div>
@@ -139,7 +154,16 @@ export default async function CompaniesPage() {
                       <tr key={c.id}>
                         <td>
                           <EnterCompany id={c.id} /> <b>{c.name}</b>
-                          {c.ico && <div className="muted" style={{ fontSize: 12 }}>IČO {c.ico}</div>}
+                          <div className="muted" style={{ fontSize: 12 }}>
+                            {[c.ico && `IČO ${c.ico}`, c.billing_dic && `DIČ ${c.billing_dic}`, c.billing_icdph && `IČ DPH ${c.billing_icdph}`]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                          {(c.billing_street || c.billing_city) && (
+                            <div className="muted" style={{ fontSize: 12 }}>
+                              {[c.billing_street, [c.billing_zip, c.billing_city].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
+                            </div>
+                          )}
                         </td>
                         <td>
                           <span className={`pill ${cls}`}>{lbl}</span>

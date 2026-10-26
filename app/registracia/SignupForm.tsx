@@ -31,6 +31,30 @@ export function SignupForm() {
         </label>
       </div>
       <label>
+        <span>Ulica a číslo</span>
+        <input name="street" maxLength={200} autoComplete="street-address" />
+      </label>
+      <div className="signup-two">
+        <label>
+          <span>PSČ</span>
+          <input name="zip" maxLength={20} autoComplete="postal-code" />
+        </label>
+        <label>
+          <span>Mesto</span>
+          <input name="city" maxLength={200} autoComplete="address-level2" />
+        </label>
+      </div>
+      <div className="signup-two">
+        <label>
+          <span>DIČ</span>
+          <input name="dic" inputMode="numeric" maxLength={14} />
+        </label>
+        <label>
+          <span>IČ DPH (len platitelia DPH)</span>
+          <input name="icdph" maxLength={16} placeholder="SK…" />
+        </label>
+      </div>
+      <label>
         <span>Meno a priezvisko admina *</span>
         <input name="name" required maxLength={200} autoComplete="name" />
       </label>

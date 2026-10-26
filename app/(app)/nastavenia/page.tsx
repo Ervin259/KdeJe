@@ -35,7 +35,7 @@ export default async function SettingsPage({
     supabase.from("employee_notes").select("employee_id, note"),
     supabase
       .from("companies")
-      .select("name, ico, address, status, trial_until, paid_until, billing_exempt, continue_confirmed_at, billing_name, billing_street, billing_city, billing_zip, billing_dic, billing_email")
+      .select("name, ico, address, status, trial_until, paid_until, billing_exempt, continue_confirmed_at, billing_name, billing_street, billing_city, billing_zip, billing_dic, billing_email, billing_icdph, billing_phone")
       .eq("id", me.company_id)
       .maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
@@ -379,6 +379,8 @@ export default async function SettingsPage({
                 billing_zip: company?.billing_zip ?? "",
                 billing_dic: company?.billing_dic ?? "",
                 billing_email: company?.billing_email ?? "",
+                billing_icdph: company?.billing_icdph ?? "",
+                billing_phone: company?.billing_phone ?? "",
               }}
             />
             <div className="exportbox">

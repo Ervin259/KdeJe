@@ -765,7 +765,16 @@ export function ActiveToggle({ emp, active, self, name }: { emp: string; active:
 }
 
 // ---------- údaje o firme ----------
-type Billing = { billing_name: string; billing_street: string; billing_city: string; billing_zip: string; billing_dic: string; billing_email: string };
+type Billing = {
+  billing_name: string;
+  billing_street: string;
+  billing_city: string;
+  billing_zip: string;
+  billing_dic: string;
+  billing_icdph: string;
+  billing_email: string;
+  billing_phone: string;
+};
 
 export function CompanyForm({ name, ico, address, billing }: { name: string; ico: string; address: string; billing: Billing }) {
   const [st, act, pending] = useActionState<SetState, FormData>(saveCompany, {});
@@ -798,7 +807,11 @@ export function CompanyForm({ name, ico, address, billing }: { name: string; ico
       </div>
       <div className="row" style={{ gap: 10, alignItems: "end" }}>
         {inp("billing_dic", "DIČ", { style: { maxWidth: 160 } })}
+        {inp("billing_icdph", "IČ DPH (len platitelia DPH)", { placeholder: "SK…", style: { maxWidth: 180 } })}
+      </div>
+      <div className="row" style={{ gap: 10, alignItems: "end" }}>
         {inp("billing_email", "E-mail na faktúry", { type: "email" })}
+        {inp("billing_phone", "Telefón", { type: "tel", style: { maxWidth: 180 } })}
       </div>
       <div className="row">
         <button className="btn primary" disabled={pending}>

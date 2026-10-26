@@ -202,6 +202,8 @@ export async function saveCompany(_p: SetState, f: FormData): Promise<SetState> 
     billing_zip: str(f, "billing_zip") || null,
     billing_dic: str(f, "billing_dic") || null,
     billing_email: str(f, "billing_email").toLowerCase() || null,
+    billing_icdph: str(f, "billing_icdph").replace(/\s/g, "").toUpperCase() || null,
+    billing_phone: str(f, "billing_phone") || null,
   };
   if (!row.name) return { error: ["Vyplňte názov firmy."] };
   if (row.ico && !/^\d{6,8}$/.test(row.ico.replace(/\s/g, ""))) return { error: ["IČO má 6 až 8 číslic."] };
@@ -370,11 +372,24 @@ export async function inviteEmployees(_p: InviteState, f: FormData): Promise<Inv
 
 /** Admin firmy potvrdí, že chce po skúšobnej dobe pokračovať – až potom sa vystaví prvá faktúra. */
 export async function confirmContinue(_p: SetState, _f: FormData): Promise<SetState> {
-  await requireAdmin();
+  const me = await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.rpc("confirm_continue");
   if (error) return { error: [error.message] };
   await audit("Potvrdené pokračovanie po skúšobnej dobe");
+  // upozornenie pre superadmina – treba vystaviť prvú faktúru
+  const { mailHtml, sendMail } = await import("@/lib/mail");
+  const { data: ps } = await supabase.from("platform_settings").select("notify_email").eq("id", 1).maybeSingle();
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  await sendMail(
+    ps?.notify_email,
+    `KdeJe: ${me.company_name} pokračuje – vystaviť faktúru`,
+    mailHtml("Firma potvrdila pokračovanie po skúšobnej dobe", [["Firma", me.company_name], ["Potvrdil(a)", me.name]], {
+      href: `${origin}/firmy`,
+      label: "Vystaviť faktúru",
+    })
+  );
   done();
   return { ok: "Ďakujeme! Faktúru pošleme e-mailom a nájdete ju aj tu v Predplatnom." };
 }
