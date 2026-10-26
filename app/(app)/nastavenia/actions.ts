@@ -164,6 +164,19 @@ export async function loadStateHolidays(f: FormData) {
   redirect(`/nastavenia?open=hol&rok=${y}`);
 }
 
+/** Aktívny / skrytý priamo v zozname zamestnancov. */
+export async function setActive(empId: string, active: boolean): Promise<string | null> {
+  const me = await requireAdmin();
+  if (empId === me.id && !active) return "Sám seba nemôžete skryť.";
+  const supabase = await createClient();
+  const { data: e } = await supabase.from("employees").select("name").eq("id", empId).maybeSingle();
+  const { error } = await supabase.from("employees").update({ active }).eq("id", empId);
+  if (error) return error.message;
+  await audit(`${e?.name ?? "Zamestnanec"} · ${active ? "aktívny" : "skrytý"}`, empId);
+  done();
+  return null;
+}
+
 // ---------- vedúci a ich ľudia ----------
 /** Pridá alebo odoberie zamestnanca vedúcemu (sekcia Roly a prístupy). */
 export async function setManaged(managerId: string, empId: string, on: boolean) {

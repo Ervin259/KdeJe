@@ -209,3 +209,9 @@ a.namebtn:hover { color: var(--accent); }
 .firmswitch:hover { border-color: rgba(255,255,255,.45); }
 .firmswitch option { color: #161D2B; background: #fff; }
 .brandlink { text-decoration: none; color: inherit; }
+.gmpanel.teampanel { left: var(--l) !important; right: auto !important; z-index: 60; overflow: auto; }
+.teampanel .teamlist { max-height: none; }
+.actseg button { padding: 3px 9px !important; font-size: 12px !important; }
+.actseg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.actseg button:last-child[aria-pressed="true"] { background: var(--bad-soft); color: var(--bad); }
+.actseg button:disabled { opacity: .5; cursor: default; }

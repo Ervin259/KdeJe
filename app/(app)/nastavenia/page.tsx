@@ -6,7 +6,7 @@ import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
-import { Acc, AccAll, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { Acc, AccAll, ActiveToggle, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
 import { eur, loadPlatformSettings, yearlyPrice, type Invoice } from "@/lib/billing";
 
@@ -92,7 +92,6 @@ export default async function SettingsPage({
   const teamOf = (id: string) => asg.filter((a) => a.manager_id === id).map((a) => a.employee_id);
   const people = [...act].sort(byLastName).map((e) => ({ id: e.id, name: e.name, pp: PP_LABEL[e.contract_type] }));
   const nameOf = (id: string) => emps.find((e) => e.id === id)?.name ?? "";
-  const noLead = act.filter((e) => !asg.some((a) => a.employee_id === e.id) && e.role !== "admin");
 
   const STATUS: Record<string, string> = { trial: "Skúšobná doba", active: "Aktívne", suspended: "Pozastavené" };
   const yp = yearlyPrice(act.length, ps);
@@ -103,7 +102,7 @@ export default async function SettingsPage({
       <Header me={me} right={<AccAll />} />
       <main id="view">
         <div className="panel setpanel">
-          <SetGroup k="people" title="Ľudia" sub="Zamestnanci · Roly a prístupy" forceOpen={["emp","roles"].includes(sp.open ?? "")}>
+          <SetGroup k="people" title="Užívatelia" sub="Zamestnanci · Roly a prístupy" forceOpen={["emp","roles"].includes(sp.open ?? "")}>
           <Acc k="emp" title="Zamestnanci" extra={empSum} forceOpen={sp.open === "emp"}>
             <div className="row spread emptools">
               <span className="muted" style={{ fontSize: 12.5 }}>
@@ -131,6 +130,9 @@ export default async function SettingsPage({
                     <th className="c">Prenos z {year - 1}</th>
                     <th className="c">Nárok {year}</th>
                     <th className="c">Zostatok</th>
+                    <th className="c" title="Aktívny = je v kalendári, prehľade a mzdách. Skrytý = odišiel alebo sa nemá zobrazovať, údaje zostávajú.">
+                      Stav
+                    </th>
                     <th className="c" title="Stav prístupu do aplikácie">
                       <span className="acchk">
                         Prístup {auth && <InviteAll />}
@@ -199,6 +201,9 @@ export default async function SettingsPage({
                             </td>
                           </>
                         )}
+                        <td className="c">
+                          <ActiveToggle emp={e.id} active={e.active} self={e.id === me.id} name={e.name} />
+                        </td>
                         <td className="c access">
                           <Access email={e.email} info={auth} empId={e.id} active={e.active} />
                         </td>
@@ -269,11 +274,6 @@ export default async function SettingsPage({
                 </tbody>
               </table>
             </div>
-            {managers.length > 0 && noLead.length > 0 && (
-              <p className="muted sethelp" style={{ marginTop: 10 }}>
-                <b>Bez vedúceho ({noLead.length}):</b> {noLead.sort(byLastName).map((e) => e.name).join(", ")}
-              </p>
-            )}
           </Acc>
           </SetGroup>
           <SetGroup k="rules" title="Pravidlá" sub="Pracovná doba · Typy neprítomností · Uzávierka a úpravy" forceOpen={["work","types","appr"].includes(sp.open ?? "")}>

@@ -8,6 +8,7 @@ import {
   saveWorkGroup,
   setHideHealth,
   setManaged,
+  setActive,
   saveCompany,
   setVacation,
   toggleType,
@@ -652,18 +653,37 @@ export function InviteAll() {
 // ---------- vedúci a ich ľudia ----------
 type TeamEmp = { id: string; name: string; pp: string };
 
-/** Čip „N ľudí ▾“ pri vedúcom: zaškrtnutím pridá alebo odoberie zamestnanca. */
+/** Čip „N ľudí ▾“ pri vedúcom: zaškrtnutím pridá alebo odoberie zamestnanca.
+ *  Panel sa otvára v pevnej polohe pri tlačidle, aby ho neorezala tabuľka a netreba scrolovať. */
 export function ManagerTeam({ managerId, people, managed }: { managerId: string; people: TeamEmp[]; managed: string[] }) {
-  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number; maxH: number } | null>(null);
   const [, start] = useTransition();
   const [sel, setSel] = useState(new Set(managed));
   const ref = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
   useEffect(() => setSel(new Set(managed)), [managed]);
   useEffect(() => {
-    const c = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setOpen(false);
+    if (!pos) return;
+    const c = (e: MouseEvent) => ref.current && !ref.current.contains(e.target as Node) && setPos(null);
+    const close = () => setPos(null);
     document.addEventListener("mousedown", c);
-    return () => document.removeEventListener("mousedown", c);
-  }, []);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("mousedown", c);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [pos]);
+  const openPanel = () => {
+    if (pos) return setPos(null);
+    const r = btn.current!.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - 348));
+    // otvorí sa tam, kde je viac miesta
+    setPos(below >= 260 || below >= above ? { left, top: r.bottom + 6, maxH: below - 6 } : { left, bottom: window.innerHeight - r.top + 6, maxH: above - 6 });
+  };
   const toggle = (id: string, on: boolean) => {
     const n = new Set(sel);
     if (on) n.add(id);
@@ -674,13 +694,25 @@ export function ManagerTeam({ managerId, people, managed }: { managerId: string;
   const list = people.filter((p) => p.id !== managerId);
   return (
     <div className="ypdd gmdd" ref={ref}>
-      <button className="gmchip" aria-expanded={open} aria-haspopup="true" onClick={() => setOpen(!open)} title="Ľudia, ktorých spravuje">
+      <button ref={btn} className="gmchip" aria-expanded={!!pos} aria-haspopup="true" onClick={openPanel} title="Ľudia, ktorých spravuje">
         {PEOPLE}
         <span>{cntTxt(sel.size)}</span>
         <span className="caret">▾</span>
       </button>
-      {open && (
-        <div className="yppanel gmpanel teampanel" role="dialog">
+      {pos && (
+        <div
+          className="yppanel gmpanel teampanel"
+          role="dialog"
+          style={
+            {
+              position: "fixed",
+              "--l": `${pos.left}px`,
+              top: pos.top ?? "auto",
+              bottom: pos.bottom ?? "auto",
+              maxHeight: Math.max(180, pos.maxH),
+            } as React.CSSProperties
+          }
+        >
           <div className="gmhd">Spravuje</div>
           <div className="teamlist">
             {list.map((p) => (
@@ -693,6 +725,40 @@ export function ManagerTeam({ managerId, people, managed }: { managerId: string;
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Aktívny / skrytý zamestnanec – prepínač priamo v zozname. */
+export function ActiveToggle({ emp, active, self, name }: { emp: string; active: boolean; self: boolean; name: string }) {
+  const [on, setOn] = useState(active);
+  const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => setOn(active), [active]);
+  return (
+    <div className="seg sm actseg" role="group" aria-label={`Stav – ${name}`} title={err ?? (self ? "Sám seba nemôžete skryť" : undefined)}>
+      {([true, false] as const).map((v) => (
+        <button
+          key={String(v)}
+          type="button"
+          aria-pressed={on === v}
+          disabled={pending || (self && !v)}
+          onClick={() => {
+            if (on === v) return;
+            setOn(v);
+            setErr(null);
+            start(async () => {
+              const e = await setActive(emp, v);
+              if (e) {
+                setOn(!v);
+                setErr(e);
+              }
+            });
+          }}
+        >
+          {v ? "Aktívny" : "Skrytý"}
+        </button>
+      ))}
     </div>
   );
 }
