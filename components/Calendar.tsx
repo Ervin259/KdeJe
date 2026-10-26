@@ -114,7 +114,7 @@ export async function Calendar({
     ? emps.filter((e) => e.id === me.id)
     : emps.filter(
         (e) =>
-          e.id === me.id ||
+          (e.id === me.id && me.isEmployee) ||
           (e.show_in_calendar && e.active && entries.some((x) => x.employee_id === e.id))
       );
   rows = rows.sort(byLastName).sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id));
@@ -160,7 +160,7 @@ export async function Calendar({
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
   // v riadku prihláseného za menom
   const meExtra =
-    view === "month" && me.contract_type === "TPP" ? (
+    view === "month" && me.isEmployee && me.contract_type === "TPP" ? (
       <span className="mebtns">
         <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} short />
       </span>

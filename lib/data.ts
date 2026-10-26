@@ -77,7 +77,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
   const { data } = companyId
     ? await supabase
         .from("employees")
-        .select("id, name, role, is_manager, contract_type, sees_calendar, company_id, companies(name)")
+        .select("id, name, role, is_manager, is_external, contract_type, sees_calendar, company_id, companies(name)")
         .eq("user_id", user.id)
         .eq("company_id", companyId)
         .eq("active", true)
@@ -140,7 +140,8 @@ export const getMe = cache(async (): Promise<Me | null> => {
     isPlatform,
     readOnly: writable === false,
     companies,
-    isEmployee: true,
+    // správca, ktorý nie je zamestnancom firmy, nemá vlastnú dochádzku
+    isEmployee: !data.is_external,
     trial,
   };
 });

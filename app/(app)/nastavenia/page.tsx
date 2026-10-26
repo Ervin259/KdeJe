@@ -47,11 +47,12 @@ export default async function SettingsPage({
 
 
   const act = emps.filter((e) => e.active && !e.is_external);
-  const hiddenN = emps.filter((e) => !e.active).length;
+  const hiddenN = emps.filter((e) => !e.active && !e.is_external).length;
   const showHidden = sp.skryti === "1";
   const filt = sp.f && PP_ORDER.includes(sp.f) ? sp.f : null;
+  // správcovia, ktorí nie sú zamestnancami firmy, sú len v Rolách a prístupoch
   const list = emps
-    .filter((e) => (showHidden || e.active) && (!filt || e.contract_type === filt))
+    .filter((e) => !e.is_external && (showHidden || e.active) && (!filt || e.contract_type === filt))
     .sort(byLastName);
   // prihlásený admin vždy na prvom mieste, ostatní podľa pracovného pomeru
   const ordered = [
@@ -257,7 +258,8 @@ export default async function SettingsPage({
                         </Link>
                       </td>
                       <td>
-                        {e.role === "admin" && <span className="pill closed">admin</span>} {e.is_manager && <span className="pill lead">vedúci</span>}
+                        {e.role === "admin" && <span className="pill closed">admin</span>} {e.is_manager && <span className="pill lead">vedúci</span>}{" "}
+                        {e.is_external && <span className="pill closed" title="Spravuje firmu, nie je jej zamestnancom">len správca</span>}
                       </td>
                       <td>
                         {e.is_manager ? (
