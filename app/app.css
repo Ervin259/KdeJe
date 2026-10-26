@@ -257,6 +257,7 @@ a.namebtn:hover { color: var(--accent); }
 .cal thead th.hcol { background: var(--sunk); }
 .cal thead th.hcol .daylink { color: var(--ink); }
 /* bunka, ktorú prihlásený nemôže upravovať: sivá („neaktívna“) šípka = len informácia */
-.cal td.c:not(.click) {
+.cal td.c:not(.click),
+.cal:not(.dayt) tbody td.name {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24'%3E%3Cpath d='M2 2 L2 19 L6.4 14.8 L9.4 21.4 L12.2 20.2 L9.3 13.7 L15.2 13.7 Z' fill='%23A6B0C2' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, default;
 }
