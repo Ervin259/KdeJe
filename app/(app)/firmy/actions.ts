@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatform } from "@/lib/data";
@@ -222,5 +223,5 @@ export async function saveCompanyAdmin(_p: FirmState, f: FormData): Promise<Firm
     await supabase.rpc("rename_company_firm", { p_company: id, p_old: old.name, p_new: name });
   }
   revalidatePath("/", "layout");
-  return { ok: "Uložené." };
+  redirect("/firmy");
 }
