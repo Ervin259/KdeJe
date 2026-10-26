@@ -40,14 +40,14 @@ export default async function SettingsPage({
       .maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
     supabase.from("state_holidays").select("date"),
-    supabase.from("invoices").select("*").order("issued_on", { ascending: false }),
+    supabase.from("invoices").select("*").eq("company_id", me.company_id).order("issued_on", { ascending: false }),
     loadPlatformSettings(),
   ]);
   const invoices = (invs ?? []) as Invoice[];
 
 
-  const act = emps.filter((e) => e.active);
-  const hiddenN = emps.length - act.length;
+  const act = emps.filter((e) => e.active && !e.is_external);
+  const hiddenN = emps.filter((e) => !e.active).length;
   const showHidden = sp.skryti === "1";
   const filt = sp.f && PP_ORDER.includes(sp.f) ? sp.f : null;
   const list = emps
@@ -88,7 +88,7 @@ export default async function SettingsPage({
   // vedúci a ich ľudia
   const asg = (assign ?? []) as { manager_id: string; employee_id: string }[];
   const managers = act.filter((e) => e.is_manager).sort(byLastName);
-  const admins = act.filter((e) => e.role === "admin").sort(byLastName);
+  const admins = emps.filter((e) => e.active && e.role === "admin").sort(byLastName);
   const teamOf = (id: string) => asg.filter((a) => a.manager_id === id).map((a) => a.employee_id);
   const people = [...act].sort(byLastName).map((e) => ({ id: e.id, name: e.name, pp: PP_LABEL[e.contract_type] }));
   const nameOf = (id: string) => emps.find((e) => e.id === id)?.name ?? "";
@@ -154,6 +154,7 @@ export default async function SettingsPage({
                           {note && <span className="notedot" title={`Poznámka: ${note}`} aria-label="Má poznámku" />}
                           {e.role === "admin" && <span className="pill closed"> admin</span>}
                           {e.is_manager && <span className="pill lead"> vedúci</span>}
+                          {e.is_external && <span className="pill closed" title="Spravuje firmu, nie je zamestnanec"> len správca</span>}
                           {!e.active && <span className="pill bad"> skrytý</span>}
                         </td>
                         <td className="email">

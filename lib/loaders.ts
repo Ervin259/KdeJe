@@ -22,6 +22,8 @@ export type EmpFull = Emp & {
   in_payroll: boolean;
   role: "admin" | "employee";
   is_manager: boolean;
+  /** správca firmy, ktorý nie je jej zamestnancom */
+  is_external: boolean;
 };
 
 /** Spoločné dáta firmy (raz za request). */
@@ -33,7 +35,7 @@ export const loadCompany = cache(async () => {
     supabase
       .from("employees")
       .select(
-        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager"
+        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager, is_external"
       ),
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),
@@ -117,10 +119,8 @@ export async function loadEntries(from: string, to: string): Promise<Entry[]> {
 /** Čakajúce žiadosti na vybavenie (bez vlastných – tie vybavuje niekto iný). */
 export async function pendingRequestsCount(meId: string): Promise<number> {
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending")
-    .neq("employee_id", meId);
+  let q = supabase.from("requests").select("id", { count: "exact", head: true }).eq("status", "pending");
+  if (meId) q = q.neq("employee_id", meId);
+  const { count } = await q;
   return count ?? 0;
 }

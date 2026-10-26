@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NavTabs, type Tab } from "./NavTabs";
 import { TopBar } from "./TopBar";
 import { ViewToggle } from "./ViewToggle";
+import { CompanySwitch } from "./CompanySwitch";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -25,11 +26,13 @@ export async function Header({
   userExtra?: React.ReactNode;
 }) {
   const tabs: Tab[] = [];
-  if (me.role === "admin") {
+  if (!me.company_id) {
+    // superadmin mimo firmy – len správa aplikácie
+  } else if (me.role === "admin") {
     const pending = await pendingRequestsCount(me.id);
     tabs.push(
       { href: "/kalendar", label: "Kalendár" },
-      { href: "/moj-prehlad", label: "Môj prehľad" },
+      ...(me.isEmployee ? [{ href: "/moj-prehlad", label: "Môj prehľad" }] : []),
       { href: "/prehlad", label: "Prehľad" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },
@@ -53,6 +56,14 @@ export async function Header({
     tabs.push({ href: "/firmy", label: "Firmy", badge: count || undefined });
   }
 
+  // firmy v prepínači: superadmin všetky, ostatní tie, kde majú účet
+  let switchOptions = me.companies;
+  if (me.isPlatform) {
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("platform_companies");
+    switchOptions = ((data ?? []) as { id: string; name: string }[]).map((c) => ({ id: c.id, name: c.name }));
+  }
+
   // upozornenie na neuhradenú faktúru (admin) alebo obmedzenie firmy (všetci)
   let notice: React.ReactNode = null;
   if (me.readOnly) {
@@ -62,9 +73,9 @@ export async function Header({
         možné po úhrade{me.realRole === "admin" ? <> – <a href="/nastavenia?open=plan">platobné údaje</a></> : " – obráťte sa na admina firmy"}.
       </div>
     );
-  } else if (me.realRole === "admin") {
+  } else if (me.realRole === "admin" && me.company_id) {
     const supabase = await createClient();
-    const { data: inv } = await supabase.from("invoices").select("vs, amount, due_on").eq("status", "issued").order("due_on").limit(1);
+    const { data: inv } = await supabase.from("invoices").select("vs, amount, due_on").eq("company_id", me.company_id).eq("status", "issued").order("due_on").limit(1);
     const i = inv?.[0];
     if (i) {
       const late = i.due_on < new Date().toISOString().slice(0, 10);
@@ -86,11 +97,17 @@ export async function Header({
             Kde<b>Je</b>
           </h1>
         </div>
-        <span className="firm">{me.company_name}</span>
+        <span className="firm">
+          {me.isPlatform || me.companies.length > 1 ? (
+            <CompanySwitch current={me.company_id} options={switchOptions} platform={me.isPlatform} />
+          ) : (
+            me.company_name
+          )}
+        </span>
         <div className="headright">
           <span className="whobox">
             <span className="who-name">{me.name}</span>
-            {me.realRole === "admin" && <ViewToggle empView={me.role !== "admin"} />}
+            {me.realRole === "admin" && me.isEmployee && <ViewToggle empView={me.role !== "admin"} />}
           </span>
           {userExtra}
           <form action="/auth/signout" method="post" className="seg" style={{ marginLeft: 10 }}>

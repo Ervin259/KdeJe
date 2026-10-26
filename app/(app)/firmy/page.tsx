@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
 import { eur, fdate, loadPlatformSettings, nextInvoice, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
-import { DecideSignup, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
+import { DecideSignup, EnterCompany, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
   id: string;
@@ -118,7 +118,7 @@ export default async function CompaniesPage() {
                     return (
                       <tr key={c.id}>
                         <td>
-                          <b>{c.name}</b>
+                          <EnterCompany id={c.id} /> <b>{c.name}</b>
                           {c.ico && <div className="muted" style={{ fontSize: 12 }}>IČO {c.ico}</div>}
                         </td>
                         <td>
@@ -134,7 +134,7 @@ export default async function CompaniesPage() {
                         </td>
                         <td>
                           {c.admins ?? <span className="muted">—</span>}
-                          {email && c.id !== me.company_id && <ResendInvite email={email} />}
+                          {email && <ResendInvite email={email} />}
                         </td>
                         <td className="num">{fd(c.created_at.slice(0, 10))}</td>
                       </tr>

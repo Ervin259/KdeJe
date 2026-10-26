@@ -24,6 +24,10 @@ export type Me = {
   isPlatform: boolean;
   /** firma je obmedzená (neuhradená faktúra po splatnosti alebo pozastavenie) – len čítanie */
   readOnly: boolean;
+  /** firmy, v ktorých má účet prístup (prepínač v hlavičke) */
+  companies: { id: string; name: string }[];
+  /** false = superadmin bez vlastného záznamu zamestnanca */
+  isEmployee: boolean;
 };
 
 export type CalEntry = {
@@ -51,7 +55,7 @@ export const CONTRACT_LABEL: Record<ContractType, string> = {
 /** Cookie s pohľadom admina: „emp“ = vidí aplikáciu ako zamestnanec. */
 export const VIEW_COOKIE = "kdeje-view";
 
-/** Prihlásený zamestnanec (raz za request). Bez prihlásenia → /login. */
+/** Prihlásený zamestnanec v práve zvolenej firme (raz za request). Bez prihlásenia → /login. */
 export const getMe = cache(async (): Promise<Me | null> => {
   const supabase = await createClient();
   const {
@@ -59,20 +63,54 @@ export const getMe = cache(async (): Promise<Me | null> => {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data } = await supabase
-    .from("employees")
-    .select("id, name, role, is_manager, contract_type, sees_calendar, company_id, companies(name)")
-    .eq("user_id", user.id)
-    .eq("active", true)
-    .maybeSingle();
+  const [{ data: cid }, { data: platform }, { data: mine }] = await Promise.all([
+    supabase.rpc("current_company_id"),
+    supabase.rpc("is_platform_admin"),
+    supabase.rpc("my_companies"),
+  ]);
+  const isPlatform = platform === true;
+  const companies = ((mine ?? []) as { id: string; name: string }[]).map((c) => ({ id: c.id, name: c.name }));
+  const companyId = (cid as string | null) ?? "";
 
-  if (!data) return null;
+  const { data } = companyId
+    ? await supabase
+        .from("employees")
+        .select("id, name, role, is_manager, contract_type, sees_calendar, company_id, companies(name)")
+        .eq("user_id", user.id)
+        .eq("company_id", companyId)
+        .eq("active", true)
+        .maybeSingle()
+    : { data: null };
+
+  // superadmin bez zamestnaneckého záznamu: buď vstúpil do firmy (je v nej admin), alebo je mimo firiem (len Firmy)
+  if (!data) {
+    if (!isPlatform) return null;
+    let companyName = "";
+    if (companyId) {
+      const { data: c } = await supabase.from("companies").select("name").eq("id", companyId).maybeSingle();
+      companyName = c?.name ?? "";
+    }
+    return {
+      id: "",
+      name: user.email ?? "Superadmin",
+      role: companyId ? "admin" : "employee",
+      realRole: companyId ? "admin" : "employee",
+      contract_type: "SRO",
+      sees_calendar: true,
+      company_id: companyId,
+      company_name: companyName,
+      isManager: false,
+      managed: [],
+      isPlatform,
+      readOnly: false,
+      companies,
+      isEmployee: false,
+    };
+  }
+
   const company = data.companies as unknown as { name: string } | null;
   const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
-  const [{ data: platform }, { data: writable }] = await Promise.all([
-    supabase.rpc("is_platform_admin"),
-    supabase.rpc("company_writable", { p_company: data.company_id }),
-  ]);
+  const { data: writable } = await supabase.rpc("company_writable", { p_company: data.company_id });
   let managed: string[] = [];
   if (data.is_manager && !empView) {
     const { data: rows } = await supabase.from("manager_assignments").select("employee_id").eq("manager_id", data.id);
@@ -89,14 +127,18 @@ export const getMe = cache(async (): Promise<Me | null> => {
     company_name: company?.name ?? "",
     isManager: !!data.is_manager && !empView,
     managed,
-    isPlatform: platform === true,
+    isPlatform,
     readOnly: writable === false,
+    companies,
+    isEmployee: true,
   };
 });
 
 export async function requireMe(): Promise<Me> {
   const me = await getMe();
   if (!me) redirect("/kalendar");
+  // superadmin mimo firmy pracuje len so stránkou Firmy
+  if (!me.company_id) redirect("/firmy");
   return me;
 }
 
@@ -106,10 +148,10 @@ export async function requireAdmin(): Promise<Me> {
   return me;
 }
 
-/** Superadmin celej aplikácie (stránka Firmy). */
+/** Superadmin celej aplikácie (stránka Firmy) – aj keď práve nie je v žiadnej firme. */
 export async function requirePlatform(): Promise<Me> {
-  const me = await requireMe();
-  if (!me.isPlatform) redirect("/kalendar");
+  const me = await getMe();
+  if (!me?.isPlatform) redirect("/kalendar");
   return me;
 }
 
