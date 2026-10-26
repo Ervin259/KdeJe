@@ -252,8 +252,11 @@ a.namebtn:hover { color: var(--accent); }
 .cal thead th .daylink:hover { background: var(--accent-soft); color: var(--accent); }
 
 /* ---------- Kalendár: pri prejdení myšou zvýrazniť riadok užívateľa a stĺpec dňa ---------- */
-.cal:not(.dayt) tbody tr:hover > td.c { background-color: rgba(41, 68, 194, .06); }
-.cal:not(.dayt) tbody tr:hover > td.name { background: var(--accent-soft); color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-.cal thead th.hcol { background: var(--accent-soft); }
-.cal thead th.hcol .daylink { color: var(--accent); }
-.cal td.c:not(.click) { cursor: default; }
+.cal:not(.dayt) tbody tr:hover > td.c { background-color: rgba(22, 29, 43, .045); }
+.cal:not(.dayt) tbody tr:hover > td.name { background: var(--sunk); color: var(--ink); box-shadow: inset 3px 0 0 var(--ink); }
+.cal thead th.hcol { background: var(--sunk); }
+.cal thead th.hcol .daylink { color: var(--ink); }
+/* bunka, ktorú prihlásený nemôže upravovať: kurzor „i“ = len informácia */
+.cal td.c:not(.click) {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='9' fill='%23ffffff' stroke='%23596379' stroke-width='1.6'/%3E%3Crect x='10' y='9.5' width='2' height='6.5' rx='1' fill='%23596379'/%3E%3Ccircle cx='11' cy='6.6' r='1.3' fill='%23596379'/%3E%3C/svg%3E") 11 11, help;
+}
