@@ -124,14 +124,14 @@ export default async function SettingsPage({
                   <tr>
                     <th>Meno</th>
                     <th>E-mail</th>
-                    <th>Pracovný pomer</th>
+                    <th title="Pracovný pomer">Prac. pomer</th>
                     <th>Trvanie pomeru</th>
                     <th>Pracovný čas a SL</th>
                     <th className="c">Prenos z {year - 1}</th>
                     <th className="c">Nárok {year}</th>
                     <th className="c">Zostatok</th>
                     <th className="c" title="Aktívny = je v kalendári, prehľade a mzdách. Skrytý = odišiel alebo sa nemá zobrazovať, údaje zostávajú.">
-                      Stav
+                      Aktívny
                     </th>
                     <th className="c" title="Stav prístupu do aplikácie">
                       <span className="acchk">

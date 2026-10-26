@@ -729,37 +729,37 @@ export function ManagerTeam({ managerId, people, managed }: { managerId: string;
   );
 }
 
-/** Aktívny / skrytý zamestnanec – prepínač priamo v zozname. */
+/** Aktívny / skrytý zamestnanec – zaškrtávacie políčko priamo v zozname (zelená fajka = aktívny). */
 export function ActiveToggle({ emp, active, self, name }: { emp: string; active: boolean; self: boolean; name: string }) {
   const [on, setOn] = useState(active);
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => setOn(active), [active]);
   return (
-    <div className="seg sm actseg" role="group" aria-label={`Stav – ${name}`} title={err ?? (self ? "Sám seba nemôžete skryť" : undefined)}>
-      {([true, false] as const).map((v) => (
-        <button
-          key={String(v)}
-          type="button"
-          aria-pressed={on === v}
-          disabled={pending || (self && !v)}
-          onClick={() => {
-            if (on === v) return;
-            setOn(v);
-            setErr(null);
-            start(async () => {
-              const e = await setActive(emp, v);
-              if (e) {
-                setOn(!v);
-                setErr(e);
-              }
-            });
-          }}
-        >
-          {v ? "Aktívny" : "Skrytý"}
-        </button>
-      ))}
-    </div>
+    <label
+      className={`actchk${on ? " on" : ""}`}
+      title={err ?? (self ? "Sám seba nemôžete skryť" : on ? "Aktívny – kliknutím skryjete" : "Skrytý – kliknutím aktivujete")}
+    >
+      <input
+        type="checkbox"
+        checked={on}
+        disabled={pending || (self && on)}
+        aria-label={`Aktívny – ${name}`}
+        onChange={(e) => {
+          const v = e.target.checked;
+          setOn(v);
+          setErr(null);
+          start(async () => {
+            const r = await setActive(emp, v);
+            if (r) {
+              setOn(!v);
+              setErr(r);
+            }
+          });
+        }}
+      />
+      <span aria-hidden="true">✓</span>
+    </label>
   );
 }
 

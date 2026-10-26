@@ -211,7 +211,10 @@ a.namebtn:hover { color: var(--accent); }
 .brandlink { text-decoration: none; color: inherit; }
 .gmpanel.teampanel { left: var(--l) !important; right: auto !important; z-index: 60; overflow: auto; }
 .teampanel .teamlist { max-height: none; }
-.actseg button { padding: 3px 9px !important; font-size: 12px !important; }
-.actseg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
-.actseg button:last-child[aria-pressed="true"] { background: var(--bad-soft); color: var(--bad); }
-.actseg button:disabled { opacity: .5; cursor: default; }
+.actchk { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--line); cursor: pointer; position: relative; background: var(--surface); }
+.actchk input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; }
+.actchk span { font-size: 13px; font-weight: 700; color: transparent; line-height: 1; }
+.actchk.on { background: var(--dov-bg); border-color: var(--dov); }
+.actchk.on span { color: var(--dov); }
+.actchk:has(input:disabled) { cursor: default; opacity: .8; }
+.actchk:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
