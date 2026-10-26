@@ -23,6 +23,7 @@ import { Header } from "./Header";
 import { StatusPill, Legend } from "./ui";
 import { CalClick } from "./CalClick";
 import { ConfirmMonthButton } from "./ConfirmMonth";
+import { MonthPicker } from "./MonthPicker";
 
 export type View = "day" | "week" | "month";
 const WDL = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
@@ -130,7 +131,9 @@ export async function Calendar({
   const center = (
     <div className="mnav">
       <Link className="icon-btn" href={q(view, prev)} aria-label="Dozadu">‹</Link>
-      <h2>{title}</h2>
+      <MonthPicker y={y} m={m} today={calc.today} basePath={basePath} view={view}>
+        {title}
+      </MonthPicker>
       <Link className="icon-btn" href={q(view, next)} aria-label="Dopredu">›</Link>
       <Link className="btn" href={q(view, calc.today)}>Dnes</Link>
       <StatusPill st={st} m={m} admin={admin} />

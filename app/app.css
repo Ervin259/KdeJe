@@ -221,3 +221,19 @@ a.namebtn:hover { color: var(--accent); }
 .contbox { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
 .contbox > div { display: grid; gap: 3px; flex: 1; min-width: 260px; }
 .contbox.over { border-color: var(--bad); background: var(--bad-soft); }
+
+/* ---------- výber mesiaca v kalendári ---------- */
+.mpick-btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 8px; }
+.mpick-btn:hover { background: rgba(255,255,255,.08); }
+.mpick-btn:focus-visible { outline: 2px solid #9DB0FF; outline-offset: 2px; }
+.mpick-btn h2 { margin: 0; }
+.mpick-btn .caret { font-size: 12px; opacity: .7; }
+.mpick-panel { left: 50% !important; transform: translateX(-50%); min-width: 260px !important; padding: 10px !important; gap: 8px; }
+.mpick-year { display: flex; align-items: center; justify-content: space-between; }
+.mpick-year b { font-size: 15px; }
+.mpick-year .icon-btn { width: 30px; height: 30px; }
+.mpick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mpick-grid button { border: 1px solid var(--grid); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 0; font-weight: 600; font-size: 13px; cursor: pointer; }
+.mpick-grid button:hover { border-color: var(--accent); }
+.mpick-grid button.now { border-color: var(--accent); }
+.mpick-grid button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
