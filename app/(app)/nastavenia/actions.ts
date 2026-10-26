@@ -229,7 +229,7 @@ export async function setVacation(empId: string, field: "entitlement" | "carry_i
   const supabase = await createClient();
   const year = Number(todayIso().slice(0, 4));
   const { data } = await supabase.from("vacation_years").select("*").eq("employee_id", empId).eq("year", year).maybeSingle();
-  const row = { employee_id: empId, year, entitlement_full: data?.entitlement_full ?? value, entitlement: data?.entitlement ?? 20, carry_in: data?.carry_in ?? 0, [field]: value };
+  const row = { employee_id: empId, year, entitlement_full: data?.entitlement_full ?? value, entitlement: data?.entitlement ?? 25, carry_in: data?.carry_in ?? 0, [field]: value };
   await supabase.from("vacation_years").upsert(row);
   done();
 }
@@ -304,7 +304,7 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
       step: str(f, "dstep") === "0.5" ? 0.5 : 1,
     });
   } else {
-    const ent = numOr(f, "entitlement", 20) ?? 20;
+    const ent = numOr(f, "entitlement", 25) ?? 25;
     await supabase.from("vacation_years").upsert({
       employee_id: empId,
       year,

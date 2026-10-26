@@ -62,8 +62,8 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           .filter((x) => x?.is_manager && x.active)
           .map((x) => x!.name),
     linked: !!link?.user_id,
-    entitlement_full: Number(vac?.entitlement_full ?? 20),
-    entitlement: Number(vac?.entitlement ?? 20),
+    entitlement_full: Number(vac?.entitlement_full ?? 25),
+    entitlement: Number(vac?.entitlement ?? 25),
     carry_in: Number(vac?.carry_in ?? 0),
     note: note?.note ?? "",
     doh: {
