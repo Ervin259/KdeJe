@@ -56,9 +56,9 @@ export default async function Home() {
               </p>
               <div className="hero-cta">
                 <Link className="btn primary big-btn" href="/registracia">
-                  Vyskúšať {trial} zdarma
+                  Vyskúšať {trial} zdarma*
                 </Link>
-                <span className="muted">Potom {eur(s.price_month)} za užívateľa mesačne</span>
+                <span className="hero-note">* Potom {eur(s.price_month)} za užívateľa mesačne</span>
               </div>
             </div>
             <div className="hero-demo" aria-hidden="true">
