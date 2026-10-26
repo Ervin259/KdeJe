@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
+import { eur, loadPlatformSettings, months } from "@/lib/billing";
 import "./site.css";
 
 export const metadata = {
@@ -19,7 +20,7 @@ const FEATURES = [
 const STEPS = [
   ["Vyplníte žiadosť", "Názov firmy, IČO a e-mail toho, kto bude aplikáciu spravovať."],
   ["Potvrdíme prístup", "Žiadosť skontrolujeme a adminovi príde pozvánka e-mailom."],
-  ["Pridáte zamestnancov", "Admin pridá ľudí, nastaví pracovný čas a pošle im pozvánky. Hotovo."],
+  ["Pridáte užívateľov", "Admin pridá užívateľov, nastaví pracovný čas a pošle im pozvánky. Hotovo."],
 ] as const;
 
 /** Kúsok kalendára v úvode – len ilustrácia, nie skutočné dáta. */
@@ -31,7 +32,12 @@ const DEMO: { n: string; c: (string | null)[] }[] = [
 ];
 const LBL: Record<string, string> = { dov: "DOV", ho: "HO", par: "LEK", sc: "SC" };
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const s = await loadPlatformSettings();
+  const trial = months(s.trial_months);
+  const first = s.trial_months === 1 ? "Prvý mesiac" : s.trial_months <= 4 ? `Prvé ${trial}` : `Prvých ${trial}`;
   return (
     <div className="site">
       <SiteHeader />
@@ -50,9 +56,9 @@ export default function Home() {
               </p>
               <div className="hero-cta">
                 <Link className="btn primary big-btn" href="/registracia">
-                  Vyskúšať 12 mesiacov zdarma
+                  Vyskúšať {trial} zdarma*
                 </Link>
-                <span className="muted">Potom 1 € za zamestnanca mesačne</span>
+                <span className="hero-note">* Potom {eur(s.price_month)} za užívateľa mesačne</span>
               </div>
             </div>
             <div className="hero-demo" aria-hidden="true">
@@ -94,7 +100,7 @@ export default function Home() {
           <div className="site-in price-in">
             <div>
               <h2>Jednoduchá cena</h2>
-              <p className="lead">Platíte len za aktívnych zamestnancov. Nič sa neinštaluje, aplikácia beží v prehliadači.</p>
+              <p className="lead">Platíte len za aktívnych užívateľov. Nič sa neinštaluje, aplikácia beží v prehliadači.</p>
               <ol className="steps">
                 {STEPS.map(([t, d]) => (
                   <li key={t}>
@@ -105,24 +111,22 @@ export default function Home() {
               </ol>
             </div>
             <div className="price-card">
-              <span className="price-tag">Prvých 12 mesiacov zdarma</span>
+              <span className="price-tag">{first} zdarma</span>
               <div className="price">
-                <b>1 €</b>
-                <span>za zamestnanca mesačne</span>
+                <b>{eur(s.price_month)}</b>
+                <span>za užívateľa mesačne</span>
               </div>
               <ul>
                 <li>Všetky funkcie vrátane podkladu pre mzdy</li>
                 <li>Neobmedzený počet adminov a vedúcich</li>
-                <li>Rátajú sa aj ľudia, ktorí sa neprihlasujú</li>
                 <li>Prihlásenie odkazom do e-mailu, bez hesiel</li>
                 <li>Export všetkých dát kedykoľvek</li>
               </ul>
-              <p className="price-fine">
-                Fakturujeme raz ročne vopred, najmenej za 5 zamestnancov (60 € ročne). Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
-                <Link href="/podmienky">Obchodné podmienky</Link>
-              </p>
               <Link className="btn primary big-btn" href="/registracia">
                 Požiadať o zriadenie
+              </Link>
+              <Link className="price-terms" href="/podmienky">
+                Obchodné podmienky
               </Link>
             </div>
           </div>

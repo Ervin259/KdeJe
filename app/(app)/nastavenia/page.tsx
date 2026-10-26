@@ -6,7 +6,7 @@ import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
-import { Acc, AccAll, ActiveToggle, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
 import { eur, loadPlatformSettings, yearlyPrice, type Invoice } from "@/lib/billing";
 
@@ -35,7 +35,7 @@ export default async function SettingsPage({
     supabase.from("employee_notes").select("employee_id, note"),
     supabase
       .from("companies")
-      .select("name, ico, address, status, trial_until, paid_until, billing_exempt, billing_name, billing_street, billing_city, billing_zip, billing_dic, billing_email")
+      .select("name, ico, address, status, trial_until, paid_until, billing_exempt, continue_confirmed_at, billing_name, billing_street, billing_city, billing_zip, billing_dic, billing_email")
       .eq("id", me.company_id)
       .maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
@@ -426,7 +426,7 @@ export default async function SettingsPage({
                 </div>
               )}
               <div>
-                <span className="muted">Aktívni zamestnanci</span>
+                <span className="muted">Aktívni užívatelia</span>
                 <b>{act.length}</b>
               </div>
               {!company?.billing_exempt && (
@@ -436,9 +436,16 @@ export default async function SettingsPage({
                 </div>
               )}
             </div>
+            {me.trial && !me.trial.confirmed && me.trial.until && (
+              <ContinueBox until={fdate(me.trial.until)} price={eur(yp.amount)} over={me.trial.until < calc.today} />
+            )}
+            {me.trial?.confirmed && company?.continue_confirmed_at && !invoices.length && (
+              <div className="fmsg ok contbox">Pokračovanie ste potvrdili. Faktúru pripravujeme.</div>
+            )}
             <p className="muted sethelp">
-              {eur(ps.price_month)} za aktívneho zamestnanca mesačne, vrátane tých, ktorí sa do aplikácie neprihlasujú. Fakturujeme raz ročne
-              vopred, najmenej za {ps.min_employees} zamestnancov. Ceny sú konečné, dodávateľ nie je platiteľ DPH.{" "}
+              {eur(ps.price_month)} za aktívneho užívateľa mesačne, fakturované raz ročne vopred, najmenej za {ps.min_employees} užívateľov.
+              Pri ďalšej faktúre sa vyrovná skutočný počet užívateľov po mesiacoch – doplatok aj odpočet. Ceny sú konečné, dodávateľ nie je
+              platiteľ DPH.{" "}
               <a href="/podmienky" target="_blank" className="linkbtn">
                 Obchodné podmienky
               </a>
@@ -479,7 +486,15 @@ export default async function SettingsPage({
                         <td className="num">
                           {fdate(i.period_from)} – {fdate(i.period_to)}
                         </td>
-                        <td className="r">{eur(Number(i.amount))}</td>
+                        <td className="r">
+                          {eur(Number(i.amount))}
+                          {(i.extra_units !== 0 || Number(i.carry_in) < 0) && (
+                            <div className="muted" style={{ fontSize: 11.5 }} title="Vyrovnanie podľa skutočného počtu užívateľov v predchádzajúcom období">
+                              {i.extra_units !== 0 && <>vyrovnanie {Number(i.extra_amount) > 0 ? "+" : "−"}{eur(Math.abs(Number(i.extra_amount)))}</>}
+                              {Number(i.carry_in) < 0 && <> · prenesený odpočet −{eur(-Number(i.carry_in))}</>}
+                            </div>
+                          )}
+                        </td>
                         <td className="num">{fdate(i.due_on)}</td>
                         <td>
                           {i.status === "paid" ? (

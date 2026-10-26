@@ -105,7 +105,7 @@ export async function saveSupplier(_p: FirmState, f: FormData): Promise<FirmStat
 /** Vystaví ročné faktúry všetkým firmám, ktorým o menej ako 30 dní končí skúšobné alebo zaplatené obdobie. */
 export async function issueInvoices(_p: FirmState, _f: FormData): Promise<FirmState> {
   await requirePlatform();
-  const { loadPlatformSettings, nextInvoice, addDays } = await import("@/lib/billing");
+  const { loadPlatformSettings, nextInvoice, addDays, settle } = await import("@/lib/billing");
   const { todayIso } = await import("@/lib/data");
   const supabase = await createClient();
   const s = await loadPlatformSettings();
@@ -121,6 +121,21 @@ export async function issueInvoices(_p: FirmState, _f: FormData): Promise<FirmSt
   for (const c of (co ?? []) as import("@/lib/billing").BillingCompany[]) {
     const n = nextInvoice(c, invoices, s, today);
     if (!n) continue;
+    // ročné vyrovnanie za predchádzajúce obdobie (+ doplatok / − odpočet) a prenesený odpočet
+    let extra = 0;
+    if (n.prev) {
+      const { data: u } = await supabase.rpc("billing_settlement_units", {
+        p_company: c.id,
+        p_from: n.prev.period_from,
+        p_to: n.prev.period_to,
+        p_paid: n.prev.billed_qty,
+        p_min: s.min_employees,
+      });
+      extra = Number(u ?? 0);
+    }
+    const extraAmount = Math.round(extra * Number(n.prev?.unit_price ?? s.price_month) * 100) / 100;
+    const carryIn = Number(n.prev?.carry_out ?? 0);
+    const { amount, carry_out } = settle(n.amount, extraAmount, carryIn);
     seq += 1;
     rows.push({
       company_id: c.id,
@@ -133,7 +148,13 @@ export async function issueInvoices(_p: FirmState, _f: FormData): Promise<FirmSt
       billed_qty: n.qty,
       months: 12,
       unit_price: s.price_month,
-      amount: n.amount,
+      amount,
+      carry_in: carryIn,
+      carry_out,
+      extra_units: extra,
+      extra_amount: extraAmount,
+      extra_from: n.prev?.period_from ?? null,
+      extra_to: n.prev?.period_to ?? null,
     });
   }
   if (!rows.length) return { ok: "Momentálne netreba vystaviť žiadnu faktúru." };

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
-import { eur, fdate, loadPlatformSettings, nextInvoice, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
+import { eur, fdate, loadPlatformSettings, nextInvoice, settle, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
 import { DecideSignup, EnterCompany, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
@@ -45,7 +45,27 @@ export default async function CompaniesPage() {
   const companies = (co ?? []) as Company[];
   const emailOf = (admins: string | null) => admins?.match(/<([^>]+)>/)?.[1] ?? null;
   const total = companies.filter((c) => c.status !== "suspended").reduce((a, c) => a + Number(c.employees), 0);
-  const due = companies.map((c) => ({ c, n: nextInvoice(c, invoices, ps, today) })).filter((x) => x.n);
+  const due = await Promise.all(
+    companies
+      .map((c) => ({ c, n: nextInvoice(c, invoices, ps, today) }))
+      .filter((x) => x.n)
+      .map(async (x) => {
+        let extra = 0;
+        if (x.n!.prev) {
+          const { data } = await supabase.rpc("billing_settlement_units", {
+            p_company: x.c.id,
+            p_from: x.n!.prev.period_from,
+            p_to: x.n!.prev.period_to,
+            p_paid: x.n!.prev.billed_qty,
+            p_min: ps.min_employees,
+          });
+          extra = Number(data ?? 0);
+        }
+        const carry = Number(x.n!.prev?.carry_out ?? 0);
+        const total = settle(x.n!.amount, extra * ps.price_month, carry).amount;
+        return { ...x, extra, carry, total };
+      })
+  );
   const cname = (id: string) => companies.find((c) => c.id === id)?.name ?? "";
   const notExported = invoices.filter((i) => i.status !== "cancelled" && !i.exported_at).length;
   const supplierMissing = !ps.supplier_name || !ps.supplier_ico || !ps.iban;
@@ -124,7 +144,14 @@ export default async function CompaniesPage() {
                         <td>
                           <span className={`pill ${cls}`}>{lbl}</span>
                         </td>
-                        <td className="num">{fd(c.trial_until)}</td>
+                        <td className="num">
+                          {fd(c.trial_until)}
+                          {c.status === "trial" && !c.billing_exempt && (
+                            <div className="muted" style={{ fontSize: 11.5 }}>
+                              {c.continue_confirmed_at ? `pokračuje (${fd(c.continue_confirmed_at.slice(0, 10))})` : "nepotvrdené"}
+                            </div>
+                          )}
+                        </td>
                         <td className="num">{fd(c.paid_until)}</td>
                         <td className="r">{c.employees}</td>
                         <td className="r">{c.billing_exempt ? "—" : eur(yearlyPrice(Number(c.employees), ps).amount)}</td>
@@ -165,7 +192,14 @@ export default async function CompaniesPage() {
             {due.length > 0 && (
               <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>
                 <b>Na fakturáciu:</b>{" "}
-                {due.map(({ c, n }) => `${c.name} – ${n!.qty} × 12 × ${eur(ps.price_month)} = ${eur(n!.amount)} (${fd(n!.from)} – ${fd(n!.to)})`).join(" · ")}
+                {due
+                  .map(
+                    ({ c, n, extra, carry, total }) =>
+                      `${c.name} – ${n!.qty} × 12 × ${eur(ps.price_month)}${
+                        extra ? ` ${extra > 0 ? "+" : "−"} vyrovnanie ${Math.abs(extra)} × ${eur(ps.price_month)}` : ""
+                      }${carry ? ` − prenesený odpočet ${eur(-carry)}` : ""} = ${eur(total)} (${fd(n!.from)} – ${fd(n!.to)})`
+                  )
+                  .join(" · ")}
               </p>
             )}
             {invoices.length ? (
@@ -203,7 +237,15 @@ export default async function CompaniesPage() {
                           <td className="num">
                             {fd(i.period_from)} – {fd(i.period_to)}
                           </td>
-                          <td className="r">{i.billed_qty}</td>
+                          <td className="r">
+                            {i.billed_qty}
+                            {i.extra_units !== 0 && (
+                              <div className="muted" style={{ fontSize: 11.5 }}>
+                                vyrovnanie {i.extra_units > 0 ? "+" : "−"}
+                                {Math.abs(i.extra_units)} už./mes.
+                              </div>
+                            )}
+                          </td>
                           <td className="r">{eur(Number(i.amount))}</td>
                           <td className="num">{fd(i.issued_on)}</td>
                           <td className="num" style={late ? { color: "var(--bad)", fontWeight: 600 } : undefined}>
@@ -221,7 +263,10 @@ export default async function CompaniesPage() {
                 </table>
               </div>
             ) : (
-              <div className="empty-note">Zatiaľ žiadne faktúry. Faktúry sa navrhnú 30 dní pred koncom skúšobnej doby.</div>
+              <div className="empty-note">
+                Zatiaľ žiadne faktúry. Prvá faktúra sa navrhne, keď firma potvrdí pokračovanie po skúšobnej dobe; obnova 30 dní pred koncom
+                zaplateného obdobia.
+              </div>
             )}
           </div>
 
