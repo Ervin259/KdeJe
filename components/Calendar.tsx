@@ -215,14 +215,16 @@ const NM: Record<string, React.ReactNode> = {
   "Opatrovanie člena rodiny": <>Opatrovanie<br />člena rodiny</>,
 };
 
-function Cell({ empId, d, wide, calc, on }: { empId: string; d: string; wide: boolean } & Ctx) {
+function Cell({ empId, empName, d, wide, calc, on }: { empId: string; empName: string; d: string; wide: boolean } & Ctx) {
   const xs = on(empId, d);
+  // bublina pri prejdení myšou: komu záznam patrí, čo to je a prípadná poznámka
+  const tip = (x: CalEntry, nt?: string) => `${empName} · ${disp(x).name}${nt ? `\nPoznámka: ${nt}` : ""}`;
   const full = xs.find((x) => x.part === "full");
   if (full) {
     const ds = disp(full);
     const nt = full.note?.trim();
     return (
-      <span className={`f ${ds.cls}${nt ? " has-note" : ""}`} data-id={full.id} title={nt || undefined}>
+      <span className={`f ${ds.cls}${nt ? " has-note" : ""}`} data-id={full.id} title={tip(full, nt)}>
         {wide ? (
           <>
             <b>{ds.code}</b> <span>{NM[ds.name] ?? ds.name}</span>
@@ -252,7 +254,7 @@ function Cell({ empId, d, wide, calc, on }: { empId: string; d: string; wide: bo
               key={x.id}
               className={`f q ${ds.cls}${nt ? " has-note" : ""}${f < 0.5 ? " q-s" : ""}`}
               data-id={x.id}
-              title={nt || undefined}
+              title={tip(x, nt)}
               style={{
                 top: `calc(2px + (100% - 4px) * ${calc.wpos(a, sc) / sc.H})`,
                 height: `calc((100% - 4px) * ${f} - ${f < 1 ? 1 : 0}px)`,
@@ -281,7 +283,7 @@ function Cell({ empId, d, wide, calc, on }: { empId: string; d: string; wide: bo
         const t = x.part === "hrs" ? `${hhmm(x.time_from)}–${hhmm(x.time_to)}` : p === "am" ? "dopol." : "popol.";
         const nt = x.note?.trim();
         return (
-          <span key={p} className={`h f ${ds.cls}${nt ? " has-note" : ""}`} data-id={x.id} title={nt || undefined}>
+          <span key={p} className={`h f ${ds.cls}${nt ? " has-note" : ""}`} data-id={x.id} title={tip(x, nt)}>
             <b>
               {ds.code}
               {more}
@@ -365,7 +367,7 @@ function Grid({
                       data-emp={e.id}
                       data-d={d}
                     >
-                      <div className="cell">{off ? null : <Cell empId={e.id} d={d} wide={wide} {...ctx} />}</div>
+                      <div className="cell">{off ? null : <Cell empId={e.id} empName={e.name} d={d} wide={wide} {...ctx} />}</div>
                     </td>
                   );
                 })}
