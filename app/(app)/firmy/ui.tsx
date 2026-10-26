@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { approveSignup, cancelInvoice, issueInvoices, markPaid, rejectSignup, resendInvite, saveSupplier, setExempt, type FirmState } from "./actions";
+import { approveSignup, saveCompanyAdmin, cancelInvoice, issueInvoices, markPaid, rejectSignup, resendInvite, saveSupplier, setExempt, type FirmState } from "./actions";
 import type { PlatformSettings } from "@/lib/billing";
 import { switchCompany } from "@/components/companyActions";
 
@@ -135,6 +135,60 @@ export function EnterCompany({ id }: { id: string }) {
       <button className="btn" style={{ height: 28, padding: "0 10px" }}>
         Otvoriť
       </button>
+    </form>
+  );
+}
+
+type CompanyRow = {
+  id: string;
+  name: string;
+  ico: string | null;
+  address: string | null;
+  billing_name: string | null;
+  billing_street: string | null;
+  billing_city: string | null;
+  billing_zip: string | null;
+  billing_dic: string | null;
+  billing_icdph: string | null;
+  billing_email: string | null;
+  billing_phone: string | null;
+};
+
+/** Formulár superadmina na úpravu firmy. */
+export function CompanyEdit({ c }: { c: CompanyRow }) {
+  const [st, act, p] = useActionState<FirmState, FormData>(saveCompanyAdmin, {});
+  const f = (name: keyof CompanyRow, label: string, extra?: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <label>
+      <span>{label}</span>
+      <input name={name} defaultValue={String(c[name] ?? "")} {...extra} />
+    </label>
+  );
+  return (
+    <form action={act} className="supform">
+      <input type="hidden" name="id" value={c.id} />
+      <h3>Firma</h3>
+      <div className="supgrid">
+        {f("name", "Názov firmy", { required: true })}
+        {f("ico", "IČO", { inputMode: "numeric" })}
+        {f("address", "Adresa sídla")}
+      </div>
+      <h3>Fakturačné údaje</h3>
+      <div className="supgrid">
+        {f("billing_name", "Odberateľ na faktúre", { placeholder: c.name })}
+        {f("billing_street", "Ulica a číslo")}
+        {f("billing_zip", "PSČ")}
+        {f("billing_city", "Mesto")}
+        {f("billing_dic", "DIČ")}
+        {f("billing_icdph", "IČ DPH", { placeholder: "SK…" })}
+        {f("billing_email", "E-mail na faktúry", { type: "email" })}
+        {f("billing_phone", "Telefón", { type: "tel" })}
+      </div>
+      <div className="row">
+        <button className="btn primary" disabled={p}>
+          Uložiť
+        </button>
+        <Msg st={st} />
+      </div>
     </form>
   );
 }

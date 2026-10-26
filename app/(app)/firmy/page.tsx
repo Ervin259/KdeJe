@@ -153,7 +153,10 @@ export default async function CompaniesPage() {
                     return (
                       <tr key={c.id}>
                         <td>
-                          <EnterCompany id={c.id} /> <b>{c.name}</b>
+                          <EnterCompany id={c.id} /> <b>{c.name}</b>{" "}
+                          <a className="linkbtn" href={`/firmy/${c.id}`} style={{ fontSize: 12.5 }}>
+                            Upraviť
+                          </a>
                           <div className="muted" style={{ fontSize: 12 }}>
                             {[c.ico && `IČO ${c.ico}`, c.billing_dic && `DIČ ${c.billing_dic}`, c.billing_icdph && `IČ DPH ${c.billing_icdph}`]
                               .filter(Boolean)

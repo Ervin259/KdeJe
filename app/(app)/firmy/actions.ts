@@ -192,3 +192,35 @@ export async function setExempt(_p: FirmState, f: FormData): Promise<FirmState> 
   revalidatePath("/", "layout");
   return { ok: "Uložené." };
 }
+
+/** Superadmin: úprava názvu a fakturačných údajov firmy (pri zmene názvu sa opraví aj pole Firma u zamestnancov). */
+export async function saveCompanyAdmin(_p: FirmState, f: FormData): Promise<FirmState> {
+  await requirePlatform();
+  const supabase = await createClient();
+  const id = String(f.get("id") ?? "");
+  const t = (k: string) => String(f.get(k) ?? "").trim() || null;
+  const name = t("name");
+  if (!name) return { error: "Vyplňte názov firmy." };
+  const { data: old } = await supabase.from("companies").select("name").eq("id", id).maybeSingle();
+  const row = {
+    name,
+    ico: t("ico")?.replace(/\s/g, "") ?? null,
+    address: t("address"),
+    billing_name: t("billing_name"),
+    billing_street: t("billing_street"),
+    billing_city: t("billing_city"),
+    billing_zip: t("billing_zip"),
+    billing_dic: t("billing_dic")?.replace(/\s/g, "") ?? null,
+    billing_icdph: t("billing_icdph")?.replace(/\s/g, "").toUpperCase() ?? null,
+    billing_email: t("billing_email")?.toLowerCase() ?? null,
+    billing_phone: t("billing_phone"),
+  };
+  const { error } = await supabase.from("companies").update(row).eq("id", id);
+  if (error) return { error: error.message };
+  if (old?.name && old.name !== name) {
+    // superadmin smie meniť zamestnancov len po vstupe do firmy – zmenu poľa Firma urobí funkcia v databáze, ak existuje
+    await supabase.rpc("rename_company_firm", { p_company: id, p_old: old.name, p_new: name });
+  }
+  revalidatePath("/", "layout");
+  return { ok: "Uložené." };
+}
