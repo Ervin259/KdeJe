@@ -112,8 +112,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
   }
 
   const company = data.companies as unknown as { name: string } | null;
-  // pohľad zamestnanca len tam, kde je admin aj zamestnancom; vo firme, kde je len správca, je vždy admin
-  const empView = data.role === "admin" && !data.is_external && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
+  const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
   const [{ data: writable }, { data: co }] = await Promise.all([
     supabase.rpc("company_writable", { p_company: data.company_id }),
     supabase.from("companies").select("status, trial_until, paid_until, billing_exempt, continue_confirmed_at").eq("id", data.company_id).maybeSingle(),

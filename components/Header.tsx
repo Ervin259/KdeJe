@@ -135,7 +135,7 @@ export async function Header({
         <div className="headright">
           <span className="whobox">
             <span className="who-name">{me.name}</span>
-            {me.realRole === "admin" && me.isEmployee && <ViewToggle empView={me.role !== "admin"} />}
+            {me.realRole === "admin" && !!me.id && <ViewToggle empView={me.role !== "admin"} />}
           </span>
           {userExtra}
           <form action="/auth/signout" method="post" className="seg" style={{ marginLeft: 10 }}>
