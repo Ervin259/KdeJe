@@ -1,27 +1,34 @@
+import nodemailer from "nodemailer";
+
 /**
- * Odoslanie e-mailu cez Brevo (transakčné API). Kľúč je v premennej BREVO_API_KEY vo Verceli.
- * Bez kľúča sa e-mail neodošle (aplikácia funguje ďalej) a do logu sa zapíše upozornenie.
+ * Odoslanie e-mailu cez SMTP (Brevo – rovnaké údaje ako v Supabase → SMTP Settings).
+ * Premenné vo Verceli: SMTP_USER (Login z Brevo), SMTP_PASS (SMTP kľúč),
+ * voliteľne SMTP_HOST (smtp-relay.brevo.com), SMTP_PORT (587), MAIL_FROM (noreply@kdeje.app).
+ * Bez nich sa e-mail neodošle (aplikácia funguje ďalej) a do logu sa zapíše upozornenie.
  */
 export async function sendMail(to: string | null | undefined, subject: string, html: string): Promise<boolean> {
-  const key = process.env.BREVO_API_KEY?.trim();
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
   if (!to) return false;
-  if (!key) {
-    console.warn(`[mail] chýba BREVO_API_KEY – e-mail „${subject}“ pre ${to} sa neodoslal`);
+  if (!user || !pass) {
+    console.warn(`[mail] chýba SMTP_USER / SMTP_PASS – e-mail „${subject}“ pre ${to} sa neodoslal`);
     return false;
   }
+  const port = Number(process.env.SMTP_PORT ?? 587);
   try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": key, "Content-Type": "application/json", accept: "application/json" },
-      body: JSON.stringify({
-        sender: { name: process.env.MAIL_FROM_NAME ?? "KdeJe", email: process.env.MAIL_FROM ?? "noreply@kdeje.app" },
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
+    const tx = nodemailer.createTransport({
+      host: process.env.SMTP_HOST?.trim() || "smtp-relay.brevo.com",
+      port,
+      secure: port === 465,
+      auth: { user, pass },
     });
-    if (!res.ok) console.warn(`[mail] Brevo odmietol e-mail „${subject}“: ${res.status} ${await res.text()}`);
-    return res.ok;
+    await tx.sendMail({
+      from: { name: process.env.MAIL_FROM_NAME ?? "KdeJe", address: process.env.MAIL_FROM ?? "noreply@kdeje.app" },
+      to,
+      subject,
+      html,
+    });
+    return true;
   } catch (e) {
     console.warn(`[mail] e-mail „${subject}“ sa nepodarilo odoslať:`, e);
     return false;
