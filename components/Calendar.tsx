@@ -348,7 +348,7 @@ function Grid({
             const can = admin || e.id === meId || managed.has(e.id);
             return (
               <tr key={e.id} className={mine ? "me" : undefined}>
-                <td className="name" title={e.name}>
+                <td className="name">
                   {e.id === meId && meExtra ? (
                     <div className="mename">
                       <span>{e.name}</span>
@@ -450,7 +450,7 @@ function DayTable({
               return (
                 <tr key={x.id} className={mine ? "me" : undefined}>
                   {i === 0 && (
-                    <td className="name" rowSpan={xs.length} title={e.name}>
+                    <td className="name" rowSpan={xs.length}>
                       {e.name}
                     </td>
                   )}
