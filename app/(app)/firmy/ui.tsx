@@ -2,6 +2,7 @@
 import { useActionState } from "react";
 import { approveSignup, cancelInvoice, issueInvoices, markPaid, rejectSignup, resendInvite, saveSupplier, setExempt, type FirmState } from "./actions";
 import type { PlatformSettings } from "@/lib/billing";
+import { switchCompany } from "@/components/companyActions";
 
 export function DecideSignup({ id }: { id: string }) {
   const [a, approve, pa] = useActionState<FirmState, FormData>(approveSignup, {});
@@ -122,6 +123,17 @@ export function SupplierForm({ s }: { s: PlatformSettings }) {
       <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
         Tieto údaje sa zobrazujú v obchodných podmienkach na kdeje.app/podmienky a firmám pri platobných údajoch.
       </p>
+    </form>
+  );
+}
+
+/** Vstup superadmina do firmy (podpora, kontrola údajov). */
+export function EnterCompany({ id }: { id: string }) {
+  return (
+    <form action={() => switchCompany(id)} style={{ display: "inline" }}>
+      <button className="btn" style={{ height: 28, padding: "0 10px" }}>
+        Otvoriť
+      </button>
     </form>
   );
 }

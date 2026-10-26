@@ -52,6 +52,7 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     in_payroll: e?.in_payroll ?? true,
     is_admin: e?.role === "admin",
     is_manager: !!e?.is_manager,
+    is_external: !!e?.is_external,
     manages: isNew ? [] : assign.filter((a) => a.manager_id === id).map((a) => a.employee_id),
     managedBy: isNew
       ? []

@@ -91,7 +91,7 @@ async function decide(_prev: ActState, form: FormData, approve: boolean): Promis
     .from("requests")
     .update({
       status: approve ? "approved" : "rejected",
-      decided_by: me.id,
+      decided_by: me.id || null,
       decided_at: new Date().toISOString(),
       reject_reason: approve ? null : note || null,
     })

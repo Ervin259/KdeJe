@@ -20,6 +20,8 @@ export type EmpInit = {
   in_payroll: boolean;
   is_admin: boolean;
   is_manager: boolean;
+  /** správca firmy, ktorý nie je jej zamestnancom */
+  is_external: boolean;
   /** id ľudí, ktorých spravuje (ak je vedúci) */
   manages: string[];
   /** mená vedúcich, ktorí spravujú tohto zamestnanca */
@@ -219,6 +221,10 @@ export function EmpForm({
                   <span>Administrátor</span>
                 </label>
                 {init.id === meId && <input type="hidden" name="is_admin" value="on" />}
+                <label className="kchk" title="Napr. majiteľ alebo účtovník, ktorý firmu spravuje, ale nie je jej zamestnancom. Nie je v kalendári, prehľade, mzdách ani vo fakturácii.">
+                  <input type="checkbox" name="is_external" defaultChecked={init.is_external} />
+                  <span>Len správca – nie je zamestnancom firmy</span>
+                </label>
                 <label className="kchk" title="Spravuje vybraných zamestnancov">
                   <input type="checkbox" name="is_manager" checked={lead} onChange={(e) => setLead(e.target.checked)} />
                   <span>Vedúci</span>

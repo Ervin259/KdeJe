@@ -4,8 +4,8 @@ Evidencia neprítomností pre viac firiem – Next.js (Vercel) + Supabase. Prvý
 
 ## Roly
 
-- **Superadmin** (tabuľka `platform_admins`) – zakladá firmy (`create_company`), mení stav predplatného (`set_company_status`), štátne sviatky a moduly firiem.
-- **Admin firmy** – Nastavenia, Podklad pre mzdy, všetky záznamy vo firme.
+- **Superadmin** (tabuľka `platform_admins`, účet admin@sigmadigital.sk) – nie je zamestnancom žiadnej firmy; záložka Firmy, do firmy vstúpi tlačidlom Otvoriť alebo prepínačom v hlavičke. Zakladá firmy (`create_company`), mení stav predplatného (`set_company_status`), štátne sviatky a moduly firiem.
+- **Admin firmy** – Nastavenia, Podklad pre mzdy, všetky záznamy vo firme. Jeden účet môže byť adminom vo viacerých firmách (prepínač firiem v hlavičke, `user_active_company`); v cudzej firme ako „len správca“ (`is_external`) – nie je v kalendári, mzdách ani vo fakturácii.
 - **Vedúci** (`employees.is_manager` + `manager_assignments`) – Prehľad a Schvaľovanie pre svojich ľudí, zápis za nich do uzávierky.
 - **Zamestnanec** – vlastný kalendár a prehľad; bez e-mailu sa neprihlasuje a zapisuje za neho vedúci alebo admin.
 

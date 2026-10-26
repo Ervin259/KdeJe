@@ -66,7 +66,7 @@ export default async function EntryPage({
     }
   } else {
     const d = sp.d && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) ? sp.d : todayIso();
-    const empId = lead && sp.emp && emps.some((e) => e.id === sp.emp) && canManage(me, sp.emp) ? sp.emp : me.id;
+    const empId = lead && sp.emp && emps.some((e) => e.id === sp.emp) && canManage(me, sp.emp) ? sp.emp : me.id || emps.find((e) => e.active && !e.is_external)?.id || me.id;
     const sc = calc.sched(empId);
     init = {
       id: null,

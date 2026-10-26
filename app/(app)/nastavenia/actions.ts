@@ -244,7 +244,10 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     in_payroll: bool(f, "in_payroll"),
     role: bool(f, "is_admin") ? "admin" : "employee",
     is_manager: bool(f, "is_manager"),
+    is_external: bool(f, "is_external"),
   };
+  // správca, ktorý nie je zamestnancom: nie je v kalendári, prehľade ani v mzdách
+  if (row.is_external) Object.assign(row, { show_in_calendar: false, in_stats: false, in_payroll: false });
   const err: string[] = [];
   if (!row.name) err.push("Vyplňte meno a priezvisko.");
   if (row.date_from && row.date_to && row.date_from > row.date_to) err.push("Dátum „do“ je skôr ako „od“.");
