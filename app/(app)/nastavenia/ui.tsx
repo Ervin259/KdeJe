@@ -10,6 +10,7 @@ import {
   setManaged,
   setActive,
   saveCompany,
+  confirmContinue,
   setVacation,
   toggleType,
   inviteEmployees,
@@ -848,5 +849,26 @@ export function SetGroup({
       </div>
       {open && <div className="setgrpbody">{children}</div>}
     </section>
+  );
+}
+
+/** Potvrdenie pokračovania po skúšobnej dobe (prvá faktúra sa vystaví až po ňom). */
+export function ContinueBox({ until, price, over }: { until: string; price: string; over: boolean }) {
+  const [st, act, pending] = useActionState<SetState, FormData>(confirmContinue, {});
+  if (st.ok) return <div className="fmsg ok contbox">{st.ok}</div>;
+  return (
+    <form action={act} className={`contbox${over ? " over" : ""}`}>
+      <div>
+        <b>{over ? "Skúšobná doba skončila" : `Skúšobná doba končí ${until}`}</b>
+        <span className="muted">
+          Ak chcete KdeJe používať ďalej, potvrďte to. Potom vám pošleme faktúru na 12 mesiacov ({price}).{" "}
+          {over ? "Kým nepotvrdíte, aplikácia je len na čítanie." : "Ak nepotvrdíte, po skončení skúšobnej doby bude aplikácia len na čítanie."}
+        </span>
+      </div>
+      <button className="btn primary" disabled={pending}>
+        {pending ? "Potvrdzujem…" : "Pokračovať v používaní"}
+      </button>
+      {st.error && <span className="fmsg err">{st.error.join(" ")}</span>}
+    </form>
   );
 }

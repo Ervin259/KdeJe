@@ -28,6 +28,8 @@ export type Me = {
   companies: { id: string; name: string }[];
   /** false = superadmin bez vlastného záznamu zamestnanca */
   isEmployee: boolean;
+  /** skúšobná doba firmy (null = firma už platí alebo sa nefakturuje) */
+  trial: { until: string | null; confirmed: boolean } | null;
 };
 
 export type CalEntry = {
@@ -105,12 +107,20 @@ export const getMe = cache(async (): Promise<Me | null> => {
       readOnly: false,
       companies,
       isEmployee: false,
+      trial: null,
     };
   }
 
   const company = data.companies as unknown as { name: string } | null;
   const empView = data.role === "admin" && (await cookies()).get(VIEW_COOKIE)?.value === "emp";
-  const { data: writable } = await supabase.rpc("company_writable", { p_company: data.company_id });
+  const [{ data: writable }, { data: co }] = await Promise.all([
+    supabase.rpc("company_writable", { p_company: data.company_id }),
+    supabase.from("companies").select("status, trial_until, paid_until, billing_exempt, continue_confirmed_at").eq("id", data.company_id).maybeSingle(),
+  ]);
+  const trial =
+    co && co.status === "trial" && !co.paid_until && !co.billing_exempt
+      ? { until: (co.trial_until as string | null) ?? null, confirmed: !!co.continue_confirmed_at }
+      : null;
   let managed: string[] = [];
   if (data.is_manager && !empView) {
     const { data: rows } = await supabase.from("manager_assignments").select("employee_id").eq("manager_id", data.id);
@@ -131,6 +141,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
     readOnly: writable === false,
     companies,
     isEmployee: true,
+    trial,
   };
 });
 

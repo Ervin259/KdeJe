@@ -53,8 +53,16 @@ export async function Header({
 
   if (me.isPlatform) {
     const supabase = await createClient();
-    const { count } = await supabase.from("company_signups").select("id", { count: "exact", head: true }).eq("status", "pending");
-    tabs.push({ href: "/firmy", label: "Firmy", badge: count || undefined });
+    const [{ count }, { data: pc }, { data: inv }] = await Promise.all([
+      supabase.from("company_signups").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.rpc("platform_companies"),
+      supabase.from("invoices").select("company_id").neq("status", "cancelled"),
+    ]);
+    // firmy, ktoré potvrdili pokračovanie a ešte nemajú faktúru
+    const confirmed = ((pc ?? []) as { id: string; status: string; continue_confirmed_at: string | null; billing_exempt: boolean }[]).filter(
+      (c) => c.status === "trial" && c.continue_confirmed_at && !c.billing_exempt && !(inv ?? []).some((i) => i.company_id === c.id)
+    ).length;
+    tabs.push({ href: "/firmy", label: "Firmy", badge: (count ?? 0) + confirmed || undefined });
   }
 
   // firmy v prepínači: superadmin všetky, ostatní tie, kde majú účet
@@ -67,13 +75,32 @@ export async function Header({
 
   // upozornenie na neuhradenú faktúru (admin) alebo obmedzenie firmy (všetci)
   let notice: React.ReactNode = null;
-  if (me.readOnly) {
+  const today = new Date().toISOString().slice(0, 10);
+  const trialOver = !!me.trial && !me.trial.confirmed && !!me.trial.until && me.trial.until < today;
+  const plan = me.realRole === "admin" ? <a href="/nastavenia?open=plan">Pokračovať v používaní</a> : null;
+  if (me.readOnly && trialOver) {
+    notice = (
+      <div className="billnotice bad">
+        <b>Skúšobná doba skončila.</b> Aplikácia je len na čítanie.{" "}
+        {plan ? <>Ak chcete pokračovať, potvrďte to: {plan}</> : "Ak chcete pokračovať, obráťte sa na admina firmy."}
+      </div>
+    );
+  } else if (me.readOnly) {
     notice = (
       <div className="billnotice bad">
         <b>Aplikácia je len na čítanie.</b> Predplatné vašej firmy nie je uhradené. Údaje si môžete pozrieť aj exportovať, nové zápisy budú
         možné po úhrade{me.realRole === "admin" ? <> – <a href="/nastavenia?open=plan">platobné údaje</a></> : " – obráťte sa na admina firmy"}.
       </div>
     );
+  } else if (me.trial && !me.trial.confirmed && me.trial.until && me.realRole === "admin") {
+    // posledných 14 dní skúšobnej doby: výzva na potvrdenie
+    const days = Math.round((Date.parse(me.trial.until) - Date.parse(today)) / 864e5);
+    if (days <= 14)
+      notice = (
+        <div className="billnotice">
+          Skúšobná doba končí {Number(me.trial.until.slice(8))}. {Number(me.trial.until.slice(5, 7))}. {me.trial.until.slice(0, 4)}. {plan}
+        </div>
+      );
   } else if (me.realRole === "admin" && me.company_id) {
     const supabase = await createClient();
     const { data: inv } = await supabase.from("invoices").select("vs, amount, due_on").eq("company_id", me.company_id).eq("status", "issued").order("due_on").limit(1);

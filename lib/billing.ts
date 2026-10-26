@@ -95,6 +95,7 @@ export type BillingCompany = {
   billing_dic: string | null;
   billing_email: string | null;
   writable: boolean;
+  continue_confirmed_at: string | null;
 };
 
 // ---------- dátumy (YYYY-MM-DD) ----------
@@ -120,11 +121,15 @@ export function yearlyPrice(employees: number, s: PlatformSettings) {
   return { qty, amount: Math.round(qty * 12 * s.price_month * 100) / 100 };
 }
 
-/** Návrh ďalšej faktúry pre firmu (alebo null, ak ešte netreba fakturovať). Fakturuje sa 30 dní pred koncom obdobia. */
+/** Návrh ďalšej faktúry pre firmu (alebo null). Prvá faktúra po potvrdení pokračovania, obnova 30 dní pred koncom obdobia. */
 export function nextInvoice(c: BillingCompany, invoices: Invoice[], s: PlatformSettings, today: string) {
   if (c.billing_exempt || c.status === "suspended") return null;
   const end = c.paid_until ?? c.trial_until;
-  if (!end || end > addDays(today, 30)) return null;
+  if (!end) return null;
+  if (!c.paid_until && c.status === "trial") {
+    // prvá faktúra až po tom, čo admin firmy potvrdí pokračovanie po skúšobnej dobe
+    if (!c.continue_confirmed_at) return null;
+  } else if (end > addDays(today, 30)) return null; // obnova: 30 dní pred koncom zaplateného obdobia
   const covered = invoices.some((i) => i.company_id === c.id && i.status !== "cancelled" && i.period_to > end);
   if (covered) return null;
   const from = addDays(end, 1) > today ? addDays(end, 1) : today;

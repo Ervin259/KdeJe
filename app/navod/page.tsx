@@ -19,6 +19,7 @@ export default function GuidePage() {
             <a href="#veduci">Vedúci</a>
             <a href="#admin">Admin – prvé kroky</a>
             <a href="#mesiac">Koniec mesiaca</a>
+            <a href="#predplatne">Predplatné</a>
             <a href="#otazky">Časté otázky</a>
           </nav>
 
@@ -94,6 +95,20 @@ export default function GuidePage() {
               Kedykoľvek si môžete stiahnuť všetky dáta do CSV: Nastavenia → Firma → Údaje o firme → Export dát.
             </li>
           </ol>
+
+          <h2 id="predplatne">Skúšobná doba a predplatné</h2>
+          <ul>
+            <li>Prvé mesiace sú zdarma. Posledných 14 dní skúšobnej doby uvidí admin v hlavičke upozornenie.</li>
+            <li>
+              Ak chcete pokračovať, admin klikne na <b>„Pokračovať v používaní“</b> v Nastavenia → Firma → Predplatné. Potom príde faktúra na 12
+              mesiacov.
+            </li>
+            <li>Bez potvrdenia je aplikácia po skúšobnej dobe len na čítanie – nič neplatíte a údaje si môžete exportovať.</li>
+            <li>
+              Faktúry, platobné údaje a ročné vyrovnanie počtu užívateľov nájdete v Predplatnom. Podrobnosti sú v{" "}
+              <Link href="/podmienky">obchodných podmienkach</Link>.
+            </li>
+          </ul>
 
           <h2 id="otazky">Časté otázky</h2>
           <dl className="doc-faq">

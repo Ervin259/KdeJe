@@ -67,8 +67,19 @@ export default async function TermsPage() {
               Skúšobné obdobie trvá <b>{months(s.trial_months)}</b> odo dňa zriadenia. Počas neho je služba bezplatná a v plnom rozsahu, bez
               obmedzenia počtu užívateľov.
             </li>
-            <li>Najneskôr 30 dní pred koncom skúšobného obdobia dostane zákazník faktúru na nasledujúcich 12 mesiacov.</li>
-            <li>Ak zákazník nechce pokračovať, stačí to oznámiť e-mailom alebo faktúru neuhradiť. Žiadne poplatky ani sankcie nevznikajú.</li>
+            <li>
+              Počas skúšobného obdobia nič neplatíte a nedostanete žiadnu faktúru. Posledných 14 dní vás aplikácia upozorní, kedy skúšobné obdobie
+              končí.
+            </li>
+            <li>
+              Ak chcete pokračovať, admin to <b>potvrdí v aplikácii</b> (Nastavenia → Firma → Predplatné → „Pokračovať v používaní“). Až potom
+              vystavíme prvú faktúru na nasledujúcich 12 mesiacov.
+            </li>
+            <li>
+              Ak pokračovanie nepotvrdíte, po skončení skúšobného obdobia prejde aplikácia do režimu len na čítanie – bez faktúry a bez akýchkoľvek
+              poplatkov. Údaje si môžete exportovať. Ak ani do {s.delete_after_days} dní nepotvrdíte pokračovanie, údaje môžeme vymazať; najmenej 14
+              dní predtým vás upozorníme e-mailom.
+            </li>
           </ul>
 
           <h2 id="cena">4. Cena</h2>
@@ -96,7 +107,7 @@ export default async function TermsPage() {
           <ul>
             <li>
               Služba sa fakturuje <b>raz ročne vopred</b>, vždy na 12 mesiacov, podľa počtu aktívnych užívateľov v deň vystavenia faktúry (najmenej{" "}
-              {s.min_employees}). Prvá faktúra prichádza najneskôr 30 dní pred koncom skúšobného obdobia.
+              {s.min_employees}). Prvú faktúru vystavíme po potvrdení pokračovania, ďalšie vždy najneskôr 30 dní pred koncom zaplateného obdobia.
             </li>
             <li>
               <b>Ročné vyrovnanie.</b> Pri ďalšej ročnej faktúre porovnáme, za koľko užívateľov ste zaplatili a koľko ste ich v jednotlivých

@@ -367,3 +367,14 @@ export async function inviteEmployees(_p: InviteState, f: FormData): Promise<Inv
   revalidatePath("/nastavenia");
   return { sent, failed };
 }
+
+/** Admin firmy potvrdí, že chce po skúšobnej dobe pokračovať – až potom sa vystaví prvá faktúra. */
+export async function confirmContinue(_p: SetState, _f: FormData): Promise<SetState> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("confirm_continue");
+  if (error) return { error: [error.message] };
+  await audit("Potvrdené pokračovanie po skúšobnej dobe");
+  done();
+  return { ok: "Ďakujeme! Faktúru pošleme e-mailom a nájdete ju aj tu v Predplatnom." };
+}

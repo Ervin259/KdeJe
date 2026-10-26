@@ -85,4 +85,56 @@ $$;
 revoke execute on function billing_settlement_units(uuid,date,date,int,int) from public, anon;
 grant execute on function billing_settlement_units(uuid,date,date,int,int) to authenticated;
 
+-- 4) Pokračovanie po skúšobnej dobe: admin firmy ho potvrdí, až potom sa vystaví prvá faktúra.
+--    Bez potvrdenia je firma po skončení skúšobnej doby len na čítanie (bez faktúry).
+alter table companies add column if not exists continue_confirmed_at timestamptz;
+alter table companies add column if not exists continue_confirmed_by uuid;
+
+create or replace function confirm_continue() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'Len pre admina firmy'; end if;
+  update companies set continue_confirmed_at = now(), continue_confirmed_by = auth.uid()
+  where id = current_company_id() and continue_confirmed_at is null;
+end $$;
+revoke execute on function confirm_continue() from public, anon;
+grant execute on function confirm_continue() to authenticated;
+
+create or replace function company_writable(p_company uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select is_platform_admin() or (
+    coalesce((select status <> 'suspended'
+                     -- skončená skúšobná doba bez potvrdenia pokračovania
+                     and not (status = 'trial' and not billing_exempt and trial_until < current_date
+                              and continue_confirmed_at is null)
+              from companies where id = p_company), true)
+    and not exists (
+      select 1 from invoices i, platform_settings s
+      where i.company_id = p_company and i.status = 'issued'
+        and i.due_on + s.grace_days < current_date
+    )
+  )
+$$;
+
+drop function if exists platform_companies();
+create or replace function platform_companies()
+returns table (id uuid, name text, ico text, status text, trial_until date, paid_until date, billing_exempt boolean,
+               created_at timestamptz, employees bigint, admins text,
+               billing_name text, billing_street text, billing_city text, billing_zip text, billing_dic text, billing_email text,
+               writable boolean, continue_confirmed_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select c.id, c.name, c.ico, c.status, c.trial_until, c.paid_until, c.billing_exempt, c.created_at,
+         (select count(*) from employees e where e.company_id = c.id and e.active and not e.is_external),
+         (select string_agg(e.name || coalesce(' <' || e.email || '>', ''), ', ' order by e.name)
+            from employees e where e.company_id = c.id and e.role = 'admin' and e.active),
+         c.billing_name, c.billing_street, c.billing_city, c.billing_zip, c.billing_dic, c.billing_email,
+         company_writable(c.id) and c.status <> 'suspended',
+         c.continue_confirmed_at
+  from companies c
+  where is_platform_admin()
+  order by c.created_at
+$$;
+revoke execute on function platform_companies() from public, anon;
+grant execute on function platform_companies() to authenticated;
+
 commit;

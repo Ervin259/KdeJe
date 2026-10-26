@@ -144,7 +144,14 @@ export default async function CompaniesPage() {
                         <td>
                           <span className={`pill ${cls}`}>{lbl}</span>
                         </td>
-                        <td className="num">{fd(c.trial_until)}</td>
+                        <td className="num">
+                          {fd(c.trial_until)}
+                          {c.status === "trial" && !c.billing_exempt && (
+                            <div className="muted" style={{ fontSize: 11.5 }}>
+                              {c.continue_confirmed_at ? `pokračuje (${fd(c.continue_confirmed_at.slice(0, 10))})` : "nepotvrdené"}
+                            </div>
+                          )}
+                        </td>
                         <td className="num">{fd(c.paid_until)}</td>
                         <td className="r">{c.employees}</td>
                         <td className="r">{c.billing_exempt ? "—" : eur(yearlyPrice(Number(c.employees), ps).amount)}</td>
@@ -256,7 +263,10 @@ export default async function CompaniesPage() {
                 </table>
               </div>
             ) : (
-              <div className="empty-note">Zatiaľ žiadne faktúry. Faktúry sa navrhnú 30 dní pred koncom skúšobnej doby.</div>
+              <div className="empty-note">
+                Zatiaľ žiadne faktúry. Prvá faktúra sa navrhne, keď firma potvrdí pokračovanie po skúšobnej dobe; obnova 30 dní pred koncom
+                zaplateného obdobia.
+              </div>
             )}
           </div>
 

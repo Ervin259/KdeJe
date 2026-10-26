@@ -218,3 +218,6 @@ a.namebtn:hover { color: var(--accent); }
 .actchk.on span { color: var(--dov); }
 .actchk:has(input:disabled) { cursor: default; opacity: .8; }
 .actchk:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.contbox { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.contbox > div { display: grid; gap: 3px; flex: 1; min-width: 260px; }
+.contbox.over { border-color: var(--bad); background: var(--bad-soft); }
