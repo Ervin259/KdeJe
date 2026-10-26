@@ -17,6 +17,7 @@ export type PlatformSettings = {
   grace_days: number;
   delete_after_days: number;
   vat_payer: boolean;
+  notify_email: string | null;
 };
 
 export const DEFAULT_SETTINGS: PlatformSettings = {
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: PlatformSettings = {
   grace_days: 14,
   delete_after_days: 90,
   vat_payer: false,
+  notify_email: "admin@sigmadigital.sk",
 };
 
 export async function loadPlatformSettings(): Promise<PlatformSettings> {
@@ -96,6 +98,8 @@ export type BillingCompany = {
   billing_email: string | null;
   writable: boolean;
   continue_confirmed_at: string | null;
+  billing_icdph: string | null;
+  billing_phone: string | null;
 };
 
 // ---------- dátumy (YYYY-MM-DD) ----------
@@ -174,7 +178,9 @@ export function pohodaXml(invoices: Invoice[], companies: BillingCompany[], s: P
             <typ:street>${x(c?.billing_street)}</typ:street>
             <typ:zip>${x(c?.billing_zip)}</typ:zip>
             <typ:ico>${x(c?.ico)}</typ:ico>
-            <typ:dic>${x(c?.billing_dic)}</typ:dic>
+            <typ:dic>${x(c?.billing_dic)}</typ:dic>${c?.billing_icdph ? `
+            <typ:icDph>${x(c.billing_icdph)}</typ:icDph>` : ""}${c?.billing_phone ? `
+            <typ:phone>${x(c.billing_phone)}</typ:phone>` : ""}
             <typ:email>${x(c?.billing_email)}</typ:email>
           </typ:address>
         </inv:partnerIdentity>

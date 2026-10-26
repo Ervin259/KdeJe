@@ -88,6 +88,7 @@ export async function saveSupplier(_p: FirmState, f: FormData): Promise<FirmStat
     supplier_email: txt(f, "supplier_email"),
     supplier_phone: txt(f, "supplier_phone"),
     iban: txt(f, "iban")?.replace(/\s+/g, " ").toUpperCase() ?? null,
+    notify_email: txt(f, "notify_email")?.toLowerCase() ?? null,
     price_month: num(f, "price_month", 1),
     min_employees: Math.max(0, Math.round(num(f, "min_employees", 5))),
     trial_months: Math.max(0, Math.round(num(f, "trial_months", 12))),
