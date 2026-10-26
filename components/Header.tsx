@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Me } from "@/lib/data";
 import { pendingRequestsCount } from "@/lib/loaders";
 import { createClient } from "@/lib/supabase/server";
@@ -92,11 +93,11 @@ export async function Header({
     <div className="stickyhead" id="stickyhead">
       {notice}
       <header className="top headrow">
-        <div className="brand">
+        <Link href="/kalendar" className="brand brandlink" title="Kalendár">
           <h1>
             Kde<b>Je</b>
           </h1>
-        </div>
+        </Link>
         <span className="firm">
           {me.isPlatform || me.companies.length > 1 ? (
             <CompanySwitch current={me.company_id} options={switchOptions} platform={me.isPlatform} />

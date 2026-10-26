@@ -208,3 +208,4 @@ a.namebtn:hover { color: var(--accent); }
   background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
 .firmswitch:hover { border-color: rgba(255,255,255,.45); }
 .firmswitch option { color: #161D2B; background: #fff; }
+.brandlink { text-decoration: none; color: inherit; }
