@@ -24,7 +24,7 @@ import { Header } from "./Header";
 import { StatusPill, Legend } from "./ui";
 import { CalClick } from "./CalClick";
 import { ConfirmMonthButton, loadConfirmations } from "./ConfirmMonth";
-import { applyFilter, getFilter, groupOf, sortGrouped } from "@/lib/filters";
+import { applyFilter, getFilter, sortGrouped } from "@/lib/filters";
 import { MonthPicker } from "./MonthPicker";
 
 export type View = "day" | "week" | "month";
@@ -121,7 +121,7 @@ export async function Calendar({
           (e.id === me.id && me.isEmployee) ||
           (e.show_in_calendar && e.active && entries.some((x) => x.employee_id === e.id))
       );
-  // výber prevádzky / oddelenia v hlavičke a zoskupenie (vlastný riadok ostáva vždy prvý)
+  // výber prevádzky / oddelenia v hlavičke; zoradenie podľa prevádzky, oddelenia, pomeru a priezviska (vlastný riadok prvý)
   const flt = onlyMe ? null : await getFilter();
   if (flt) {
     const mine = rows.filter((e) => e.id === me.id);
@@ -170,10 +170,10 @@ export async function Calendar({
 
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
   // v riadku prihláseného za menom
-  // admin odsúhlasuje aj za ostatných TPP
+  // odsúhlasenie: všetci okrem dohodárov; admin aj za ostatných
   const confIds =
     view === "month"
-      ? rows.filter((e) => e.contract_type === "TPP" && (admin || (e.id === me.id && me.isEmployee))).map((e) => e.id)
+      ? rows.filter((e) => e.contract_type !== "DOH" && (admin || (e.id === me.id && me.isEmployee))).map((e) => e.id)
       : [];
   const conf = await loadConfirmations(y, m, confIds);
   const rowExtra = (e: { id: string; name: string }) =>
@@ -210,7 +210,6 @@ export async function Calendar({
                 wide={view === "week"}
                 rows={rows}
                 rowExtra={rowExtra}
-                groupLabel={flt && flt.group !== "none" ? (e) => groupOf(e, flt.group) || "Nezaradení" : undefined}
                 {...ctx}
               />
             )}

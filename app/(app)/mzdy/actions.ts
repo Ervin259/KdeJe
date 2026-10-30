@@ -24,14 +24,17 @@ export async function confirmFor(form: FormData) {
   revalidatePath("/mzdy");
 }
 
-/** Odsúhlasiť všetkým zvyšným TPP. */
+/** Odsúhlasiť všetkým zvyšným (okrem dohodárov). */
 export async function confirmAll(form: FormData) {
   await requireAdmin();
   const y = num(form, "y");
   const m = num(form, "m");
   const supabase = await createClient();
   const { groups } = await buildPayroll(y, m);
-  const rows = (groups.TPP ?? []).filter((r) => !r.conf).map((r) => ({ employee_id: r.e.id, year: y, month: m }));
+  const rows = Object.entries(groups)
+    .filter(([g]) => g !== "DOH")
+    .flatMap(([, r]) => r)
+    .filter((r) => !r.conf).map((r) => ({ employee_id: r.e.id, year: y, month: m }));
   if (rows.length) await supabase.from("month_confirmations").insert(rows);
   revalidatePath("/mzdy");
 }

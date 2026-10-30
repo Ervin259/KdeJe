@@ -1,10 +1,9 @@
 import { cookies } from "next/headers";
 import { byLastName } from "@/lib/calc";
 
-/** Výber zamestnancov v hlavičke: prevádzka, oddelenie a zoskupenie (pamätá sa v cookies). */
+/** Výber zamestnancov v hlavičke: prevádzka a oddelenie (pamätá sa v cookies). Zoradenie je pevné. */
 export const F_SITE = "kj_site";
 export const F_DEPT = "kj_dept";
-export const F_GROUP = "kj_group";
 
 export type GroupBy = "site" | "department" | "contract_type" | "none";
 export const GROUP_LABEL: Record<GroupBy, string> = {
@@ -21,11 +20,10 @@ export type Filter = { site: string; dept: string; group: GroupBy };
 
 export async function getFilter(): Promise<Filter> {
   const c = await cookies();
-  const g = c.get(F_GROUP)?.value as GroupBy | undefined;
   return {
     site: c.get(F_SITE)?.value ?? "",
     dept: c.get(F_DEPT)?.value ?? "",
-    group: g && g in GROUP_LABEL ? g : "site",
+    group: "site",
   };
 }
 
