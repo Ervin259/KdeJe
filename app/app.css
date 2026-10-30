@@ -295,12 +295,17 @@ a.namebtn:hover { color: var(--accent); }
 .okc2.unlock:hover, .okc2.unlock:focus-visible { background: #FBE3E3; padding: 0 9px 0 6px; outline: none; }
 .okc2.unlock:hover .t, .okc2.unlock:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }
 
-/* čakajúce žiadosti v kalendári: šrafovanie vo farbe žiadosti s plným rámikom (zápis zelený, vymazanie červený + prečiarknuté) */
-.cell > span.f.pend-new, .dpill.pend-new { background: repeating-linear-gradient(135deg, #CDEFD9 0 4px, #fff 4px 8px) !important; outline: 2px solid #1E9E4F; outline-offset: -2px; border-color: transparent !important; color: #14713A !important; cursor: help; }
-.cell > span.f.pend-delete, .dpill.pend-delete { background: repeating-linear-gradient(135deg, #F9D3D3 0 4px, #fff 4px 8px) !important; outline: 2px solid #D63B3B; outline-offset: -2px; border-color: transparent !important; color: #A82828 !important; text-decoration: line-through; text-decoration-thickness: 1.5px; }
-.cell > span.f.pend-edit, .dpill.pend-edit { background: repeating-linear-gradient(135deg, #FDE7C2 0 4px, #fff 4px 8px) !important; outline: 2px solid #D98A00; outline-offset: -2px; border-color: transparent !important; color: #8A5800 !important; }
+/* čakajúce žiadosti v kalendári: záznam vo svojom bežnom vzhľade + guľôčka s hodinkami v rohu
+   (zelená = žiadosť o zápis, červená = o vymazanie, oranžová = o zmenu) */
+.cell > span.f:is(.pend-new, .pend-delete, .pend-edit), .dpill:is(.pend-new, .pend-delete, .pend-edit) { position: relative; overflow: visible !important; }
+.cell > span.f.q:is(.pend-new, .pend-delete, .pend-edit) { position: absolute; }
+.cell > span.f.pend-new { cursor: help; }
+:is(.cell > span.f, .dpill, .pendlegend .smp):is(.pend-new, .pend-delete, .pend-edit)::before {
+  content: ""; position: absolute; top: -4px; right: -4px; width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid #fff; box-sizing: border-box; background: #1E9E4F url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='5.5' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M8 5v3.3l2 1.4' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / 9px no-repeat; z-index: 3;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+:is(.cell > span.f, .dpill, .pendlegend .smp).pend-delete::before { background-color: #D63B3B; }
+:is(.cell > span.f, .dpill, .pendlegend .smp).pend-edit::before { background-color: #D98A00; }
 .pendlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: -4px; }
-.pendlegend .smp { display: inline-block; width: 22px; height: 14px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; outline-offset: -2px; }
-.pendlegend .smp.pend-new { background: repeating-linear-gradient(135deg, #CDEFD9 0 4px, #fff 4px 8px); outline: 2px solid #1E9E4F; }
-.pendlegend .smp.pend-delete { background: repeating-linear-gradient(135deg, #F9D3D3 0 4px, #fff 4px 8px); outline: 2px solid #D63B3B; }
-.pendlegend .smp.pend-edit { background: repeating-linear-gradient(135deg, #FDE7C2 0 4px, #fff 4px 8px); outline: 2px solid #D98A00; }
+.pendlegend .smp { position: relative; display: inline-block; width: 14px; height: 14px; vertical-align: -3px; margin-right: 10px; }
+.pendlegend .smp::before { top: 0; right: 0; width: 14px; height: 14px; }
