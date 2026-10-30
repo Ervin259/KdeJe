@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import Link from "next/link";
 import { deleteEntry, saveEntry, type FormState } from "./actions";
 
@@ -59,7 +59,16 @@ export function EntryForm({
   const reasonMsg = state.reasonMsg || dstate.reasonMsg;
 
   return (
-    <form action={save} className="fform">
+    <form
+      className="fform"
+      onSubmit={(e) => {
+        // odoslanie bez automatického vynulovania formulára (inak by sa po výzve na dôvod vrátil typ a dátumy na pôvodné)
+        e.preventDefault();
+        const sub = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+        const fd = new FormData(e.currentTarget, sub);
+        startTransition(() => (sub?.dataset.act === "del" ? del(fd) : save(fd)));
+      }}
+    >
       <input type="hidden" name="spat" value={back} />
       {init.id && <input type="hidden" name="id" value={init.id} />}
 
@@ -171,7 +180,7 @@ export function EntryForm({
         {init.id && (
           <button
             className="btn danger"
-            formAction={del}
+            data-act="del"
             formNoValidate
             disabled={deleting}
             onClick={(e) => {

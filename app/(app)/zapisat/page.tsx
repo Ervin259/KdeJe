@@ -80,6 +80,11 @@ export default async function EntryPage({
       substitute_id: "",
       note: "",
     };
+    // vlastný zápis do zamknutého / odsúhlaseného obdobia: rovno ako žiadosť (s dôvodom)
+    if (!admin && empId === me.id) {
+      const { data: can } = await supabase.rpc("employee_can_write", { p_emp: empId, p_from: d, p_to: d, p_change: false });
+      locked = can === false;
+    }
   }
 
   const active = emps.filter((e) => e.active && !e.is_external).sort(byLastName);
