@@ -24,6 +24,9 @@ export type EmpFull = Emp & {
   is_manager: boolean;
   /** správca firmy, ktorý nie je jej zamestnancom */
   is_external: boolean;
+  /** prevádzka a oddelenie (výber a zoskupenie v hlavičke) */
+  site: string | null;
+  department: string | null;
 };
 
 /** Spoločné dáta firmy (raz za request). */
@@ -35,7 +38,7 @@ export const loadCompany = cache(async () => {
     supabase
       .from("employees")
       .select(
-        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager, is_external"
+        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager, is_external, site, department"
       ),
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),

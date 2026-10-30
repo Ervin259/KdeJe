@@ -263,3 +263,16 @@ a.namebtn:hover { color: var(--accent); }
 }
 .editpill { display: inline-block; margin-left: 6px; font-size: 11.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); text-decoration: none; vertical-align: 1px; }
 .editpill:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+
+/* ---------- hlavička: firma vľavo, vedľa nej výber prevádzky / oddelenia / zoskupenia ---------- */
+.headrow { grid-template-columns: auto minmax(0, 1fr) auto !important; column-gap: 22px !important; }
+.headrow .firm { display: flex !important; align-items: center; gap: 8px; flex-wrap: nowrap; justify-self: start; text-align: left !important; min-width: 0; }
+.orgfilter { display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.headrow .firm select { width: auto; display: inline-block; flex: 0 1 auto; min-width: 0; }
+.firmswitch.fsel { font-weight: 500; font-size: 14px; padding: 5px 28px 5px 10px; max-width: 220px; }
+.firmswitch.fsel.on { border-color: #8FA8FF; background-color: rgba(143,168,255,.16); }
+.firmswitch:disabled { opacity: .6; cursor: progress; }
+
+/* skupiny zamestnancov v kalendári */
+.cal tr.grp td { padding: 10px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg, #F5F7FB); border-bottom: 1px solid var(--line); }
+.cal tr.grp td.name { position: sticky; left: 0; z-index: 2; }

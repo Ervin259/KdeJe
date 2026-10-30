@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Me } from "@/lib/data";
@@ -22,13 +23,15 @@ import {
 import { Header } from "./Header";
 import { StatusPill, Legend } from "./ui";
 import { CalClick } from "./CalClick";
-import { ConfirmMonthButton } from "./ConfirmMonth";
+import { ConfirmMonthButton, loadConfirmations } from "./ConfirmMonth";
+import { applyFilter, getFilter, groupOf, sortGrouped } from "@/lib/filters";
 import { MonthPicker } from "./MonthPicker";
 
 export type View = "day" | "week" | "month";
 const WDL = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
 
 type CalEntry = Entry & { employee_name?: string };
+type GridRow = { id: string; name: string; site?: string | null; department?: string | null; contract_type?: string };
 
 const mondayOf = (s: string) => plus(s, -((dow(s) + 6) % 7));
 function isoWeek(s: string) {
@@ -118,7 +121,12 @@ export async function Calendar({
           (e.id === me.id && me.isEmployee) ||
           (e.show_in_calendar && e.active && entries.some((x) => x.employee_id === e.id))
       );
-  rows = rows.sort(byLastName).sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id));
+  // výber prevádzky / oddelenia v hlavičke a zoskupenie (vlastný riadok ostáva vždy prvý)
+  const flt = onlyMe ? null : await getFilter();
+  if (flt) {
+    const mine = rows.filter((e) => e.id === me.id);
+    rows = [...mine, ...sortGrouped(applyFilter(rows.filter((e) => e.id !== me.id), flt), flt.group)];
+  } else rows = rows.sort(byLastName);
 
   const st = mstatus(y, m);
   const q = (v: View, d: string) => `${basePath}?v=${v}&d=${d}`;
@@ -162,10 +170,25 @@ export async function Calendar({
 
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
   // v riadku prihláseného za menom
-  const meExtra =
-    view === "month" && me.isEmployee && me.contract_type === "TPP" ? (
+  // admin odsúhlasuje aj za ostatných TPP
+  const confIds =
+    view === "month"
+      ? rows.filter((e) => e.contract_type === "TPP" && (admin || (e.id === me.id && me.isEmployee))).map((e) => e.id)
+      : [];
+  const conf = await loadConfirmations(y, m, confIds);
+  const rowExtra = (e: { id: string; name: string }) =>
+    confIds.includes(e.id) ? (
       <span className="mebtns">
-        <ConfirmMonthButton y={y} m={m} last={st.last} today={calc.today} empId={me.id} short />
+        <ConfirmMonthButton
+          y={y}
+          m={m}
+          last={st.last}
+          today={calc.today}
+          empId={e.id}
+          confirmedAt={conf.get(e.id)}
+          forName={e.id === me.id ? undefined : e.name}
+          short
+        />
       </span>
     ) : null;
 
@@ -175,14 +198,21 @@ export async function Calendar({
 
   return (
     <>
-      <Header me={me} center={center} right={right} />
+      <Header me={me} center={center} right={right} org={!onlyMe} />
       <main id="view">
         <div className="panel">
           <CalClick back={back}>
             {view === "day" ? (
               <DayTable d={anchor} rows={rows} {...ctx} onlyMe={onlyMe} emps={emps} />
             ) : (
-              <Grid days={days} wide={view === "week"} rows={rows} meExtra={meExtra} {...ctx} />
+              <Grid
+                days={days}
+                wide={view === "week"}
+                rows={rows}
+                rowExtra={rowExtra}
+                groupLabel={flt && flt.group !== "none" ? (e) => groupOf(e, flt.group) || "Nezaradení" : undefined}
+                {...ctx}
+              />
             )}
           </CalClick>
           <Legend types={types} />
@@ -300,9 +330,17 @@ function Grid({
   days,
   wide,
   rows,
-  meExtra,
+  rowExtra,
+  groupLabel,
   ...ctx
-}: { days: string[]; wide: boolean; rows: { id: string; name: string }[]; meExtra?: React.ReactNode } & Ctx) {
+}: {
+  days: string[];
+  wide: boolean;
+  rows: GridRow[];
+  rowExtra?: (e: GridRow) => React.ReactNode;
+  /** názov skupiny riadku (zoskupenie podľa prevádzky, oddelenia…) */
+  groupLabel?: (e: GridRow) => string;
+} & Ctx) {
   const { calc, admin, meId, managed } = ctx;
   return (
     <div className="gridwrap">
@@ -343,16 +381,28 @@ function Grid({
               </td>
             </tr>
           )}
-          {rows.map((e) => {
+          {rows.map((e, i) => {
             const mine = e.id === meId;
             const can = admin || e.id === meId || managed.has(e.id);
+            const extra = rowExtra?.(e);
+            // nadpis skupiny pred prvým riadkom skupiny (vlastný riadok hore sa nezoskupuje)
+            const g = groupLabel && !mine ? groupLabel(e) : null;
+            const prev = i > 0 && rows[i - 1].id !== meId ? rows[i - 1] : null;
+            const head = g !== null && (!prev || groupLabel!(prev) !== g);
             return (
-              <tr key={e.id} className={mine ? "me" : undefined}>
+              <Fragment key={e.id}>
+              {head && (
+                <tr className="grp">
+                  <td className="name">{g}</td>
+                  <td colSpan={days.length} />
+                </tr>
+              )}
+              <tr className={mine ? "me" : undefined}>
                 <td className="name">
-                  {e.id === meId && meExtra ? (
+                  {extra ? (
                     <div className="mename">
                       <span>{e.name}</span>
-                      {meExtra}
+                      {extra}
                     </div>
                   ) : (
                     e.name
@@ -372,6 +422,7 @@ function Grid({
                   );
                 })}
               </tr>
+              </Fragment>
             );
           })}
         </tbody>

@@ -23,6 +23,19 @@ export async function switchCompany(companyId: string) {
       .maybeSingle();
     if (emp?.is_external) (await cookies()).delete(VIEW_COOKIE);
   }
+  // prevádzky a oddelenia sú v každej firme iné
+  const c = await cookies();
+  c.delete("kj_site");
+  c.delete("kj_dept");
   revalidatePath("/", "layout");
   redirect(companyId ? "/kalendar" : "/firmy");
+}
+
+/** Výber prevádzky, oddelenia a zoskupenia v hlavičke (pamätá sa na rok). */
+export async function setOrgFilter(key: "kj_site" | "kj_dept" | "kj_group", value: string) {
+  if (!["kj_site", "kj_dept", "kj_group"].includes(key)) return;
+  const c = await cookies();
+  if (value) c.set(key, value.slice(0, 80), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  else c.delete(key);
+  revalidatePath("/", "layout");
 }

@@ -254,3 +254,7 @@ export const TYPE_NAME: Record<string, string> = {
 
 export const partTxt = (x: Pick<Entry, "part" | "time_from" | "time_to">) =>
   x.part === "hrs" ? `${hhmm(x.time_from)}–${hhmm(x.time_to)}` : x.part === "am" ? "dopoludnie" : x.part === "pm" ? "popoludnie" : "celý deň";
+
+/** Odsúhlasiť dochádzku za mesiac sa dá už 3 dni pred jeho koncom (last = posledný deň mesiaca). */
+export const CONFIRM_DAYS_BEFORE = 3;
+export const confirmOpen = (today: string, last: string) => today >= plus(last, -CONFIRM_DAYS_BEFORE);
