@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data";
-import { CONFIRM_DAYS_BEFORE, MN, confirmOpen, fd, plus } from "@/lib/calc";
+import { CONFIRM_DAYS_BEFORE, MN, MNC, confirmOpen, fd, plus } from "@/lib/calc";
 
 async function confirmMonth(form: FormData) {
   "use server";
@@ -114,11 +114,7 @@ export function ConfirmMonthButton({
       <input type="hidden" name="m" value={m} />
       <button
         className="okc2 todo"
-        title={
-          forName
-            ? `Odsúhlasíš dochádzku za ${MN[m - 1]} za: ${forName}. Záznamy sa potom uzamknú.`
-            : `Potvrdíš, že tvoje záznamy za ${MN[m - 1]} sú úplné. Potom sa uzamknú.`
-        }
+        title={`Odsúhlasenie dochádzky za ${MNC[m - 1]}. Záznamy sa po odsúhlasení uzamknú.`}
       >
         <CheckIcon />
         <span className="t">Odsúhlasiť</span>
