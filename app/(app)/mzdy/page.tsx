@@ -26,7 +26,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const selPP = sp.pp ? sp.pp.split(",").filter((g) => avail.includes(g)) : avail;
   const show = selPP.length ? selPP : avail.slice(0, 1);
 
-  const tpp = groups.TPP ?? [];
+  // odsúhlasujú všetci okrem dohodárov
+  const tpp = Object.entries(groups).filter(([g]) => g !== "DOH").flatMap(([, r]) => r);
   const confN = tpp.filter((r) => r.conf).length;
   const left = tpp.length - confN;
   const hidden = (k: string, v: string | number) => <input type="hidden" name={k} value={v} />;
@@ -140,7 +141,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                             )}
                             <td className="c hcol">{r.sl !== null ? <b className="num">{r.sl}</b> : <span className="muted">–</span>}</td>
                             <td className="c okc">
-                              {r.e.contract_type !== "TPP" ? (
+                              {r.e.contract_type === "DOH" ? (
                                 <span className="muted">–</span>
                               ) : r.conf ? (
                                 <span className="okdot yes" title={`Odsúhlasené ${fd(r.conf.at)}`}>

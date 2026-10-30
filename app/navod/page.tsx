@@ -46,7 +46,7 @@ export default function GuidePage() {
               <b>Môj prehľad</b> ukazuje nárok na dovolenku, čerpanie, zostatok a koľko treba dočerpať do konca roka, aj návštevy lekára a OČR.
             </li>
             <li>
-              <b>Odsúhlasenie mesiaca</b> (zamestnanci na TPP): v posledných dňoch mesiaca (od 3 dní pred jeho koncom) kliknite v kalendári na „Odsúhlasiť“. Potvrdíte tým, že
+              <b>Odsúhlasenie mesiaca</b> (všetci okrem dohodárov): v posledných dňoch mesiaca (od 3 dní pred jeho koncom) kliknite v kalendári na „Odsúhlasiť“. Potvrdíte tým, že
               záznamy sedia.
             </li>
           </ul>

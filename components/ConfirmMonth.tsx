@@ -26,7 +26,7 @@ export async function loadConfirmations(y: number, m: number, ids: string[]) {
 }
 
 /**
- * Tlačidlo „Odsúhlasiť“ v mesačnom náhľade (TPP). Zamestnanec za seba, admin za kohokoľvek.
+ * Tlačidlo „Odsúhlasiť“ v mesačnom náhľade (všetci okrem dohodárov). Zamestnanec za seba, admin za kohokoľvek.
  * Aktívne od 3 dní pred koncom mesiaca.
  */
 export function ConfirmMonthButton({

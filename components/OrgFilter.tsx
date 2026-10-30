@@ -2,23 +2,19 @@
 import { useTransition } from "react";
 import { setOrgFilter } from "./companyActions";
 
-type Key = "kj_site" | "kj_dept" | "kj_group";
+type Key = "kj_site" | "kj_dept";
 
-/** Výber prevádzky, oddelenia a zoskupenia zamestnancov v hlavičke. */
+/** Výber prevádzky a oddelenia v hlavičke. */
 export function OrgFilter({
   sites,
   depts,
   site,
   dept,
-  group,
-  groups,
 }: {
   sites: string[];
   depts: string[];
   site: string;
   dept: string;
-  group: string;
-  groups: [string, string][];
 }) {
   const [pending, start] = useTransition();
   const set = (k: Key) => (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -47,13 +43,6 @@ export function OrgFilter({
           ))}
         </select>
       )}
-      <select className="firmswitch fsel" value={group} disabled={pending} onChange={set("kj_group")} aria-label="Zoskupiť podľa" title="Zoskupiť zamestnancov podľa">
-        {groups.map(([k, l]) => (
-          <option key={k} value={k}>
-            {k === "none" ? l : `Zoskupiť: ${l}`}
-          </option>
-        ))}
-      </select>
     </span>
   );
 }

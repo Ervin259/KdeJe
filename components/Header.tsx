@@ -8,7 +8,7 @@ import { ViewToggle } from "./ViewToggle";
 import { CompanySwitch } from "./CompanySwitch";
 import { OrgFilter } from "./OrgFilter";
 import { loadCompany } from "@/lib/loaders";
-import { GROUP_LABEL, distinctOf, getFilter } from "@/lib/filters";
+import { distinctOf, getFilter } from "@/lib/filters";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -29,7 +29,7 @@ export async function Header({
   stack?: boolean;
   /** tlačidlá za menom prihláseného (napr. Odsúhlasiť mesiac) */
   userExtra?: React.ReactNode;
-  /** výber prevádzky / oddelenia / zoskupenia (stránky so zoznamom ľudí) */
+  /** výber prevádzky a oddelenia (stránky so zoznamom ľudí) */
   org?: boolean;
 }) {
   const tabs: Tab[] = [];
@@ -137,8 +137,6 @@ export async function Header({
           depts={depts}
           site={f.site}
           dept={f.dept}
-          group={f.group}
-          groups={Object.entries(GROUP_LABEL) as [string, string][]}
         />
       );
   }
