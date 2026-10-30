@@ -195,3 +195,15 @@ async function loadDov(sb: SupabaseClient, ids: string[], from: string, to: stri
   }
   return out;
 }
+
+/** Spustí dennú úlohu a zapíše výsledok do job_runs (prehľad spustení v záložke Firmy). */
+export async function runAndRecord(sb: SupabaseClient, today: string, origin: string, source: "cron" | "manual") {
+  try {
+    const log = await runDaily(sb, today, origin);
+    await sb.from("job_runs").insert({ source, ok: true, log: log.join(" · ") || null });
+    return { ok: true as const, log };
+  } catch (e) {
+    await sb.from("job_runs").insert({ source, ok: false, log: String(e) });
+    return { ok: false as const, error: String(e) };
+  }
+}

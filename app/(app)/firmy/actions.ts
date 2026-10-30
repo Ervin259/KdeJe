@@ -275,19 +275,16 @@ export async function saveHolidayDraft(_p: FirmState, f: FormData): Promise<Firm
 export async function runDailyNow(_p: FirmState, _f: FormData): Promise<FirmState> {
   await requirePlatform();
   const { adminClient } = await import("@/lib/supabase/admin");
-  const { runDaily } = await import("@/lib/yearly");
+  const { runAndRecord } = await import("@/lib/yearly");
   const sb = adminClient();
   if (!sb) return { error: "Vo Verceli chýba SUPABASE_SERVICE_ROLE_KEY – denná úloha nemôže bežať." };
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
-  try {
-    const log = await runDaily(sb, today, origin);
-    revalidatePath("/", "layout");
-    return { ok: log.length ? log.join(" · ") : "Nie je čo robiť – všetko je pripravené." };
-  } catch (e) {
-    return { error: String(e) };
-  }
+  const r = await runAndRecord(sb, today, origin, "manual");
+  revalidatePath("/", "layout");
+  if (!r.ok) return { error: r.error };
+  return { ok: r.log.length ? r.log.join(" · ") : "Nie je čo robiť – všetko je pripravené." };
 }
 
 /** Úprava už potvrdených sviatkov roka: skopíruje ich do návrhu (po potvrdení sa zmena prejaví vo všetkých firmách). */

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminClient } from "@/lib/supabase/admin";
-import { runDaily } from "@/lib/yearly";
+import { runAndRecord } from "@/lib/yearly";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,12 +18,7 @@ export async function GET(req: NextRequest) {
   // dátum podľa Bratislavy
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
   const origin = process.env.APP_URL?.trim() || "https://kdeje.app";
-  try {
-    const log = await runDaily(sb, today, origin);
-    console.log("[cron denne]", today, log);
-    return NextResponse.json({ today, log });
-  } catch (e) {
-    console.error("[cron denne]", e);
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  }
+  const r = await runAndRecord(sb, today, origin, "cron");
+  console.log("[cron denne]", today, r);
+  return NextResponse.json({ today, ...r }, { status: r.ok ? 200 : 500 });
 }

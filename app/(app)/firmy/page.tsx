@@ -46,9 +46,10 @@ export default async function CompaniesPage() {
   const today = todayIso();
   // štátne sviatky: návrh na ďalší rok (pripraví sa sám od 1. 10.) a potvrdené roky
   const hy = Number(today.slice(0, 4)) + 1;
-  const [{ data: hDraft }, { data: hConf }] = await Promise.all([
+  const [{ data: hDraft }, { data: hConf }, { data: runs }] = await Promise.all([
     supabase.from("state_holiday_drafts").select("date, name").order("date"),
     supabase.from("state_holidays").select("date, name").gte("date", `${hy - 1}-01-01`).order("date"),
+    supabase.from("job_runs").select("id, ran_at, source, ok, log").order("ran_at", { ascending: false }).limit(10),
   ]);
   const draftYears = [...new Set((hDraft ?? []).map((h) => Number(h.date.slice(0, 4))))];
   const confOf = (y: number) => (hConf ?? []).filter((h) => h.date.startsWith(`${y}-`));
@@ -352,6 +353,39 @@ export default async function CompaniesPage() {
               dovolenku na ďalší rok a v decembri a januári dopočítava prenos zostatku.
             </p>
             <RunDaily />
+            <h4 style={{ margin: "16px 0 6px", fontSize: 13 }}>Posledné spustenia</h4>
+            {runs?.length ? (
+              <table className="t runs">
+                <thead>
+                  <tr>
+                    <th style={{ width: 130 }}>Kedy</th>
+                    <th style={{ width: 90 }}>Spustenie</th>
+                    <th>Výsledok</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runs.map((r) => (
+                    <tr key={r.id}>
+                      <td className="num">
+                        {new Intl.DateTimeFormat("sk-SK", {
+                          timeZone: "Europe/Bratislava",
+                          day: "numeric",
+                          month: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }).format(new Date(r.ran_at))}
+                      </td>
+                      <td className="muted">{r.source === "manual" ? "tlačidlo" : "v noci"}</td>
+                      <td style={r.ok ? undefined : { color: "var(--bad)" }}>
+                        {r.ok ? r.log || <span className="muted">nebolo čo robiť</span> : `Chyba: ${r.log}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="muted" style={{ fontSize: 13, margin: 0 }}>Zatiaľ žiadne – prvé nočné spustenie sa tu objaví ráno.</p>
+            )}
           </div>
 
           <div className="box">
