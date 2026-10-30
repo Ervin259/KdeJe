@@ -126,6 +126,20 @@ async function makeRequest(
   return null;
 }
 
+/**
+ * Admin v pohľade zamestnanca: databáza mu povolí všetko, preto pravidlá zamestnanca
+ * (zamknutý / odsúhlasený mesiac, schvaľovanie) overíme tu – inak by zmena obišla schválenie.
+ */
+async function adminAsEmployeeMustAsk(me: Me, empId: string, ranges: [string, string][], change: boolean) {
+  if (me.role === "admin" || me.realRole !== "admin" || empId !== me.id) return false;
+  const supabase = await createClient();
+  for (const [from, to] of ranges) {
+    const { data, error } = await supabase.rpc("employee_can_write", { p_emp: empId, p_from: from, p_to: to, p_change: change });
+    if (error || data !== true) return true;
+  }
+  return false;
+}
+
 export async function saveEntry(_prev: FormState, form: FormData): Promise<FormState> {
   const me = await requireMe();
   const admin = me.role === "admin";
@@ -149,7 +163,11 @@ export async function saveEntry(_prev: FormState, form: FormData): Promise<FormS
   // zápis; RLS rozhodne, či smie priamo
   let ok = false;
   let dbErr: string | null = null;
-  if (id) {
+  const ranges: [string, string][] = [[row.date_from, row.date_to]];
+  if (original) ranges.push([original.date_from, original.date_to]);
+  if (await adminAsEmployeeMustAsk(me, row.employee_id, ranges, !!id)) {
+    // ok = false → žiadosť
+  } else if (id) {
     const { data, error } = await supabase.from("entries").update(row).eq("id", id).select("id");
     ok = !error && !!data?.length;
     dbErr = error && error.code !== "42501" ? error.message : null;
@@ -184,7 +202,9 @@ export async function deleteEntry(_prev: FormState, form: FormData): Promise<For
   const { data: original } = await supabase.from("entries").select("*").eq("id", id).maybeSingle();
   if (!original) return { error: ["Záznam sa nenašiel."] };
 
-  const { data, error } = await supabase.from("entries").delete().eq("id", id).select("id");
+  const o = original as Entry;
+  const ask = await adminAsEmployeeMustAsk(me, o.employee_id, [[o.date_from, o.date_to]], true);
+  const { data, error } = ask ? { data: null, error: null } : await supabase.from("entries").delete().eq("id", id).select("id");
   if (error && error.code !== "42501") return { error: ["Záznam sa nepodarilo vymazať: " + error.message] };
   if (!data?.length) {
     if (admin) return { error: ["Záznam sa nepodarilo vymazať."] };
