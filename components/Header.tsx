@@ -36,7 +36,8 @@ export async function Header({
   if (!me.company_id) {
     // superadmin mimo firmy – len správa aplikácie
   } else if (me.role === "admin") {
-    const pending = await pendingRequestsCount(me.id);
+    // admin schvaľuje aj vlastné žiadosti (poslané z pohľadu zamestnanca)
+    const pending = await pendingRequestsCount("");
     tabs.push(
       { href: "/kalendar", label: "Kalendár" },
       ...(me.isEmployee ? [{ href: "/moj-prehlad", label: "Môj prehľad" }] : []),

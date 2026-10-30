@@ -180,6 +180,7 @@ export async function saveEntry(_prev: FormState, form: FormData): Promise<FormS
 
   if (!ok) {
     if (admin) return { error: ["Záznam sa nepodarilo uložiť."] };
+    if (form.has("reason") && !reason) return { needReason: true, error: ["Napíšte dôvod žiadosti."] };
     const r = await makeRequest(id ? "edit" : "new", row.employee_id, row, original, reason);
     if (r) return r;
     revalidatePath("/", "layout");
@@ -208,6 +209,7 @@ export async function deleteEntry(_prev: FormState, form: FormData): Promise<For
   if (error && error.code !== "42501") return { error: ["Záznam sa nepodarilo vymazať: " + error.message] };
   if (!data?.length) {
     if (admin) return { error: ["Záznam sa nepodarilo vymazať."] };
+    if (form.has("reason") && !reason) return { needReason: true, error: ["Napíšte dôvod žiadosti o vymazanie."] };
     const r = await makeRequest("delete", (original as Entry).employee_id, null, original as Entry, reason);
     if (r) return r;
     revalidatePath("/", "layout");
