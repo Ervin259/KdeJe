@@ -289,3 +289,16 @@ export async function runDailyNow(_p: FirmState, _f: FormData): Promise<FirmStat
     return { error: String(e) };
   }
 }
+
+/** Úprava už potvrdených sviatkov roka: skopíruje ich do návrhu (po potvrdení sa zmena prejaví vo všetkých firmách). */
+export async function editConfirmedHolidays(f: FormData) {
+  await requirePlatform();
+  const year = Number(f.get("year"));
+  if (!Number.isInteger(year)) return;
+  const supabase = await createClient();
+  const { data } = await supabase.from("state_holidays").select("date, name").gte("date", `${year}-01-01`).lte("date", `${year}-12-31`);
+  if (!data?.length) return;
+  await supabase.from("state_holiday_drafts").delete().gte("date", `${year}-01-01`).lte("date", `${year}-12-31`);
+  await supabase.from("state_holiday_drafts").insert(data);
+  revalidatePath("/", "layout");
+}

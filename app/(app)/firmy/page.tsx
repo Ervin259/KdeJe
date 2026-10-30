@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
 import { eur, fdate, loadPlatformSettings, nextInvoice, settle, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
-import { makeHolidayDraftAction } from "./actions";
+import { editConfirmedHolidays, makeHolidayDraftAction } from "./actions";
 import { DecideSignup, ExemptToggle, HolidayDraft, RunDaily, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
@@ -328,13 +328,23 @@ export default async function CompaniesPage() {
             {[hy - 1, hy]
               .filter((y) => !draftYears.includes(y))
               .map((y) => (
-                <p key={y} className="muted" style={{ margin: "4px 0", fontSize: 13 }}>
+                <p key={y} className="muted row" style={{ margin: "4px 0", fontSize: 13, gap: 8 }}>
+                  {confOf(y).length > 0 && (
+                    <form action={editConfirmedHolidays}>
+                      <input type="hidden" name="year" value={y} />
+                      <button className="editpill" title={`Upraviť potvrdené sviatky ${y} – zmena sa po potvrdení prejaví vo všetkých firmách`}>
+                        Upraviť
+                      </button>
+                    </form>
+                  )}
+                  <span>
                   <b>{y}:</b>{" "}
                   {confOf(y).length
                     ? `${confOf(y).length} dní – ${confOf(y).map((h) => `${Number(h.date.slice(8))}. ${Number(h.date.slice(5, 7))}.`).join(", ")}`
                     : y === hy
                       ? "zatiaľ nepotvrdené – návrh sa pripraví automaticky od 1. októbra"
                       : "žiadne"}
+                  </span>
                 </p>
               ))}
             <p className="muted" style={{ fontSize: 12.5, margin: "12px 0 8px" }}>
