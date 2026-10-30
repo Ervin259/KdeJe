@@ -295,12 +295,12 @@ a.namebtn:hover { color: var(--accent); }
 .okc2.unlock:hover, .okc2.unlock:focus-visible { background: #FBE3E3; padding: 0 9px 0 6px; outline: none; }
 .okc2.unlock:hover .t, .okc2.unlock:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }
 
-/* čakajúce žiadosti v kalendári: zápis = zelený prerušovaný rámik, vymazanie = červený prerušovaný + prečiarknuté */
-.cell > span.f.pend-new, .dpill.pend-new { outline: 2px dashed #1E9E4F; outline-offset: -2px; border-color: transparent !important; cursor: help; }
-.cell > span.f.pend-delete, .dpill.pend-delete { outline: 2px dashed #D63B3B; outline-offset: -2px; border-color: transparent !important; text-decoration: line-through; text-decoration-thickness: 1.5px; }
-.cell > span.f.pend-edit, .dpill.pend-edit { outline: 2px dashed #D98A00; outline-offset: -2px; border-color: transparent !important; }
+/* čakajúce žiadosti v kalendári: šrafovanie vo farbe žiadosti s plným rámikom (zápis zelený, vymazanie červený + prečiarknuté) */
+.cell > span.f.pend-new, .dpill.pend-new { background: repeating-linear-gradient(135deg, #CDEFD9 0 4px, #fff 4px 8px) !important; outline: 2px solid #1E9E4F; outline-offset: -2px; border-color: transparent !important; color: #14713A !important; cursor: help; }
+.cell > span.f.pend-delete, .dpill.pend-delete { background: repeating-linear-gradient(135deg, #F9D3D3 0 4px, #fff 4px 8px) !important; outline: 2px solid #D63B3B; outline-offset: -2px; border-color: transparent !important; color: #A82828 !important; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.cell > span.f.pend-edit, .dpill.pend-edit { background: repeating-linear-gradient(135deg, #FDE7C2 0 4px, #fff 4px 8px) !important; outline: 2px solid #D98A00; outline-offset: -2px; border-color: transparent !important; color: #8A5800 !important; }
 .pendlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: -4px; }
-.pendlegend .smp { display: inline-block; width: 22px; height: 14px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; background: #E6F6EC; }
-.pendlegend .smp.pend-new { outline: 2px dashed #1E9E4F; outline-offset: -2px; }
-.pendlegend .smp.pend-delete { outline: 2px dashed #D63B3B; outline-offset: -2px; }
-.pendlegend .smp.pend-edit { outline: 2px dashed #D98A00; outline-offset: -2px; }
+.pendlegend .smp { display: inline-block; width: 22px; height: 14px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; outline-offset: -2px; }
+.pendlegend .smp.pend-new { background: repeating-linear-gradient(135deg, #CDEFD9 0 4px, #fff 4px 8px); outline: 2px solid #1E9E4F; }
+.pendlegend .smp.pend-delete { background: repeating-linear-gradient(135deg, #F9D3D3 0 4px, #fff 4px 8px); outline: 2px solid #D63B3B; }
+.pendlegend .smp.pend-edit { background: repeating-linear-gradient(135deg, #FDE7C2 0 4px, #fff 4px 8px); outline: 2px solid #D98A00; }
