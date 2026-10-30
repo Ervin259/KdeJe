@@ -12,6 +12,7 @@ import {
   saveCompany,
   confirmContinue,
   setVacation,
+  confirmEntitlement,
   toggleType,
   inviteEmployees,
   type InviteState,
@@ -883,5 +884,47 @@ export function ContinueBox({ until, price, over }: { until: string; price: stri
       </button>
       {st.error && <span className="fmsg err">{st.error.join(" ")}</span>}
     </form>
+  );
+}
+
+/**
+ * Guľôčka pri nároku: nárok na rok bol automaticky skopírovaný z predošlého roka a je pod 25 dní
+ * (napr. 20) – admin skontroluje, či sa niečo nezmenilo (vek 33 rokov, dieťa…), a potvrdí.
+ */
+export function EntCheck({ emp, name, year, value }: { emp: string; name: string; year: number; value: number }) {
+  const [open, setOpen] = useState(false);
+  const [v, setV] = useState(String(value));
+  const [pending, start] = useTransition();
+  return (
+    <span className="entchk">
+      <button
+        type="button"
+        className="entdot"
+        title={`Nárok ${year} skopírovaný z predošlého roka: ${value} dní. Skontrolujte, či sa nezmenil (napr. 33 rokov alebo dieťa → 25 dní).`}
+        aria-label={`Skontrolovať nárok ${year} – ${name}`}
+        onClick={() => setOpen(!open)}
+      />
+      {open && (
+        <span className="entpop" role="dialog" aria-label={`Nárok ${year} – ${name}`}>
+          <b>Nárok {year}</b>
+          <span className="muted">{name}</span>
+          <span className="row" style={{ gap: 6 }}>
+            <input type="number" min={0} max={60} step={0.5} value={v} onChange={(e) => setV(e.target.value)} aria-label="Nárok" />
+            <span className="muted">dní</span>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={pending}
+              onClick={() => {
+                const n = Number(v.replace(",", "."));
+                if (Number.isFinite(n)) start(() => confirmEntitlement(emp, year, n));
+              }}
+            >
+              Potvrdiť
+            </button>
+          </span>
+        </span>
+      )}
+    </span>
   );
 }

@@ -229,7 +229,16 @@ export async function setVacation(empId: string, field: "entitlement" | "carry_i
   const supabase = await createClient();
   const year = Number(todayIso().slice(0, 4));
   const { data } = await supabase.from("vacation_years").select("*").eq("employee_id", empId).eq("year", year).maybeSingle();
-  const row = { employee_id: empId, year, entitlement_full: data?.entitlement_full ?? value, entitlement: data?.entitlement ?? 25, carry_in: data?.carry_in ?? 0, [field]: value };
+  const row = {
+    employee_id: empId,
+    year,
+    entitlement_full: data?.entitlement_full ?? value,
+    entitlement: data?.entitlement ?? 25,
+    carry_in: data?.carry_in ?? 0,
+    [field]: value,
+    // ručná zmena: prenos už automatika neprepíše, nárok je skontrolovaný
+    ...(field === "carry_in" ? { carry_manual: true } : { check_needed: false }),
+  } as Record<string, unknown>;
   await supabase.from("vacation_years").upsert(row);
   done();
 }
@@ -307,12 +316,22 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     });
   } else {
     const ent = numOr(f, "entitlement", 25) ?? 25;
+    const carry = numOr(f, "carry_in", 0) ?? 0;
+    const { data: old } = await supabase
+      .from("vacation_years")
+      .select("carry_in, carry_manual")
+      .eq("employee_id", empId)
+      .eq("year", year)
+      .maybeSingle();
     await supabase.from("vacation_years").upsert({
       employee_id: empId,
       year,
       entitlement_full: numOr(f, "entitlement_full", ent) ?? ent,
       entitlement: ent,
-      carry_in: numOr(f, "carry_in", 0) ?? 0,
+      carry_in: carry,
+      check_needed: false,
+      // prenos zmenený ručne → automatika ho už neprepíše
+      carry_manual: !!old?.carry_manual || (!!old && Number(old.carry_in) !== carry),
     });
   }
   const note = str(f, "note");
@@ -394,4 +413,19 @@ export async function confirmContinue(_p: SetState, _f: FormData): Promise<SetSt
   );
   done();
   return { ok: "Ďakujeme! Faktúru pošleme e-mailom a nájdete ju aj tu v Predplatnom." };
+}
+
+/** Admin potvrdí (prípadne upraví) automaticky skopírovaný nárok – guľôčka na kontrolu zmizne. */
+export async function confirmEntitlement(empId: string, year: number, value: number) {
+  await requireAdmin();
+  if (!Number.isFinite(value) || value < 0 || value > 60) return;
+  const supabase = await createClient();
+  const { data: e } = await supabase.from("employees").select("name").eq("id", empId).maybeSingle();
+  await supabase
+    .from("vacation_years")
+    .update({ entitlement: value, entitlement_full: value, check_needed: false })
+    .eq("employee_id", empId)
+    .eq("year", year);
+  await audit(`${e?.name ?? "Zamestnanec"} · nárok na dovolenku ${year} potvrdený: ${value} dní`, empId);
+  done();
 }

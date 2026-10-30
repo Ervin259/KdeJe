@@ -6,7 +6,7 @@ import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
-import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, WorkGroups, type RG, type WG } from "./ui";
+import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, EntCheck, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
 import { eur, loadPlatformSettings, yearlyPrice, type Invoice } from "@/lib/billing";
 
@@ -99,6 +99,13 @@ export default async function SettingsPage({
   const openInv = invoices.filter((i) => i.status === "issued");
 
   const useOrg = ordered.some((e) => e.site || e.department);
+  // automaticky skopírované nároky pod 25 dní na kontrolu (tento a budúci rok)
+  const { data: chk } = await supabase
+    .from("vacation_years")
+    .select("employee_id, year, entitlement")
+    .eq("check_needed", true)
+    .in("year", [year, year + 1]);
+  const checkOf = (id: string) => (chk ?? []).filter((c) => c.employee_id === id);
 
   return (
     <>
@@ -201,7 +208,12 @@ export default async function SettingsPage({
                               <VacInput emp={e.id} field="carry_in" value={b.carry} label={`Prenos – ${e.name}`} />
                             </td>
                             <td className="c">
-                              <VacInput emp={e.id} field="entitlement" value={b.ent} label={`Nárok – ${e.name}`} />
+                              <span className="entcell">
+                                <VacInput emp={e.id} field="entitlement" value={b.ent} label={`Nárok – ${e.name}`} />
+                                {checkOf(e.id).map((c) => (
+                                  <EntCheck key={c.year} emp={e.id} name={e.name} year={c.year} value={Number(c.entitlement)} />
+                                ))}
+                              </span>
                             </td>
                             <td className="c num" style={b.left < 0 ? { color: "var(--bad)", fontWeight: 600 } : undefined}>
                               {nf(b.left)}

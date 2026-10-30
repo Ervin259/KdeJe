@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
 import { eur, fdate, loadPlatformSettings, nextInvoice, settle, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
-import { DecideSignup, ExemptToggle, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
+import { makeHolidayDraftAction } from "./actions";
+import { DecideSignup, ExemptToggle, HolidayDraft, RunDaily, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
 
 type Signup = {
   id: string;
@@ -43,6 +44,14 @@ export default async function CompaniesPage() {
     loadPlatformSettings(),
   ]);
   const today = todayIso();
+  // štátne sviatky: návrh na ďalší rok (pripraví sa sám od 1. 10.) a potvrdené roky
+  const hy = Number(today.slice(0, 4)) + 1;
+  const [{ data: hDraft }, { data: hConf }] = await Promise.all([
+    supabase.from("state_holiday_drafts").select("date, name").order("date"),
+    supabase.from("state_holidays").select("date, name").gte("date", `${hy - 1}-01-01`).order("date"),
+  ]);
+  const draftYears = [...new Set((hDraft ?? []).map((h) => Number(h.date.slice(0, 4))))];
+  const confOf = (y: number) => (hConf ?? []).filter((h) => h.date.startsWith(`${y}-`));
   const invoices = (inv ?? []) as Invoice[];
   const signups = (su ?? []) as Signup[];
   const pend = signups.filter((s) => s.status === "pending").reverse();
@@ -295,6 +304,44 @@ export default async function CompaniesPage() {
                 zaplateného obdobia.
               </div>
             )}
+          </div>
+
+          <div className="box" id="sviatky">
+            <div className="row spread" style={{ marginBottom: 10 }}>
+              <h3>Štátne sviatky</h3>
+              {!draftYears.includes(hy) && (
+                <form action={makeHolidayDraftAction}>
+                  <input type="hidden" name="year" value={hy} />
+                  <button className="btn">{confOf(hy).length ? `Znova pripraviť návrh ${hy}` : `Pripraviť návrh ${hy}`}</button>
+                </form>
+              )}
+            </div>
+            {draftYears.map((y) => (
+              <div key={y} style={{ marginBottom: 16 }}>
+                <p className="banner info" style={{ margin: "0 0 10px" }}>
+                  <b>Návrh sviatkov {y} čaká na potvrdenie.</b> Vypočítaný podľa zákona – pred potvrdením skontrolujte, či sa niečo nezmenilo.
+                  Do firiem sa zapíše až po potvrdení.
+                </p>
+                <HolidayDraft year={y} rows={(hDraft ?? []).filter((h) => h.date.startsWith(`${y}-`))} />
+              </div>
+            ))}
+            {[hy - 1, hy]
+              .filter((y) => !draftYears.includes(y))
+              .map((y) => (
+                <p key={y} className="muted" style={{ margin: "4px 0", fontSize: 13 }}>
+                  <b>{y}:</b>{" "}
+                  {confOf(y).length
+                    ? `${confOf(y).length} dní – ${confOf(y).map((h) => `${Number(h.date.slice(8))}. ${Number(h.date.slice(5, 7))}.`).join(", ")}`
+                    : y === hy
+                      ? "zatiaľ nepotvrdené – návrh sa pripraví automaticky od 1. októbra"
+                      : "žiadne"}
+                </p>
+              ))}
+            <p className="muted" style={{ fontSize: 12.5, margin: "12px 0 8px" }}>
+              Prechod na nový rok beží sám každú noc: od 1. 10. pripraví návrh sviatkov (príde e-mail), od 1. 12. založí nárok na
+              dovolenku na ďalší rok a v decembri a januári dopočítava prenos zostatku.
+            </p>
+            <RunDaily />
           </div>
 
           <div className="box">
