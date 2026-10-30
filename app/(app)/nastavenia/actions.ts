@@ -248,6 +248,8 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     email,
     contract_type: contract,
     firm: str(f, "firm") || null,
+    site: str(f, "site").replace(/\s+/g, " ") || null,
+    department: str(f, "department").replace(/\s+/g, " ") || null,
     date_from: str(f, "date_from") || null,
     date_to: str(f, "date_to") || null,
     active: str(f, "active") !== "0",

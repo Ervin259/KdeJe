@@ -1,3 +1,4 @@
+import { distinctOf } from "@/lib/filters";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -41,6 +42,8 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     email: e?.email ?? "",
     contract_type: e?.contract_type ?? "TPP",
     firm: e?.firm ?? me.company_name,
+    site: e?.site ?? "",
+    department: e?.department ?? "",
     date_from: e?.date_from ?? "",
     date_to: e?.date_to ?? "",
     active: e?.active ?? true,
@@ -186,6 +189,7 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           nextYear={ny}
           rules={rules}
           meId={me.id}
+          orgOpts={{ sites: distinctOf(emps, "site"), depts: distinctOf(emps, "department") }}
           people={emps
             .filter((x) => x.active)
             .sort((a, b) => a.name.localeCompare(b.name, "sk"))

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireLead } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
-import { MNC, TYPE_NAME, balance, byLastName, monthRange, nf, typeClass } from "@/lib/calc";
+import { applyFilter, getFilter, sortGrouped } from "@/lib/filters";
+import { MNC, TYPE_NAME, balance, monthRange, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER, isOn, payCols, valsIn, type Vals } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { CheckDropdown } from "@/components/Dropdown";
@@ -49,9 +50,11 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     return v;
   };
 
-  const all = emps
-    .filter((e) => e.in_stats && isOn(e, `${year}-01-01`, `${year}-12-31`))
-    .sort(byLastName)
+  const flt = await getFilter();
+  const all = sortGrouped(
+    applyFilter(emps, flt).filter((e) => e.in_stats && isOn(e, `${year}-01-01`, `${year}-12-31`)),
+    flt.group
+  )
     .map((e) => {
       const vac = (vacs ?? []).find((x) => x.employee_id === e.id);
       return { e, v: vals(e.id), b: balance(calc, e.id, entries, vac, settings.carry_max) };
@@ -97,7 +100,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <Header me={me} center={center} />
+      <Header me={me} center={center} org />
       <main id="view">
         <div className="panel">
           <div className="gridwrap">

@@ -6,6 +6,9 @@ import { NavTabs, type Tab } from "./NavTabs";
 import { TopBar } from "./TopBar";
 import { ViewToggle } from "./ViewToggle";
 import { CompanySwitch } from "./CompanySwitch";
+import { OrgFilter } from "./OrgFilter";
+import { loadCompany } from "@/lib/loaders";
+import { GROUP_LABEL, distinctOf, getFilter } from "@/lib/filters";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -17,6 +20,7 @@ export async function Header({
   right,
   stack = false,
   userExtra,
+  org = false,
 }: {
   me: Me;
   center?: React.ReactNode;
@@ -25,6 +29,8 @@ export async function Header({
   stack?: boolean;
   /** tlačidlá za menom prihláseného (napr. Odsúhlasiť mesiac) */
   userExtra?: React.ReactNode;
+  /** výber prevádzky / oddelenia / zoskupenia (stránky so zoznamom ľudí) */
+  org?: boolean;
 }) {
   const tabs: Tab[] = [];
   if (!me.company_id) {
@@ -117,6 +123,26 @@ export async function Header({
     }
   }
 
+  // výber prevádzky a oddelenia – len ak ich firma používa
+  let orgFilter: React.ReactNode = null;
+  if (org && me.company_id) {
+    const [{ emps }, f] = await Promise.all([loadCompany(), getFilter()]);
+    const act = emps.filter((e) => e.active && !e.is_external);
+    const sites = distinctOf(act, "site");
+    const depts = distinctOf(act, "department");
+    if (sites.length || depts.length)
+      orgFilter = (
+        <OrgFilter
+          sites={sites}
+          depts={depts}
+          site={f.site}
+          dept={f.dept}
+          group={f.group}
+          groups={Object.entries(GROUP_LABEL) as [string, string][]}
+        />
+      );
+  }
+
   return (
     <div className="stickyhead" id="stickyhead">
       {notice}
@@ -130,8 +156,9 @@ export async function Header({
           {me.isPlatform || me.companies.length > 1 ? (
             <CompanySwitch current={me.company_id} options={switchOptions} platform={me.isPlatform} />
           ) : (
-            me.company_name
+            <span className="firmname">{me.company_name}</span>
           )}
+          {orgFilter}
         </span>
         <div className="headright">
           <span className="whobox">

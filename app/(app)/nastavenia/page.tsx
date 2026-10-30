@@ -98,6 +98,8 @@ export default async function SettingsPage({
   const yp = yearlyPrice(act.length, ps);
   const openInv = invoices.filter((i) => i.status === "issued");
 
+  const useOrg = ordered.some((e) => e.site || e.department);
+
   return (
     <>
       <Header me={me} right={<AccAll />} />
@@ -126,6 +128,8 @@ export default async function SettingsPage({
                     <th>Meno</th>
                     <th>E-mail</th>
                     <th title="Pracovný pomer">Prac. pomer</th>
+                    {useOrg && <th>Prevádzka</th>}
+                    {useOrg && <th>Oddelenie</th>}
                     <th>Trvanie pomeru</th>
                     <th>Pracovný čas a SL</th>
                     <th className="c">Prenos z {year - 1}</th>
@@ -170,6 +174,8 @@ export default async function SettingsPage({
                           )}
                         </td>
                         <td>{PP_LABEL[e.contract_type]}</td>
+                        {useOrg && <td>{e.site ?? <span className="muted">—</span>}</td>}
+                        {useOrg && <td>{e.department ?? <span className="muted">—</span>}</td>}
                         <td className="num" style={{ whiteSpace: "nowrap" }}>
                           {!e.date_from && !e.date_to ? (
                             <span className="muted">na neurčito</span>

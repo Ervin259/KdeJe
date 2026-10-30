@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { MN, fd } from "@/lib/calc";
+import { CONFIRM_DAYS_BEFORE, MN, confirmOpen, fd, plus } from "@/lib/calc";
 
 async function confirmMonth(form: FormData) {
   "use server";
@@ -12,13 +12,31 @@ async function confirmMonth(form: FormData) {
   revalidatePath("/", "layout");
 }
 
-/** Tlačidlo „Odsúhlasiť [mesiac]“ v mesačnom náhľade (len TPP). */
-export async function ConfirmMonthButton({
+/** Odsúhlasenia mesiaca pre zoznam zamestnancov (jeden dopyt pre celý kalendár). */
+export async function loadConfirmations(y: number, m: number, ids: string[]) {
+  if (!ids.length) return new Map<string, string>();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("month_confirmations")
+    .select("employee_id, confirmed_at")
+    .eq("year", y)
+    .eq("month", m)
+    .in("employee_id", ids);
+  return new Map((data ?? []).map((r) => [r.employee_id as string, r.confirmed_at as string]));
+}
+
+/**
+ * Tlačidlo „Odsúhlasiť“ v mesačnom náhľade (TPP). Zamestnanec za seba, admin za kohokoľvek.
+ * Aktívne od 3 dní pred koncom mesiaca.
+ */
+export function ConfirmMonthButton({
   y,
   m,
   last,
   today,
   empId,
+  confirmedAt,
+  forName,
   short = false,
 }: {
   short?: boolean;
@@ -27,26 +45,29 @@ export async function ConfirmMonthButton({
   last: string;
   today: string;
   empId: string;
+  /** kedy bol mesiac odsúhlasený (undefined = ešte nie) */
+  confirmedAt?: string;
+  /** meno zamestnanca, keď odsúhlasuje admin za iného */
+  forName?: string;
 }) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("month_confirmations")
-    .select("confirmed_at")
-    .eq("employee_id", empId)
-    .eq("year", y)
-    .eq("month", m)
-    .maybeSingle();
-
-  if (data)
+  const label = short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`;
+  if (confirmedAt)
     return (
-      <span className="pill open confpill" title={`Dochádzku za ${MN[m - 1]} si odsúhlasil(a) ${fd(data.confirmed_at.slice(0, 10))}`}>
+      <span
+        className="pill open confpill"
+        title={`Dochádzka ${forName ? `(${forName}) ` : ""}za ${MN[m - 1]} odsúhlasená ${fd(confirmedAt.slice(0, 10))}`}
+      >
         ✓ Odsúhlasené
       </span>
     );
-  if (today <= last)
+  if (!confirmOpen(today, last))
     return (
-      <button className="btn confbtn" disabled title="Mesiac ešte prebieha – odsúhlasiť môžeš po jeho skončení">
-        {short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`}
+      <button
+        className="btn confbtn"
+        disabled
+        title={`Odsúhlasiť sa dá od ${fd(plus(last, -CONFIRM_DAYS_BEFORE))} (${CONFIRM_DAYS_BEFORE} dni pred koncom mesiaca)`}
+      >
+        {label}
       </button>
     );
   return (
@@ -56,9 +77,13 @@ export async function ConfirmMonthButton({
       <input type="hidden" name="m" value={m} />
       <button
         className="btn confbtn"
-        title={`Potvrdíš, že tvoje záznamy za ${MN[m - 1]} sú úplné. Potom sa uzamknú.`}
+        title={
+          forName
+            ? `Odsúhlasíš dochádzku za ${MN[m - 1]} za: ${forName}. Záznamy sa potom uzamknú.`
+            : `Potvrdíš, že tvoje záznamy za ${MN[m - 1]} sú úplné. Potom sa uzamknú.`
+        }
       >
-        {short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`}
+        {label}
       </button>
     </form>
   );

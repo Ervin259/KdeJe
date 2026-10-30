@@ -8,6 +8,8 @@ export type EmpInit = {
   name: string;
   email: string;
   contract_type: "TPP" | "DOH" | "ZIV" | "SRO";
+  site: string;
+  department: string;
   firm: string;
   date_from: string;
   date_to: string;
@@ -69,6 +71,7 @@ export function EmpForm({
   rules,
   meId,
   people,
+  orgOpts,
 }: {
   init: EmpInit;
   workGroups: Opt[];
@@ -80,6 +83,8 @@ export function EmpForm({
   meId: string;
   /** aktívni zamestnanci firmy (výber ľudí pre vedúceho) */
   people: { id: string; name: string; pp: string }[];
+  /** už použité prevádzky a oddelenia (návrhy pri písaní) */
+  orgOpts: { sites: string[]; depts: string[] };
 }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveEmployee, {});
   const [pp, setPp] = useState(init.contract_type);
@@ -155,6 +160,22 @@ export function EmpForm({
                   ))}
                 </select>
                 <input name="firm" type="text" maxLength={60} defaultValue={init.firm} aria-label="Firma" placeholder="Firma" />
+              </div>
+            </Kf>
+            <Kf label="Prevádzka / oddelenie" htmlFor="ef-site" hint="Podľa nich sa dajú zamestnanci filtrovať a zoskupiť v kalendári.">
+              <div className="kin">
+                <input id="ef-site" name="site" type="text" maxLength={60} defaultValue={init.site} list="ef-sites" placeholder="Prevádzka" aria-label="Prevádzka" />
+                <input name="department" type="text" maxLength={60} defaultValue={init.department} list="ef-depts" placeholder="Oddelenie" aria-label="Oddelenie" />
+                <datalist id="ef-sites">
+                  {orgOpts.sites.map((x) => (
+                    <option key={x} value={x} />
+                  ))}
+                </datalist>
+                <datalist id="ef-depts">
+                  {orgOpts.depts.map((x) => (
+                    <option key={x} value={x} />
+                  ))}
+                </datalist>
               </div>
             </Kf>
             <Kf label="Trvanie" htmlFor="ef-from" hint="Prázdne „do“ = na neurčito">

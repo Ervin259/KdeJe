@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin, todayIso } from "@/lib/data";
 import { buildPayroll } from "@/lib/payroll";
-import { KIND, MNC, TYPE_NAME, byLastName, fd, fdw, nf, typeClass } from "@/lib/calc";
+import { KIND, MNC, TYPE_NAME, byLastName, confirmOpen, fd, fdw, nf, typeClass } from "@/lib/calc";
 import { PP_LABEL, PP_ORDER, cntTxt } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { StatusPill } from "@/components/ui";
@@ -19,7 +19,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const P = await buildPayroll(year, m);
   const { calc, cols, days, wd, groups, doh, mstatus, emps, entries } = P;
   const st = mstatus(year, m);
-  const canConfirm = calc.today > st.last;
+  const canConfirm = confirmOpen(calc.today, st.last);
 
   // pracovné pomery, v ktorých má niekto zapnuté „V podkladoch pre mzdy“
   const avail = PP_ORDER.filter((g) => emps.some((e) => e.contract_type === g && e.active && e.in_payroll));
@@ -156,7 +156,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                                   </button>
                                 </form>
                               ) : (
-                                <span className="okdot wait" title="Odsúhlasí sa po skončení mesiaca">
+                                <span className="okdot wait" title="Odsúhlasiť sa dá od 3 dní pred koncom mesiaca">
                                   …
                                 </span>
                               )}
