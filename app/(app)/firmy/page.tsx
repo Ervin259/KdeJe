@@ -353,7 +353,8 @@ export default async function CompaniesPage() {
               dovolenku na ďalší rok a v decembri a januári dopočítava prenos zostatku.
             </p>
             <RunDaily />
-            <h4 style={{ margin: "16px 0 6px", fontSize: 13 }}>Posledné spustenia</h4>
+            <details className="runsdd">
+              <summary>Posledné spustenia{runs?.length ? ` (${runs.length})` : ""}</summary>
             {runs?.length ? (
               <table className="t runs">
                 <thead>
@@ -386,6 +387,7 @@ export default async function CompaniesPage() {
             ) : (
               <p className="muted" style={{ fontSize: 13, margin: 0 }}>Zatiaľ žiadne – prvé nočné spustenie sa tu objaví ráno.</p>
             )}
+            </details>
           </div>
 
           <div className="box">
