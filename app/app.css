@@ -322,3 +322,12 @@ a.namebtn:hover { color: var(--accent); }
 .orgdd .yppanel { min-width: 220px; max-height: 60vh; overflow: auto; background: #fff; color: #161D2B; border-color: #DDE2EC; z-index: 80; }
 .orgdd .yppanel label { color: #161D2B; font-weight: 500; }
 .orgdd .yppanel label:hover { background: #F1F4FA; }
+
+/* kontrola automaticky skopírovaného nároku na dovolenku */
+.entcell { display: inline-flex; align-items: center; gap: 4px; position: relative; }
+.entchk { position: relative; display: inline-flex; }
+.entdot { width: 11px; height: 11px; border-radius: 50%; background: #E8A400; border: 2px solid #fff; box-shadow: 0 0 0 1px #E8A400; padding: 0; cursor: pointer; }
+.entdot:hover { transform: scale(1.15); }
+.entpop { position: absolute; top: calc(100% + 6px); right: -8px; z-index: 30; display: grid; gap: 6px; padding: 10px 12px; min-width: 210px; text-align: left;
+  background: var(--surface, #fff); border: 1px solid var(--grid, #DDE2EC); border-radius: 10px; box-shadow: 0 8px 24px rgba(16,24,40,.14); font-size: 13px; white-space: nowrap; }
+.entpop input { width: 64px; }

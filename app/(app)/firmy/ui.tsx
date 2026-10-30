@@ -1,6 +1,6 @@
 "use client";
 import { useActionState } from "react";
-import { approveSignup, saveCompanyAdmin, cancelInvoice, issueInvoices, markPaid, rejectSignup, resendInvite, saveSupplier, setExempt, type FirmState } from "./actions";
+import { approveSignup, saveCompanyAdmin, cancelInvoice, issueInvoices, markPaid, rejectSignup, resendInvite, saveSupplier, saveHolidayDraft, runDailyNow, setExempt, type FirmState } from "./actions";
 import type { PlatformSettings } from "@/lib/billing";
 import { switchCompany } from "@/components/companyActions";
 
@@ -189,6 +189,62 @@ export function CompanyEdit({ c }: { c: CompanyRow }) {
         </button>
         <Msg st={st} />
       </div>
+    </form>
+  );
+}
+
+/** Návrh štátnych sviatkov – úprava a potvrdenie superadminom. */
+export function HolidayDraft({ year, rows }: { year: number; rows: { date: string; name: string }[] }) {
+  const [state, action, pending] = useActionState<FirmState, FormData>(saveHolidayDraft, {});
+  const list = [...rows, { date: "", name: "" }, { date: "", name: "" }];
+  return (
+    <form action={action} className="holdraft">
+      <input type="hidden" name="year" value={year} />
+      <table className="t">
+        <thead>
+          <tr>
+            <th style={{ width: 170 }}>Dátum</th>
+            <th>Názov</th>
+            <th className="c" style={{ width: 90 }}>Vynechať</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((h, i) => (
+            <tr key={`${h.date}-${i}`}>
+              <td>
+                <input type="date" name="date" defaultValue={h.date} min={`${year}-01-01`} max={`${year}-12-31`} />
+              </td>
+              <td>
+                <input type="text" name="name" defaultValue={h.name} placeholder={h.date ? "" : "Doplniť sviatok…"} style={{ width: "100%" }} />
+              </td>
+              <td className="c">{h.date && <input type="checkbox" name="del" value={i} aria-label={`Vynechať ${h.name}`} />}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {state.error && <div className="fmsg err">{state.error}</div>}
+      {state.ok && <div className="fmsg ok">{state.ok}</div>}
+      <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+        <button className="btn" name="confirm" value="0" disabled={pending}>
+          Uložiť úpravy
+        </button>
+        <button className="btn primary" name="confirm" value="1" disabled={pending}>
+          Potvrdiť a zapísať do všetkých firiem
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function RunDaily() {
+  const [s, action, pending] = useActionState<FirmState, FormData>(runDailyNow, {});
+  return (
+    <form action={action} className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+      <button className="btn" disabled={pending} title="Úloha beží sama každú noc. Tu ju môžete spustiť hneď.">
+        {pending ? "Beží…" : "Spustiť dennú úlohu teraz"}
+      </button>
+      {s.ok && <span className="muted" style={{ fontSize: 13 }}>{s.ok}</span>}
+      {s.error && <span style={{ color: "var(--bad)", fontSize: 13 }}>{s.error}</span>}
     </form>
   );
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatform } from "@/lib/data";
+import { skHolidays } from "@/lib/holidays";
 
 export type FirmState = { ok?: string; error?: string };
 
@@ -224,4 +225,67 @@ export async function saveCompanyAdmin(_p: FirmState, f: FormData): Promise<Firm
   }
   revalidatePath("/", "layout");
   redirect("/firmy");
+}
+
+// ---------- štátne sviatky (návrh na ďalší rok) ----------
+
+/** Pripraví (alebo znova pripraví) návrh sviatkov roka podľa pravidiel zákona. */
+export async function makeHolidayDraftAction(f: FormData) {
+  await requirePlatform();
+  const year = Number(f.get("year"));
+  if (!Number.isInteger(year) || year < 2025 || year > 2100) return;
+  const supabase = await createClient();
+  await supabase.from("state_holiday_drafts").delete().gte("date", `${year}-01-01`).lte("date", `${year}-12-31`);
+  await supabase.from("state_holiday_drafts").insert(skHolidays(year));
+  revalidatePath("/", "layout");
+}
+
+/** Uloží upravený návrh; s confirm=1 ho potvrdí a zapíše do všetkých firiem. */
+export async function saveHolidayDraft(_p: FirmState, f: FormData): Promise<FirmState> {
+  await requirePlatform();
+  const year = Number(f.get("year"));
+  if (!Number.isInteger(year)) return { error: "Chýba rok." };
+  const dates = f.getAll("date").map(String);
+  const names = f.getAll("name").map(String);
+  const del = new Set(f.getAll("del").map(String));
+  const rows = new Map<string, string>();
+  for (let i = 0; i < dates.length; i++) {
+    const d = dates[i].trim(), n = (names[i] ?? "").trim();
+    if (!d || del.has(String(i))) continue;
+    if (!d.startsWith(`${year}-`)) return { error: `Dátum ${d} nie je v roku ${year}.` };
+    if (!n) return { error: `Pri dátume ${d} chýba názov sviatku.` };
+    rows.set(d, n);
+  }
+  if (!rows.size) return { error: "Zoznam sviatkov je prázdny." };
+  const supabase = await createClient();
+  await supabase.from("state_holiday_drafts").delete().gte("date", `${year}-01-01`).lte("date", `${year}-12-31`);
+  const { error } = await supabase.from("state_holiday_drafts").insert([...rows].map(([date, name]) => ({ date, name })));
+  if (error) return { error: error.message };
+  if (f.get("confirm") !== "1") {
+    revalidatePath("/", "layout");
+    return { ok: "Návrh je uložený. Do firiem sa zapíše až po potvrdení." };
+  }
+  const { data, error: e2 } = await supabase.rpc("confirm_state_holidays", { p_year: year });
+  if (e2) return { error: e2.message };
+  revalidatePath("/", "layout");
+  return { ok: `Sviatky ${year} sú potvrdené a zapísané do všetkých firiem (${data ?? 0} záznamov).` };
+}
+
+/** Spustí dennú úlohu prechodu na nový rok hneď (inak beží sama raz denne v noci). */
+export async function runDailyNow(_p: FirmState, _f: FormData): Promise<FirmState> {
+  await requirePlatform();
+  const { adminClient } = await import("@/lib/supabase/admin");
+  const { runDaily } = await import("@/lib/yearly");
+  const sb = adminClient();
+  if (!sb) return { error: "Vo Verceli chýba SUPABASE_SERVICE_ROLE_KEY – denná úloha nemôže bežať." };
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  try {
+    const log = await runDaily(sb, today, origin);
+    revalidatePath("/", "layout");
+    return { ok: log.length ? log.join(" · ") : "Nie je čo robiť – všetko je pripravené." };
+  } catch (e) {
+    return { error: String(e) };
+  }
 }

@@ -61,16 +61,17 @@ export async function Header({
 
   if (me.isPlatform) {
     const supabase = await createClient();
-    const [{ count }, { data: pc }, { data: inv }] = await Promise.all([
+    const [{ count }, { data: pc }, { data: inv }, { count: hDraft }] = await Promise.all([
       supabase.from("company_signups").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.rpc("platform_companies"),
       supabase.from("invoices").select("company_id").neq("status", "cancelled"),
+      supabase.from("state_holiday_drafts").select("date", { count: "exact", head: true }),
     ]);
     // firmy, ktoré potvrdili pokračovanie a ešte nemajú faktúru
     const confirmed = ((pc ?? []) as { id: string; status: string; continue_confirmed_at: string | null; billing_exempt: boolean }[]).filter(
       (c) => c.status === "trial" && c.continue_confirmed_at && !c.billing_exempt && !(inv ?? []).some((i) => i.company_id === c.id)
     ).length;
-    tabs.push({ href: "/firmy", label: "Firmy", badge: (count ?? 0) + confirmed || undefined });
+    tabs.push({ href: "/firmy", label: "Firmy", badge: (count ?? 0) + confirmed + (hDraft ? 1 : 0) || undefined });
   }
 
   // firmy v prepínači: superadmin všetky, ostatní tie, kde majú účet
