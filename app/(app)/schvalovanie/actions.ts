@@ -75,16 +75,7 @@ async function decide(_prev: ActState, form: FormData, approve: boolean): Promis
     else res = await supabase.from("entries").delete().eq("id", r.target_entry_id);
     if (res.error) return { error: "Zmenu sa nepodarilo uložiť: " + res.error.message };
 
-    // zmena v odsúhlasenom mesiaci zruší odsúhlasenie
-    const months = new Set<string>();
-    for (const x of [old, r.kind === "delete" ? null : rec]) {
-      if (!x) continue;
-      eachDay(x.date_from, x.date_to, (d) => months.add(`${d.slice(0, 4)}|${Number(d.slice(5, 7))}`));
-    }
-    for (const k of months) {
-      const [y, m] = k.split("|").map(Number);
-      await supabase.from("month_confirmations").delete().eq("employee_id", r.employee_id).eq("year", y).eq("month", m);
-    }
+    // odsúhlasený mesiac ostáva zamknutý aj po schválenej zmene – odomknúť ho môže len admin (zámok v kalendári)
   }
 
   const { error } = await supabase

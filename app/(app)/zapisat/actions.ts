@@ -168,7 +168,6 @@ export async function saveEntry(_prev: FormState, form: FormData): Promise<FormS
     redirect(back + (back.includes("?") ? "&" : "?") + "ziadost=1");
   }
 
-  await resetConfirmations(original, row);
   revalidatePath("/", "layout");
   redirect(back);
 }
@@ -194,24 +193,7 @@ export async function deleteEntry(_prev: FormState, form: FormData): Promise<For
     revalidatePath("/", "layout");
     redirect(back + (back.includes("?") ? "&" : "?") + "ziadost=1");
   }
-  await resetConfirmations(original as Entry, null);
   revalidatePath("/", "layout");
   redirect(back);
 }
 
-/**
- * Ak admin zmení záznam v odsúhlasenom mesiaci, odsúhlasenie sa zruší (resetConf v prototype).
- * Zamestnanec v odsúhlasenom mesiaci priamo meniť nemôže, takže sa ho to netýka.
- */
-async function resetConfirmations(a: Entry | null, b: Row | null) {
-  const supabase = await createClient();
-  const months = new Set<string>();
-  for (const x of [a, b]) {
-    if (!x) continue;
-    eachDay(x.date_from, x.date_to, (d) => months.add(`${x.employee_id}|${d.slice(0, 4)}|${Number(d.slice(5, 7))}`));
-  }
-  for (const k of months) {
-    const [emp, y, m] = k.split("|");
-    await supabase.from("month_confirmations").delete().eq("employee_id", emp).eq("year", Number(y)).eq("month", Number(m));
-  }
-}
