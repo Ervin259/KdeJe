@@ -16,20 +16,23 @@ export const PP_NAME: Record<string, string> = { TPP: "TPP", DOH: "Dohoda", ZIV:
 const PP_SORT: Record<string, number> = { TPP: 0, DOH: 1, ZIV: 2, SRO: 3 };
 
 export type EmpOrg = { name: string; site?: string | null; department?: string | null; contract_type?: string };
-export type Filter = { site: string; dept: string; group: GroupBy };
+/** vybrané prevádzky a oddelenia (prázdne = všetky) */
+export type Filter = { site: string[]; dept: string[]; group: GroupBy };
 
 export async function getFilter(): Promise<Filter> {
   const c = await cookies();
   return {
-    site: c.get(F_SITE)?.value ?? "",
-    dept: c.get(F_DEPT)?.value ?? "",
+    site: (c.get(F_SITE)?.value ?? "").split("|").filter(Boolean),
+    dept: (c.get(F_DEPT)?.value ?? "").split("|").filter(Boolean),
     group: "site",
   };
 }
 
-/** Ponechá len zamestnancov vybranej prevádzky a oddelenia. */
+/** Ponechá len zamestnancov vybraných prevádzok a oddelení. */
 export function applyFilter<T extends EmpOrg>(list: T[], f: Filter) {
-  return list.filter((e) => (!f.site || (e.site ?? "") === f.site) && (!f.dept || (e.department ?? "") === f.dept));
+  return list.filter(
+    (e) => (!f.site.length || f.site.includes(e.site ?? "")) && (!f.dept.length || f.dept.includes(e.department ?? ""))
+  );
 }
 
 /** Hodnota skupiny zamestnanca (prázdna = bez prevádzky/oddelenia). */

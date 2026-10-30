@@ -35,7 +35,7 @@ export async function switchCompany(companyId: string) {
 export async function setOrgFilter(key: "kj_site" | "kj_dept", value: string) {
   if (!["kj_site", "kj_dept"].includes(key)) return;
   const c = await cookies();
-  if (value) c.set(key, value.slice(0, 80), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  if (value) c.set(key, value.slice(0, 1000), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   else c.delete(key);
   revalidatePath("/", "layout");
 }

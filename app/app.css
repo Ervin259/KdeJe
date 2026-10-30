@@ -316,3 +316,9 @@ a.namebtn:hover { color: var(--accent); }
 .btn.reqbtn.req-edit { background: #D98A00; } .btn.reqbtn.req-edit:hover { background: #B87400; }
 .btn.reqbtn.req-del { background: #D63B3B; } .btn.reqbtn.req-del:hover { background: #B82E2E; }
 .btn.reqbtn:disabled { opacity: .7; }
+
+/* viacnásobný výber prevádzok / oddelení v hlavičke */
+.orgdd .firmswitch.fsel { text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: auto; }
+.orgdd .yppanel { min-width: 220px; max-height: 60vh; overflow: auto; background: #fff; color: #161D2B; border-color: #DDE2EC; z-index: 80; }
+.orgdd .yppanel label { color: #161D2B; font-weight: 500; }
+.orgdd .yppanel label:hover { background: #F1F4FA; }
