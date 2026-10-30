@@ -30,7 +30,8 @@ import { MonthPicker } from "./MonthPicker";
 export type View = "day" | "week" | "month";
 const WDL = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
 
-type CalEntry = Entry & { employee_name?: string };
+/** pend: čakajúca žiadosť – "new" = navrhovaný zápis (nepočíta sa), "delete"/"edit" = existujúci záznam so žiadosťou */
+type CalEntry = Entry & { employee_name?: string; pend?: "new" | "delete" | "edit"; reqId?: string; reqReason?: string | null };
 type GridRow = { id: string; name: string; site?: string | null; department?: string | null; contract_type?: string };
 
 const mondayOf = (s: string) => plus(s, -((dow(s) + 6) % 7));
@@ -108,6 +109,51 @@ export async function Calendar({
     entries = entries.map((x) =>
       x.employee_id !== me.id && health.has(x.type) ? { ...x, type: "MIMO", note: null } : x
     );
+  }
+
+  // Čakajúce žiadosti (vidí ich zamestnanec sám, jeho vedúci a admin – podľa RLS).
+  // Navrhnutý zápis sa zobrazí len ako náhľad, existujúci záznam s žiadosťou o zmenu/vymazanie sa označí.
+  {
+    const { data: reqs } = await supabase
+      .from("requests")
+      .select("id, employee_id, kind, payload, target_entry_id, reason")
+      .eq("status", "pending");
+    const ghosts: CalEntry[] = [];
+    for (const r of (reqs ?? []) as {
+      id: string;
+      employee_id: string;
+      kind: "new" | "edit" | "delete";
+      payload: Partial<Entry> | null;
+      target_entry_id: string | null;
+      reason: string | null;
+    }[]) {
+      if (onlyMe && r.employee_id !== me.id) continue;
+      // admin v pohľade zamestnanca vidí len svoje (a svojich ľudí), ako bežný zamestnanec
+      if (!admin && r.employee_id !== me.id && !me.managed.includes(r.employee_id)) continue;
+      if (r.target_entry_id) {
+        const kind = r.kind === "delete" ? "delete" : "edit";
+        entries = entries.map((x) => (x.id === r.target_entry_id ? { ...x, pend: kind, reqId: r.id, reqReason: r.reason } : x));
+      }
+      const p = r.payload;
+      if (r.kind !== "delete" && p?.date_from && p.date_to && p.type && p.date_from <= last && p.date_to >= first) {
+        ghosts.push({
+          id: `req-${r.id}`,
+          employee_id: r.employee_id,
+          type: p.type,
+          date_from: p.date_from,
+          date_to: p.date_to,
+          part: p.part ?? "full",
+          time_from: p.time_from ?? null,
+          time_to: p.time_to ?? null,
+          note: p.note ?? null,
+          pend: "new",
+          reqId: r.id,
+          reqReason: r.reason,
+        });
+      }
+    }
+    // náhľad úpravy sa nezobrazí v dni, kde ostáva pôvodný záznam celý deň
+    entries = [...entries, ...ghosts];
   }
 
   const on = (empId: string, d: string) =>
@@ -216,6 +262,22 @@ export async function Calendar({
             )}
           </CalClick>
           <Legend types={types} />
+          {entries.some((x) => x.pend) && (
+            <div className="pendlegend">
+              <span>
+                <span className="smp pend-new" />
+                žiadosť o zápis – čaká na schválenie, zatiaľ sa nezapočítava
+              </span>
+              <span>
+                <span className="smp pend-edit" />
+                žiadosť o zmenu
+              </span>
+              <span>
+                <span className="smp pend-delete" />
+                žiadosť o vymazanie – do schválenia sa započítava
+              </span>
+            </div>
+          )}
           {settings.hide_health && !admin && (
             <p className="muted" style={{ fontSize: 12, margin: 0 }}>
               Zdravotné neprítomnosti kolegov sa zobrazujú ako „MIMO“.
@@ -238,6 +300,13 @@ type Ctx = {
   basePath: string;
 };
 
+const PEND_TXT = { new: "žiadosť o zápis", delete: "žiadosť o vymazanie", edit: "žiadosť o zmenu" } as const;
+/** trieda a atribúty záznamu podľa čakajúcej žiadosti (náhľad nového zápisu sa nedá otvoriť ako záznam) */
+const pcls = (x: CalEntry) => (x.pend ? ` pend-${x.pend}` : "");
+const idAttr = (x: CalEntry) => (x.pend === "new" ? { "data-req": x.reqId } : { "data-id": x.id });
+const pendTip = (x: CalEntry) =>
+  x.pend ? `\n⏳ Čaká na schválenie: ${PEND_TXT[x.pend]}${x.pend === "new" ? " (zatiaľ sa nezapočítava)" : ""}${x.reqReason ? ` – ${x.reqReason}` : ""}` : "";
+
 const disp = (x: CalEntry) => ({ cls: typeClass(x.type), code: x.type, name: TYPE_NAME[x.type] ?? x.type });
 const NM: Record<string, React.ReactNode> = {
   "Služobná cesta tuzemská": <>Služobná cesta<br />tuzemská</>,
@@ -248,13 +317,14 @@ const NM: Record<string, React.ReactNode> = {
 function Cell({ empId, empName, d, wide, calc, on }: { empId: string; empName: string; d: string; wide: boolean } & Ctx) {
   const xs = on(empId, d);
   // bublina pri prejdení myšou: komu záznam patrí, čo to je a prípadná poznámka
-  const tip = (x: CalEntry, nt?: string) => `${empName} · ${disp(x).name}${nt ? `\nPoznámka: ${nt}` : ""}`;
-  const full = xs.find((x) => x.part === "full");
+  const tip = (x: CalEntry, nt?: string) => `${empName} · ${disp(x).name}${nt ? `\nPoznámka: ${nt}` : ""}${pendTip(x)}`;
+  // skutočný záznam má prednosť pred náhľadom žiadosti
+  const full = xs.find((x) => x.part === "full" && x.pend !== "new") ?? xs.find((x) => x.part === "full");
   if (full) {
     const ds = disp(full);
     const nt = full.note?.trim();
     return (
-      <span className={`f ${ds.cls}${nt ? " has-note" : ""}`} data-id={full.id} title={tip(full, nt)}>
+      <span className={`f ${ds.cls}${nt ? " has-note" : ""}${pcls(full)}`} {...idAttr(full)} title={tip(full, nt)}>
         {wide ? (
           <>
             <b>{ds.code}</b> <span>{NM[ds.name] ?? ds.name}</span>
@@ -282,8 +352,8 @@ function Cell({ empId, empName, d, wide, calc, on }: { empId: string; empName: s
           return (
             <span
               key={x.id}
-              className={`f q ${ds.cls}${nt ? " has-note" : ""}${f < 0.5 ? " q-s" : ""}`}
-              data-id={x.id}
+              className={`f q ${ds.cls}${nt ? " has-note" : ""}${f < 0.5 ? " q-s" : ""}${pcls(x)}`}
+              {...idAttr(x)}
               title={tip(x, nt)}
               style={{
                 top: `calc(2px + (100% - 4px) * ${calc.wpos(a, sc) / sc.H})`,
@@ -313,7 +383,7 @@ function Cell({ empId, empName, d, wide, calc, on }: { empId: string; empName: s
         const t = x.part === "hrs" ? `${hhmm(x.time_from)}–${hhmm(x.time_to)}` : p === "am" ? "dopol." : "popol.";
         const nt = x.note?.trim();
         return (
-          <span key={p} className={`h f ${ds.cls}${nt ? " has-note" : ""}`} data-id={x.id} title={tip(x, nt)}>
+          <span key={p} className={`h f ${ds.cls}${nt ? " has-note" : ""}${pcls(x)}`} {...idAttr(x)} title={tip(x, nt)}>
             <b>
               {ds.code}
               {more}
@@ -451,7 +521,7 @@ function DayTable({
     );
   }
   const awayH = (id: string, s: string) =>
-    on(id, s).filter((x) => KIND[x.type] !== "work").reduce((a, x) => a + calc.hoursOf(x), 0);
+    on(id, s).filter((x) => KIND[x.type] !== "work" && x.pend !== "new").reduce((a, x) => a + calc.hoursOf(x), 0);
   const fullAway = (id: string, s: string) => awayH(id, s) >= calc.sched(id).H;
   const backDay = (id: string) => {
     let s = plus(d, 1);
@@ -493,8 +563,8 @@ function DayTable({
               const mine = e.id === meId;
               const can = admin || e.id === meId || managed.has(e.id);
               const ds = disp(x);
-              const c = can ? "rowclick" : "";
-              const at = can ? { "data-edit": x.id } : {};
+              const c = can && x.pend !== "new" ? "rowclick" : "";
+              const at = can && x.pend !== "new" ? { "data-edit": x.id } : {};
               const work = KIND[x.type] === "work";
               const per = x.date_from === x.date_to ? fdw(x.date_from) : `${fd(x.date_from)} – ${fd(x.date_to)}`;
               const sub = x.substitute_id ? emps.find((z) => z.id === x.substitute_id) : null;
@@ -506,7 +576,7 @@ function DayTable({
                     </td>
                   )}
                   <td className={c} {...at}>
-                    <span className={`dpill ${ds.cls}`}>
+                    <span className={`dpill ${ds.cls}${pcls(x)}`} title={pendTip(x).trim() || undefined}>
                       <b>{ds.code}</b>
                       {ds.name}
                     </span>

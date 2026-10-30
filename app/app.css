@@ -294,3 +294,16 @@ a.namebtn:hover { color: var(--accent); }
 .okc2.unlock .t { max-width: 0; opacity: 0; overflow: hidden; transition: max-width .18s ease, opacity .15s, margin .18s; }
 .okc2.unlock:hover, .okc2.unlock:focus-visible { background: #FBE3E3; padding: 0 9px 0 6px; outline: none; }
 .okc2.unlock:hover .t, .okc2.unlock:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }
+
+/* čakajúce žiadosti v kalendári */
+.cell > span.f.pend-new, .dpill.pend-new {
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.75) 0 4px, transparent 4px 8px) !important;
+  outline: 1.5px dashed #D98A00; outline-offset: -1.5px; opacity: .85; cursor: help;
+}
+.cell > span.f.pend-delete, .dpill.pend-delete { outline: 1.5px dashed #D64545; outline-offset: -1.5px; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.cell > span.f.pend-edit, .dpill.pend-edit { outline: 1.5px dashed #D98A00; outline-offset: -1.5px; }
+.pendlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: -4px; }
+.pendlegend .smp { display: inline-block; width: 22px; height: 14px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; background: #E6F6EC; }
+.pendlegend .smp.pend-new { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.75) 0 4px, transparent 4px 8px); outline: 1.5px dashed #D98A00; outline-offset: -1.5px; }
+.pendlegend .smp.pend-delete { outline: 1.5px dashed #D64545; outline-offset: -1.5px; }
+.pendlegend .smp.pend-edit { outline: 1.5px dashed #D98A00; outline-offset: -1.5px; }

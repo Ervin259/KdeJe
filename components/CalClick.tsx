@@ -9,6 +9,8 @@ export function CalClick({ back, children }: { back: string; children: React.Rea
   const router = useRouter();
   function onClick(e: React.MouseEvent) {
     const t = e.target as HTMLElement;
+    // náhľad čakajúcej žiadosti sa neotvára
+    if (t.closest("[data-req]")) return;
     const rec = t.closest<HTMLElement>("[data-id]");
     const cell = t.closest<HTMLElement>("[data-emp]");
     const row = t.closest<HTMLElement>("[data-edit]");
