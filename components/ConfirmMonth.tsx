@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/data";
 import { CONFIRM_DAYS_BEFORE, MN, confirmOpen, fd, plus } from "@/lib/calc";
 
 async function confirmMonth(form: FormData) {
@@ -9,6 +10,20 @@ async function confirmMonth(form: FormData) {
   const y = Number(form.get("y"));
   const m = Number(form.get("m"));
   await supabase.from("month_confirmations").insert({ employee_id: empId, year: y, month: m });
+  revalidatePath("/", "layout");
+}
+
+/** Admin zruší odsúhlasenie – mesiac sa zamestnancovi znova odomkne. */
+async function unconfirmMonth(form: FormData) {
+  "use server";
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase
+    .from("month_confirmations")
+    .delete()
+    .eq("employee_id", String(form.get("emp")))
+    .eq("year", Number(form.get("y")))
+    .eq("month", Number(form.get("m")));
   revalidatePath("/", "layout");
 }
 
@@ -37,6 +52,7 @@ export function ConfirmMonthButton({
   empId,
   confirmedAt,
   forName,
+  canUnlock = false,
   short = false,
 }: {
   short?: boolean;
@@ -49,15 +65,33 @@ export function ConfirmMonthButton({
   confirmedAt?: string;
   /** meno zamestnanca, keď odsúhlasuje admin za iného */
   forName?: string;
+  /** admin môže odsúhlasenie zrušiť kliknutím na zámok */
+  canUnlock?: boolean;
 }) {
   void short;
+  const when = confirmedAt ? fd(confirmedAt.slice(0, 10)) : "";
+  if (confirmedAt && canUnlock)
+    return (
+      <form action={unconfirmMonth}>
+        <input type="hidden" name="emp" value={empId} />
+        <input type="hidden" name="y" value={y} />
+        <input type="hidden" name="m" value={m} />
+        <button
+          className="okc2 done unlock"
+          title={`Odsúhlasené ${when}. Kliknutím odsúhlasenie zrušíš a ${MN[m - 1]} sa ${forName ? "zamestnancovi" : "ti"} znova odomkne.`}
+        >
+          <LockIcon />
+          <span className="t">Odomknúť</span>
+        </button>
+      </form>
+    );
   if (confirmedAt)
     return (
       <span
         className="okc2 done"
         role="img"
         aria-label="Odsúhlasené"
-        title={`Dochádzka ${forName ? `(${forName}) ` : ""}za ${MN[m - 1]} je odsúhlasená ${fd(confirmedAt.slice(0, 10))} a uzamknutá`}
+        title={`Dochádzka ${forName ? `(${forName}) ` : ""}za ${MN[m - 1]} je odsúhlasená ${when} a uzamknutá`}
       >
         <LockIcon />
       </span>

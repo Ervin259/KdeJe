@@ -290,3 +290,7 @@ a.namebtn:hover { color: var(--accent); }
 .okc2.todo:hover .t, .okc2.todo:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }
 .okc2.done { border: 1.5px solid #D64545; color: #D64545; cursor: default; }
 .okc2.wait { border: 1.5px dashed #C9CFDB; color: #C9CFDB; cursor: default; }
+.okc2.unlock { cursor: pointer; transition: background .15s, padding .15s; }
+.okc2.unlock .t { max-width: 0; opacity: 0; overflow: hidden; transition: max-width .18s ease, opacity .15s, margin .18s; }
+.okc2.unlock:hover, .okc2.unlock:focus-visible { background: #FBE3E3; padding: 0 9px 0 6px; outline: none; }
+.okc2.unlock:hover .t, .okc2.unlock:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }

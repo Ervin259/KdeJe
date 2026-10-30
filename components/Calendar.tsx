@@ -187,6 +187,7 @@ export async function Calendar({
           empId={e.id}
           confirmedAt={conf.get(e.id)}
           forName={e.id === me.id ? undefined : e.name}
+          canUnlock={admin}
           short
         />
       </span>
