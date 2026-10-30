@@ -280,3 +280,13 @@ a.namebtn:hover { color: var(--accent); }
 /* menšie tlačidlo Odsúhlasiť v riadkoch kalendára */
 .cal td.name .mebtns .btn.confbtn, .cal td.name .mebtns .pill.confpill { height: 20px; padding: 0 6px; font-size: 10.5px; font-weight: 600; border-radius: 5px; margin-right: 0; line-height: 18px; }
 .cal td.name .mebtns form { display: inline-flex; }
+
+/* odsúhlasenie mesiaca v kalendári: krúžok s fajkou → po odsúhlasení zámok */
+.okc2 { display: inline-flex; align-items: center; justify-content: center; height: 22px; min-width: 22px; padding: 0 4px; box-sizing: border-box;
+  border-radius: 11px; font: inherit; font-size: 11px; font-weight: 700; white-space: nowrap; line-height: 1; background: var(--surface, #fff); flex: none; }
+.okc2.todo { border: 1.5px dashed #2E9E5B; color: #2E9E5B; cursor: pointer; transition: background .15s, padding .15s; }
+.okc2.todo .t { max-width: 0; opacity: 0; overflow: hidden; transition: max-width .18s ease, opacity .15s, margin .18s; }
+.okc2.todo:hover, .okc2.todo:focus-visible { border-style: solid; background: #E6F6EC; padding: 0 9px 0 6px; outline: none; }
+.okc2.todo:hover .t, .okc2.todo:focus-visible .t { max-width: 80px; opacity: 1; margin-left: 4px; }
+.okc2.done { border: 1.5px solid #D64545; color: #D64545; cursor: default; }
+.okc2.wait { border: 1.5px dashed #C9CFDB; color: #C9CFDB; cursor: default; }

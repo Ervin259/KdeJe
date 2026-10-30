@@ -50,25 +50,28 @@ export function ConfirmMonthButton({
   /** meno zamestnanca, keď odsúhlasuje admin za iného */
   forName?: string;
 }) {
-  const label = short ? "Odsúhlasiť" : `Odsúhlasiť ${MN[m - 1]}`;
+  void short;
   if (confirmedAt)
     return (
       <span
-        className="pill open confpill"
-        title={`Dochádzka ${forName ? `(${forName}) ` : ""}za ${MN[m - 1]} odsúhlasená ${fd(confirmedAt.slice(0, 10))}`}
+        className="okc2 done"
+        role="img"
+        aria-label="Odsúhlasené"
+        title={`Dochádzka ${forName ? `(${forName}) ` : ""}za ${MN[m - 1]} je odsúhlasená ${fd(confirmedAt.slice(0, 10))} a uzamknutá`}
       >
-        ✓ Odsúhlasené
+        <LockIcon />
       </span>
     );
   if (!confirmOpen(today, last))
     return (
-      <button
-        className="btn confbtn"
-        disabled
+      <span
+        className="okc2 wait"
+        role="img"
+        aria-label="Zatiaľ nie je možné odsúhlasiť"
         title={`Odsúhlasiť sa dá od ${fd(plus(last, -CONFIRM_DAYS_BEFORE))} (${CONFIRM_DAYS_BEFORE} dni pred koncom mesiaca)`}
       >
-        {label}
-      </button>
+        <CheckIcon />
+      </span>
     );
   return (
     <form action={confirmMonth}>
@@ -76,15 +79,33 @@ export function ConfirmMonthButton({
       <input type="hidden" name="y" value={y} />
       <input type="hidden" name="m" value={m} />
       <button
-        className="btn confbtn"
+        className="okc2 todo"
         title={
           forName
             ? `Odsúhlasíš dochádzku za ${MN[m - 1]} za: ${forName}. Záznamy sa potom uzamknú.`
             : `Potvrdíš, že tvoje záznamy za ${MN[m - 1]} sú úplné. Potom sa uzamknú.`
         }
       >
-        {label}
+        <CheckIcon />
+        <span className="t">Odsúhlasiť</span>
       </button>
     </form>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <rect x="3" y="7" width="10" height="7.5" rx="1.6" fill="currentColor" />
+      <path d="M5.3 7V5.2a2.7 2.7 0 0 1 5.4 0V7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
   );
 }
