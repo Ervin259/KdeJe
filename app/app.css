@@ -309,3 +309,10 @@ a.namebtn:hover { color: var(--accent); }
 .pendlegend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); margin-top: -4px; }
 .pendlegend .smp { position: relative; display: inline-block; width: 14px; height: 14px; vertical-align: -3px; margin-right: 10px; }
 .pendlegend .smp::before { top: 0; right: 0; width: 14px; height: 14px; }
+
+/* jedno tlačidlo žiadosti vo farbe druhu žiadosti */
+.btn.reqbtn { color: #fff; border-color: transparent; font-weight: 600; }
+.btn.reqbtn.req-new { background: #1E9E4F; } .btn.reqbtn.req-new:hover { background: #17843F; }
+.btn.reqbtn.req-edit { background: #D98A00; } .btn.reqbtn.req-edit:hover { background: #B87400; }
+.btn.reqbtn.req-del { background: #D63B3B; } .btn.reqbtn.req-del:hover { background: #B82E2E; }
+.btn.reqbtn:disabled { opacity: .7; }

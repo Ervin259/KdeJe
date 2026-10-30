@@ -57,6 +57,8 @@ export function EntryForm({
   const needReason = locked || state.needReason || dstate.needReason;
   const errors = [...(state.error ?? []), ...(dstate.error ?? [])];
   const reasonMsg = state.reasonMsg || dstate.reasonMsg;
+  // pri žiadosti k existujúcemu záznamu: zmena alebo vymazanie (jedno tlačidlo dole)
+  const [reqKind, setReqKind] = useState<"edit" | "delete">(dstate.needReason ? "delete" : "edit");
 
   return (
     <form
@@ -160,6 +162,20 @@ export function EntryForm({
         </label>
       </div>
 
+      {needReason && init.id && (
+        <div className="fl" style={{ display: "grid", gap: 5, fontWeight: 600, fontSize: 13 }}>
+          Žiadosť o
+          <div className="seg" role="group" aria-label="Druh žiadosti" style={{ justifySelf: "start" }}>
+            <button type="button" aria-pressed={reqKind === "edit"} onClick={() => setReqKind("edit")}>
+              Zmenu záznamu
+            </button>
+            <button type="button" aria-pressed={reqKind === "delete"} onClick={() => setReqKind("delete")}>
+              Vymazanie záznamu
+            </button>
+          </div>
+        </div>
+      )}
+
       {needReason && (
         <label className="fl">
           Dôvod žiadosti
@@ -177,27 +193,55 @@ export function EntryForm({
       )}
 
       <div className="acts">
-        {init.id && (
-          <button
-            className="btn danger"
-            data-act="del"
-            formNoValidate
-            disabled={deleting}
-            onClick={(e) => {
-              if (!confirm(needReason ? "Odoslať žiadosť o vymazanie záznamu?" : "Naozaj vymazať tento záznam?")) e.preventDefault();
-            }}
-          >
-            {needReason ? "Žiadosť o vymazanie" : "Vymazať"}
-          </button>
+        {needReason ? (
+          <>
+            <span />
+            <div className="row">
+              <Link href={back} className="btn">
+                Zrušiť
+              </Link>
+              {!init.id ? (
+                <button className="btn reqbtn req-new" disabled={saving}>
+                  {saving ? "Odosielam…" : "Odoslať žiadosť o zápis"}
+                </button>
+              ) : reqKind === "edit" ? (
+                <button className="btn reqbtn req-edit" disabled={saving}>
+                  {saving ? "Odosielam…" : "Odoslať žiadosť o zmenu"}
+                </button>
+              ) : (
+                <button className="btn reqbtn req-del" data-act="del" disabled={deleting}>
+                  {deleting ? "Odosielam…" : "Odoslať žiadosť o vymazanie"}
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            {init.id ? (
+              <button
+                className="btn danger"
+                data-act="del"
+                formNoValidate
+                disabled={deleting}
+                onClick={(e) => {
+                  if (!confirm("Naozaj vymazať tento záznam?")) e.preventDefault();
+                }}
+              >
+                Vymazať
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="row">
+              <Link href={back} className="btn">
+                Zrušiť
+              </Link>
+              <button className="btn primary" disabled={saving}>
+                {saving ? "Ukladám…" : "Uložiť"}
+              </button>
+            </div>
+          </>
         )}
-        <div className="row">
-          <Link href={back} className="btn">
-            Zrušiť
-          </Link>
-          <button className="btn primary" disabled={saving}>
-            {saving ? "Ukladám…" : needReason ? "Odoslať žiadosť" : "Uložiť"}
-          </button>
-        </div>
       </div>
     </form>
   );
