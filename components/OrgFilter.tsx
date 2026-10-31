@@ -27,7 +27,7 @@ function MultiSelect({ k, options, selected, allLabel, title }: { k: Key; option
     setSel(v);
     start(() => setOrgFilter(k, v.join(SEP)));
   }
-  const label = !sel.length ? allLabel : sel.length === 1 ? sel[0] : `${sel[0]} +${sel.length - 1}`;
+  const label = !sel.length ? title : sel.length === 1 ? sel[0] : `${sel[0]} +${sel.length - 1}`;
 
   return (
     <div className="ypdd orgdd" ref={ref}>
@@ -82,9 +82,9 @@ export function OrgFilter({
 }) {
   return (
     <span className="orgfilter">
-      {sites.length > 0 && <MultiSelect k="kj_site" options={sites} selected={site} allLabel="Všetky prevádzky" title="Prevádzka" />}
-      {depts.length > 0 && <MultiSelect k="kj_dept" options={depts} selected={dept} allLabel="Všetky oddelenia" title="Oddelenie" />}
-      {pps.length > 1 && <MultiSelect k="kj_pp" options={pps} selected={pp} allLabel="Všetky typy vzťahu" title="Typ vzťahu" />}
+      {sites.length > 0 && <MultiSelect k="kj_site" options={sites} selected={site} allLabel="Všetky" title="Prevádzka" />}
+      {depts.length > 0 && <MultiSelect k="kj_dept" options={depts} selected={dept} allLabel="Všetky" title="Oddelenie" />}
+      {pps.length > 1 && <MultiSelect k="kj_pp" options={pps} selected={pp} allLabel="Všetky" title="Typ vzťahu" />}
     </span>
   );
 }
