@@ -144,7 +144,7 @@ export default async function SettingsPage({
                       Trvanie<br />pomeru
                     </th>
                     <th>
-                      Pracovný<br />čas a SL
+                      Pracovná<br />doba a SL
                     </th>
                     <th className="c">
                       Prenos<br />z {year - 1}
