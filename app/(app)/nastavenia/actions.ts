@@ -351,7 +351,7 @@ export type InviteState = { sent?: string[]; failed?: string[]; error?: string }
 
 /** Pošle pozvánky vybraným zamestnancom (nový účet = pozvánka, existujúci = nový prihlasovací odkaz). */
 export async function inviteEmployees(_p: InviteState, f: FormData): Promise<InviteState> {
-  await requireAdmin();
+  const me = await requireAdmin();
   const { adminClient, publicClient } = await import("@/lib/supabase/admin");
   const admin = adminClient();
   if (!admin) return { error: "Chýba premenná SUPABASE_SERVICE_ROLE_KEY vo Verceli – pozvánky sa zatiaľ nedajú posielať z aplikácie." };
@@ -370,7 +370,11 @@ export async function inviteEmployees(_p: InviteState, f: FormData): Promise<Inv
       failed.push(`${e.name}: chýba e-mail`);
       continue;
     }
-    const inv = await admin.auth.admin.inviteUserByEmail(e.email, { redirectTo: `${origin}/login` });
+    // názov firmy sa zobrazí v pozvánke ({{ .Data.company_name }}), aby nepôsobila ako spam
+    const inv = await admin.auth.admin.inviteUserByEmail(e.email, {
+      redirectTo: `${origin}/login`,
+      data: { company_name: me.company_name },
+    });
     if (!inv.error) {
       sent.push(e.name);
       continue;

@@ -19,7 +19,7 @@ export async function approveSignup(_p: FirmState, f: FormData): Promise<FirmSta
   const { error } = await supabase.rpc("approve_signup", { p_id: id });
   if (error) return { error: error.message };
 
-  const invite = await sendInvite(s.admin_email);
+  const invite = await sendInvite(s.admin_email, s.company_name);
   revalidatePath("/", "layout");
   return invite
     ? { error: `Firma „${s.company_name}“ je založená, ale pozvánku sa nepodarilo poslať: ${invite}. Pošlite ju v Supabase (Authentication → Users → Invite).` }
@@ -51,13 +51,22 @@ export async function resendInvite(_p: FirmState, f: FormData): Promise<FirmStat
 }
 
 /** Pozvánka (nový účet) alebo prihlasovací odkaz (účet už existuje). Vráti text chyby alebo null. */
-async function sendInvite(email: string): Promise<string | null> {
+async function sendInvite(email: string, companyName?: string | null): Promise<string | null> {
   const { adminClient, publicClient } = await import("@/lib/supabase/admin");
   const admin = adminClient();
   if (!admin) return "chýba SUPABASE_SERVICE_ROLE_KEY vo Verceli";
+  // názov firmy do pozvánky ({{ .Data.company_name }}) – pri opätovnom poslaní podľa e-mailu admina
+  if (!companyName) {
+    const { data } = await admin.from("employees").select("companies(name)").ilike("email", email).limit(1).maybeSingle();
+    const c = data?.companies as { name?: string } | { name?: string }[] | null | undefined;
+    companyName = (Array.isArray(c) ? c[0]?.name : c?.name) ?? null;
+  }
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
-  const inv = await admin.auth.admin.inviteUserByEmail(email, { redirectTo: `${origin}/login` });
+  const inv = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${origin}/login`,
+    data: companyName ? { company_name: companyName } : undefined,
+  });
   if (!inv.error) return null;
   if (/already|registered|exists/i.test(inv.error.message)) {
     const otp = await publicClient().auth.signInWithOtp({
