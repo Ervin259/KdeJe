@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireAdmin, todayIso } from "@/lib/data";
 import { buildPayroll } from "@/lib/payroll";
 import { KIND, MNC, TYPE_NAME, byLastName, confirmOpen, fd, fdw, nf, typeClass } from "@/lib/calc";
-import { PP_LABEL, PP_ORDER, cntTxt } from "@/lib/report";
+import { ppLabel, ppOrder, cntTxt } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { StatusPill } from "@/components/ui";
 import { CheckDropdown } from "@/components/Dropdown";
@@ -21,8 +21,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const st = mstatus(year, m);
   const canConfirm = confirmOpen(calc.today, st.last);
 
-  // pracovné pomery, v ktorých má niekto zapnuté „V podkladoch pre mzdy“
-  const avail = PP_ORDER.filter((g) => emps.some((e) => e.contract_type === g && e.active && e.in_payroll));
+  // typy vzťahu, v ktorých má niekto zapnuté „V podkladoch pre mzdy“
+  const avail = ppOrder(emps.map((e) => e.contract_type)).filter((g) => emps.some((e) => e.contract_type === g && e.active && e.in_payroll));
   const selPP = sp.pp ? sp.pp.split(",").filter((g) => avail.includes(g)) : avail;
   const show = selPP.length ? selPP : avail.slice(0, 1);
 
@@ -69,10 +69,10 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         </form>
         <CheckDropdown
           param="pp"
-          options={avail.map((g) => ({ value: g, label: PP_LABEL[g], count: emps.filter((e) => e.contract_type === g).length }))}
+          options={avail.map((g) => ({ value: g, label: ppLabel(g), count: emps.filter((e) => e.contract_type === g).length }))}
           selected={show}
           allLabel="Všetci"
-          label={show.map((g) => PP_LABEL[g]).join(", ")}
+          label={show.map((g) => ppLabel(g)).join(", ")}
         />
       </div>
     </div>
@@ -105,7 +105,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
             .map((g) => {
               const rows = groups[g].slice().sort((a, b) => byLastName(a.e, b.e));
               return (
-                <PayBox key={g} title={PP_LABEL[g]} count={cntTxt(rows.length)} actions={<CopyButton tsv={tsv(g)} />}>
+                <PayBox key={g} title={ppLabel(g)} count={cntTxt(rows.length)} actions={<CopyButton tsv={tsv(g)} />}>
                   <div className="gridwrap">
                     <table className="t yt paytab">
                       <thead>

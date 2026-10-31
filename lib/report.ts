@@ -26,7 +26,12 @@ export const isOn = (
   b: string
 ) => e.active && (!e.date_from || e.date_from <= b) && (!e.date_to || e.date_to >= a);
 
-export const PP_LABEL: Record<string, string> = { TPP: "TPP", DOH: "Dohoda", ZIV: "Živnosť", SRO: "s.r.o." };
-export const PP_ORDER = ["TPP", "DOH", "ZIV", "SRO"];
+/** Typ vzťahu: zoznam si firma upravuje sama, DOH sa zobrazuje ako „Dohoda“, ostatné kódom. */
+export const ppLabel = (g: string) => (g === "DOH" ? "Dohoda" : g);
+/** Poradie typov vzťahu: TPP, DOH, potom abecedne. */
+export function ppOrder(codes: Iterable<string | null | undefined>) {
+  const rank = (g: string) => (g === "TPP" ? 0 : g === "DOH" ? 1 : 2);
+  return [...new Set([...codes].filter((x): x is string => !!x))].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "sk"));
+}
 
 export const cntTxt = (n: number) => `${n} ${n === 1 ? "zamestnanec" : n >= 2 && n < 5 ? "zamestnanci" : "zamestnancov"}`;

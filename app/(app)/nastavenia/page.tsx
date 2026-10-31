@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
 import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
-import { PP_LABEL, PP_ORDER } from "@/lib/report";
+import { ppLabel, ppOrder } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
 import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, EntCheck, WorkGroups, type RG, type WG } from "./ui";
@@ -49,15 +49,16 @@ export default async function SettingsPage({
   const act = emps.filter((e) => e.active && !e.is_external);
   const hiddenN = emps.filter((e) => !e.active && !e.is_external).length;
   const showHidden = sp.skryti === "1";
-  const filt = sp.f && PP_ORDER.includes(sp.f) ? sp.f : null;
+  const PP = ppOrder(emps.map((e) => e.contract_type));
+  const filt = sp.f && PP.includes(sp.f) ? sp.f : null;
   // správcovia, ktorí nie sú zamestnancami firmy, sú len v Rolách a prístupoch
   const list = emps
     .filter((e) => !e.is_external && (showHidden || e.active) && (!filt || e.contract_type === filt))
     .sort(byLastName);
-  // prihlásený admin vždy na prvom mieste, ostatní podľa pracovného pomeru
+  // prihlásený admin vždy na prvom mieste, ostatní podľa typu vzťahu
   const ordered = [
     ...list.filter((e) => e.id === me.id),
-    ...PP_ORDER.flatMap((g) => list.filter((e) => e.contract_type === g && e.id !== me.id)),
+    ...PP.flatMap((g) => list.filter((e) => e.contract_type === g && e.id !== me.id)),
   ];
   const noteOf = (id: string) => (notes ?? []).find((n) => n.employee_id === id)?.note;
   const grp = (id: string | null) => groups.find((g) => g.id === id) ?? groups.find((g) => g.is_default)!;
@@ -65,11 +66,11 @@ export default async function SettingsPage({
 
   const empSum = (
     <span className="empsum">
-      {PP_ORDER.map((g) => [g, act.filter((e) => e.contract_type === g).length] as const)
+      {PP.map((g) => [g, act.filter((e) => e.contract_type === g).length] as const)
         .filter(([, n]) => n)
         .map(([g, n]) => (
-          <Link key={g} data-empf={g} href={`/nastavenia?open=emp&f=${g}`} className={filt === g ? "on" : ""} title={`Zobraziť len ${PP_LABEL[g]}`}>
-            {PP_LABEL[g]} <b>{n}</b>
+          <Link key={g} data-empf={g} href={`/nastavenia?open=emp&f=${g}`} className={filt === g ? "on" : ""} title={`Zobraziť len ${ppLabel(g)}`}>
+            {ppLabel(g)} <b>{n}</b>
           </Link>
         ))}
       <Link data-empf="all" href="/nastavenia?open=emp" className={`tot${!filt ? " on" : ""}`} title="Zobraziť všetkých">
@@ -91,7 +92,7 @@ export default async function SettingsPage({
   const managers = act.filter((e) => e.is_manager).sort(byLastName);
   const admins = emps.filter((e) => e.active && e.role === "admin").sort(byLastName);
   const teamOf = (id: string) => asg.filter((a) => a.manager_id === id).map((a) => a.employee_id);
-  const people = [...act].sort(byLastName).map((e) => ({ id: e.id, name: e.name, pp: PP_LABEL[e.contract_type] }));
+  const people = [...act].sort(byLastName).map((e) => ({ id: e.id, name: e.name, pp: ppLabel(e.contract_type) }));
   const nameOf = (id: string) => emps.find((e) => e.id === id)?.name ?? "";
 
   const STATUS: Record<string, string> = { trial: "Skúšobná doba", active: "Aktívne", suspended: "Pozastavené" };
@@ -134,7 +135,7 @@ export default async function SettingsPage({
                   <tr>
                     <th>Meno</th>
                     <th>E-mail</th>
-                    <th title="Pracovný pomer">Prac. pomer</th>
+                    <th title="Typ vzťahu">Typ vzťahu</th>
                     {useOrg && <th>Prevádzka</th>}
                     {useOrg && <th>Oddelenie</th>}
                     <th>Trvanie pomeru</th>
@@ -180,7 +181,7 @@ export default async function SettingsPage({
                             </span>
                           )}
                         </td>
-                        <td>{PP_LABEL[e.contract_type]}</td>
+                        <td>{ppLabel(e.contract_type)}</td>
                         {useOrg && <td>{e.site ?? <span className="muted">—</span>}</td>}
                         {useOrg && <td>{e.department ?? <span className="muted">—</span>}</td>}
                         <td className="num" style={{ whiteSpace: "nowrap" }}>

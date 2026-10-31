@@ -71,7 +71,7 @@ export default function GuidePage() {
               <b>Nastavenia → Kalendár → Sviatky:</b> načítajte štátne sviatky na rok a pridajte prípadné firemné voľno.
             </li>
             <li>
-              <b>Nastavenia → Užívatelia → Zamestnanci:</b> pridajte zamestnancov (meno, e-mail, pracovný pomer, nárok na dovolenku a prenos z minulého
+              <b>Nastavenia → Užívatelia → Zamestnanci:</b> pridajte zamestnancov (meno, e-mail, typ vzťahu, nárok na dovolenku a prenos z minulého
               roka). Kto nemá e-mail, môže byť v aplikácii aj tak – zapisuje zaňho vedúci alebo admin.
             </li>
             <li>

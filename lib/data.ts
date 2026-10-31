@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
-export type ContractType = "TPP" | "DOH" | "ZIV" | "SRO";
+/** Typ vzťahu – zoznam firmy (TPP, DOH, EXT…); DOH = dohoda s výkazom hodín. */
+export type ContractType = string;
 
 export type Me = {
   id: string;
@@ -47,12 +48,6 @@ export type CalEntry = {
   note: string | null;
 };
 
-export const CONTRACT_LABEL: Record<ContractType, string> = {
-  TPP: "TPP",
-  DOH: "Dohoda",
-  ZIV: "Živnosť",
-  SRO: "s.r.o.",
-};
 
 /** Cookie s pohľadom admina: „emp“ = vidí aplikáciu ako zamestnanec. */
 export const VIEW_COOKIE = "kdeje-view";
@@ -97,7 +92,7 @@ export const getMe = cache(async (): Promise<Me | null> => {
       name: user.email ?? "Superadmin",
       role: companyId ? "admin" : "employee",
       realRole: companyId ? "admin" : "employee",
-      contract_type: "SRO",
+      contract_type: "EXT",
       sees_calendar: true,
       company_id: companyId,
       company_name: companyName,

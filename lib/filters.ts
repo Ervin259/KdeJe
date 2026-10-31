@@ -9,11 +9,11 @@ export type GroupBy = "site" | "department" | "contract_type" | "none";
 export const GROUP_LABEL: Record<GroupBy, string> = {
   site: "Prevádzka",
   department: "Oddelenie",
-  contract_type: "Prac. pomer",
+  contract_type: "Typ vzťahu",
   none: "Bez zoskupenia",
 };
-export const PP_NAME: Record<string, string> = { TPP: "TPP", DOH: "Dohoda", ZIV: "Živnosť", SRO: "S.r.o." };
-const PP_SORT: Record<string, number> = { TPP: 0, DOH: 1, ZIV: 2, SRO: 3 };
+const ppName = (g: string) => (g === "DOH" ? "Dohoda" : g);
+const ppRank = (g: string) => (g === "TPP" ? 0 : g === "DOH" ? 1 : 2);
 
 export type EmpOrg = { name: string; site?: string | null; department?: string | null; contract_type?: string };
 /** vybrané prevádzky a oddelenia (prázdne = všetky) */
@@ -38,20 +38,20 @@ export function applyFilter<T extends EmpOrg>(list: T[], f: Filter) {
 /** Hodnota skupiny zamestnanca (prázdna = bez prevádzky/oddelenia). */
 export function groupOf(e: EmpOrg, g: GroupBy) {
   if (g === "none") return "";
-  if (g === "contract_type") return PP_NAME[e.contract_type ?? ""] ?? e.contract_type ?? "";
+  if (g === "contract_type") return ppName(e.contract_type ?? "");
   return (g === "site" ? e.site : e.department) ?? "";
 }
 
 const cmp = (a: string, b: string) => (!a && b ? 1 : a && !b ? -1 : a.localeCompare(b, "sk"));
 
-/** Zoradenie: najprv podľa zvoleného zoskupenia, potom prevádzka, oddelenie, pracovný pomer a priezvisko. */
+/** Zoradenie: najprv podľa zvoleného zoskupenia, potom prevádzka, oddelenie, typ vzťahu a priezvisko. */
 export function sortGrouped<T extends EmpOrg>(list: T[], g: GroupBy) {
   const keys: GroupBy[] = g === "none" ? [] : [g, ...(["site", "department", "contract_type"] as GroupBy[]).filter((k) => k !== g)];
   return list.slice().sort((a, b) => {
     for (const k of keys) {
       const r =
         k === "contract_type"
-          ? (PP_SORT[a.contract_type ?? ""] ?? 9) - (PP_SORT[b.contract_type ?? ""] ?? 9)
+          ? ppRank(a.contract_type ?? "") - ppRank(b.contract_type ?? "") || cmp(a.contract_type ?? "", b.contract_type ?? "")
           : cmp(groupOf(a, k), groupOf(b, k));
       if (r) return r;
     }

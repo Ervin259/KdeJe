@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { loadCompany, loadEntries, type EmpFull } from "@/lib/loaders";
 import { KIND, monthDays, monthRange, type Entry } from "@/lib/calc";
-import { isOn, monthVals, payCols, PP_ORDER, type Vals } from "@/lib/report";
+import { isOn, monthVals, payCols, ppOrder, type Vals } from "@/lib/report";
 import type { RzDay } from "@/lib/rozpis";
 
 export type ContractHours = {
@@ -46,7 +46,7 @@ export async function buildPayroll(y: number, m: number) {
   };
 
   const groups: Record<string, PayRow[]> = {};
-  for (const g of PP_ORDER.filter((g) => g !== "DOH")) {
+  for (const g of ppOrder(visible.map((e) => e.contract_type)).filter((g) => g !== "DOH")) {
     groups[g] = visible
       .filter((e) => e.contract_type === g)
       .map((e) => {

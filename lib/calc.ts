@@ -38,7 +38,7 @@ export type AbsenceKind = "abs" | "sc" | "work";
 export type Emp = {
   id: string;
   name: string;
-  contract_type: "TPP" | "DOH" | "ZIV" | "SRO";
+  contract_type: string;
   work_group_id: string | null;
   date_from: string | null;
   date_to: string | null;

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   let rows: (string | number | boolean | null)[][] = [];
 
   if (typ === "zamestnanci") {
-    header = ["Meno", "E-mail", "Pracovný pomer", "Firma", "Od", "Do", "Aktívny", "Admin", "Vedúci"];
+    header = ["Meno", "E-mail", "Typ vzťahu", "Firma", "Od", "Do", "Aktívny", "Admin", "Vedúci"];
     rows = (emps ?? []).map((e) => [e.name, e.email, e.contract_type, e.firm, e.date_from, e.date_to, e.active ? "áno" : "nie", e.role === "admin" ? "áno" : "nie", e.is_manager ? "áno" : "nie"]);
   } else if (typ === "dovolenky") {
     const { data } = await supabase.from("vacation_years").select("employee_id, year, entitlement_full, entitlement, carry_in, closed").order("year");

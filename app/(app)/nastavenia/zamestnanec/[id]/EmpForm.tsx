@@ -2,12 +2,14 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { saveEmployee, type SetState } from "../../actions";
+import { ListSelect } from "@/components/ListSelect";
 
 export type EmpInit = {
   id: string | null;
   name: string;
   email: string;
-  contract_type: "TPP" | "DOH" | "ZIV" | "SRO";
+  /** typ vzťahu (TPP, DOH, EXT… – zoznam firmy) */
+  contract_type: string;
   site: string;
   department: string;
   firm: string;
@@ -37,12 +39,6 @@ export type EmpInit = {
 };
 
 type Opt = { id: string; name: string; info: string };
-const PP: [string, string][] = [
-  ["TPP", "TPP"],
-  ["DOH", "Dohoda"],
-  ["ZIV", "Živnosť"],
-  ["SRO", "s.r.o."],
-];
 const nf = (n: number) => String(Math.round(n * 1000) / 1000).replace(".", ",");
 
 function Kf({ label, hint, htmlFor, children }: { label: string; hint?: React.ReactNode; htmlFor?: string; children: React.ReactNode }) {
@@ -83,11 +79,13 @@ export function EmpForm({
   meId: string;
   /** aktívni zamestnanci firmy (výber ľudí pre vedúceho) */
   people: { id: string; name: string; pp: string }[];
-  /** už použité prevádzky a oddelenia (návrhy pri písaní) */
-  orgOpts: { sites: string[]; depts: string[] };
+  /** zoznamy firmy: typy vzťahu, prevádzky, oddelenia */
+  orgOpts: { contract: string[]; sites: string[]; depts: string[] };
 }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveEmployee, {});
   const [pp, setPp] = useState(init.contract_type);
+  const [site, setSite] = useState(init.site);
+  const [dept, setDept] = useState(init.department);
   const [active, setActive] = useState(init.active);
   const [grp, setGrp] = useState(init.work_group_id);
   const [rg, setRg] = useState(init.rights_group_id);
@@ -115,7 +113,7 @@ export function EmpForm({
       <div className="monthbar">
         <div className="mnav">
           <h2>{init.id ? init.name : "Nový zamestnanec"}</h2>
-          {init.id && <span className="pill closed">{PP.find((x) => x[0] === init.contract_type)?.[1]}</span>}
+          {init.id && <span className="pill closed">{init.contract_type}</span>}
           {!init.active && <span className="pill bad">skrytý</span>}
         </div>
       </div>
@@ -150,32 +148,20 @@ export function EmpForm({
                 )}
               </div>
             </Kf>
-            <Kf label="Pracovný pomer" htmlFor="ef-pp">
+            <Kf
+              label="Typ vzťahu"
+              htmlFor="ef-pp"
+              hint="TPP – pracovný pomer, DOH – dohoda (výkaz hodín, bez odsúhlasenia mesiaca). Ďalšie typy sa správajú ako TPP. Zoznam upravíte ceruzkou."
+            >
               <div className="kin">
-                <select id="ef-pp" name="contract_type" className="w-sm" value={pp} onChange={(e) => setPp(e.target.value as EmpInit["contract_type"])}>
-                  {PP.map(([k, l]) => (
-                    <option key={k} value={k}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
+                <ListSelect kind="contract" id="ef-pp" name="contract_type" label="Typ vzťahu" value={pp} onChange={(v) => setPp(v || "TPP")} options={orgOpts.contract} locked={["TPP", "DOH"]} className="w-sm" />
                 <input name="firm" type="text" maxLength={60} defaultValue={init.firm} aria-label="Firma" placeholder="Firma" />
               </div>
             </Kf>
-            <Kf label="Prevádzka / oddelenie" htmlFor="ef-site" hint="Podľa nich sa dajú zamestnanci filtrovať a zoskupiť v kalendári.">
+            <Kf label="Prevádzka / oddelenie" htmlFor="ef-site" hint="Podľa nich sa dajú zamestnanci filtrovať a zoskupiť v kalendári. Zoznamy upravíte ceruzkou.">
               <div className="kin">
-                <input id="ef-site" name="site" type="text" maxLength={60} defaultValue={init.site} list="ef-sites" placeholder="Prevádzka" aria-label="Prevádzka" />
-                <input name="department" type="text" maxLength={60} defaultValue={init.department} list="ef-depts" placeholder="Oddelenie" aria-label="Oddelenie" />
-                <datalist id="ef-sites">
-                  {orgOpts.sites.map((x) => (
-                    <option key={x} value={x} />
-                  ))}
-                </datalist>
-                <datalist id="ef-depts">
-                  {orgOpts.depts.map((x) => (
-                    <option key={x} value={x} />
-                  ))}
-                </datalist>
+                <ListSelect kind="site" id="ef-site" name="site" label="Prevádzka" value={site} onChange={setSite} options={orgOpts.sites} emptyLabel="– prevádzka –" className="grow" />
+                <ListSelect kind="department" name="department" label="Oddelenie" value={dept} onChange={setDept} options={orgOpts.depts} emptyLabel="– oddelenie –" className="grow" />
               </div>
             </Kf>
             <Kf label="Trvanie" htmlFor="ef-from" hint="Prázdne „do“ = na neurčito">

@@ -1,11 +1,10 @@
-import { distinctOf } from "@/lib/filters";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
 import { balance, nf } from "@/lib/calc";
-import { PP_LABEL } from "@/lib/report";
+import { ppLabel, ppOrder } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { rgTxt, type RG } from "@/lib/rights";
 import { EmpForm, type EmpInit } from "./EmpForm";
@@ -27,13 +26,15 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const e = isNew ? null : emps.find((x) => x.id === id);
   if (!isNew && !e) notFound();
 
-  const [{ data: vac }, { data: ch }, { data: note }, { data: link }, { data: asg }] = await Promise.all([
+  const [{ data: vac }, { data: ch }, { data: note }, { data: link }, { data: asg }, { data: orgRows }] = await Promise.all([
     supabase.from("vacation_years").select("*").eq("employee_id", id).eq("year", year).maybeSingle(),
     supabase.from("contract_hours").select("*").eq("employee_id", id).maybeSingle(),
     supabase.from("employee_notes").select("note").eq("employee_id", id).maybeSingle(),
     isNew ? Promise.resolve({ data: null }) : supabase.from("employees").select("user_id").eq("id", id).maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
+    supabase.from("org_options").select("kind, value").eq("company_id", me.company_id),
   ]);
+  const org = (k: string) => ((orgRows ?? []) as { kind: string; value: string }[]).filter((r) => r.kind === k).map((r) => r.value);
   const assign = (asg ?? []) as { manager_id: string; employee_id: string }[];
 
   const init: EmpInit = {
@@ -101,7 +102,7 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const rules: string[] = [];
   if (e) {
     rules.push(
-      `<b>Pracovný pomer:</b> ${PP_LABEL[init.contract_type]}${
+      `<b>Typ vzťahu:</b> ${ppLabel(init.contract_type)}${
         init.date_from || init.date_to
           ? `, ${init.date_from ? "od " + fdate(init.date_from) : ""} ${init.date_to ? "do " + fdate(init.date_to) : "na neurčito"}`
           : ", na neurčito"
@@ -189,11 +190,15 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           nextYear={ny}
           rules={rules}
           meId={me.id}
-          orgOpts={{ sites: distinctOf(emps, "site"), depts: distinctOf(emps, "department") }}
+          orgOpts={{
+            contract: ppOrder(org("contract")),
+            sites: [...new Set(org("site"))].sort((a, b) => a.localeCompare(b, "sk")),
+            depts: [...new Set(org("department"))].sort((a, b) => a.localeCompare(b, "sk")),
+          }}
           people={emps
             .filter((x) => x.active)
             .sort((a, b) => a.name.localeCompare(b.name, "sk"))
-            .map((x) => ({ id: x.id, name: x.name, pp: PP_LABEL[x.contract_type] }))}
+            .map((x) => ({ id: x.id, name: x.name, pp: ppLabel(x.contract_type) }))}
         />
       </main>
     </>

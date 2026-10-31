@@ -249,7 +249,7 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   const supabase = await createClient();
   const year = Number(todayIso().slice(0, 4));
   const id = str(f, "id");
-  const contract = str(f, "contract_type") as "TPP" | "DOH" | "ZIV" | "SRO";
+  const contract = str(f, "contract_type") || "TPP";
   const email = str(f, "email").toLowerCase() || null;
   const row = {
     company_id: me.company_id,
@@ -299,6 +299,18 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     const res = await supabase.from("manager_assignments").insert(want.map((employee_id) => ({ manager_id: empId, employee_id })));
     if (res.error) return { error: ["Zoznam ľudí vedúceho sa nepodarilo uložiť: " + res.error.message] };
   }
+
+  // použité hodnoty patria do zoznamov firmy (ak tam ešte nie sú)
+  const opts = (
+    [
+      ["contract", row.contract_type],
+      ["site", row.site],
+      ["department", row.department],
+    ] as const
+  )
+    .filter(([, v]) => v)
+    .map(([kind, value]) => ({ company_id: me.company_id, kind, value }));
+  if (opts.length) await supabase.from("org_options").upsert(opts, { onConflict: "company_id,kind,value", ignoreDuplicates: true });
 
   // ak už existuje účet s týmto e-mailom, prepojí sa pri ďalšom prihlásení cez trigger;
   // existujúce účty prepája funkcia link_employee_accounts (migrácia 2)
@@ -432,4 +444,74 @@ export async function confirmEntitlement(empId: string, year: number, value: num
     .eq("year", year);
   await audit(`${e?.name ?? "Zamestnanec"} · nárok na dovolenku ${year} potvrdený: ${value} dní`, empId);
   done();
+}
+
+// ---------- zoznamy Typ vzťahu / Prevádzka / Oddelenie ----------
+export type OrgKind = "contract" | "site" | "department";
+export type OrgRes = { error?: string; list?: string[] };
+const ORG_COL: Record<OrgKind, string> = { contract: "contract_type", site: "site", department: "department" };
+/** TPP a DOH riadia správanie aplikácie (dohoda = hodiny), preto sa nedajú zmazať ani premenovať. */
+const ORG_LOCKED = ["TPP", "DOH"];
+const isKind = (k: string): k is OrgKind => k === "contract" || k === "site" || k === "department";
+const clean = (v: string) => v.replace(/\s+/g, " ").trim();
+
+async function orgList(companyId: string, kind: OrgKind) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("org_options").select("value").eq("company_id", companyId).eq("kind", kind);
+  return sortOrg(kind, (data ?? []).map((r) => r.value as string));
+}
+
+/** TPP, DOH a potom abecedne. */
+function sortOrg(kind: OrgKind, list: string[]) {
+  const rank = (v: string) => (kind === "contract" ? (v === "TPP" ? 0 : v === "DOH" ? 1 : 2) : 0);
+  return [...new Set(list)].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "sk"));
+}
+
+const ORG_NAME: Record<OrgKind, string> = { contract: "Typ vzťahu", site: "Prevádzka", department: "Oddelenie" };
+
+export async function addOrgOption(kind: string, value: string): Promise<OrgRes> {
+  const me = await requireAdmin();
+  if (!isKind(kind)) return { error: "Neznámy zoznam." };
+  const v = clean(value);
+  if (!v || v.length > 60) return { error: "Názov musí mať 1 až 60 znakov." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("org_options").insert({ company_id: me.company_id, kind, value: v });
+  if (error) return { error: error.code === "23505" ? `„${v}“ už v zozname je.` : error.message };
+  await audit(`${ORG_NAME[kind]}: pridané „${v}“`);
+  done();
+  return { list: await orgList(me.company_id, kind) };
+}
+
+export async function renameOrgOption(kind: string, oldValue: string, newValue: string): Promise<OrgRes> {
+  const me = await requireAdmin();
+  if (!isKind(kind)) return { error: "Neznámy zoznam." };
+  const v = clean(newValue);
+  if (kind === "contract" && ORG_LOCKED.includes(oldValue)) return { error: "TPP a DOH sa nedajú premenovať." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("rename_org_option", { p_kind: kind, p_old: oldValue, p_new: v });
+  if (error) return { error: error.message };
+  await audit(`${ORG_NAME[kind]}: „${oldValue}“ premenované na „${v}“`);
+  done();
+  return { list: await orgList(me.company_id, kind) };
+}
+
+export async function deleteOrgOption(kind: string, value: string): Promise<OrgRes> {
+  const me = await requireAdmin();
+  if (!isKind(kind)) return { error: "Neznámy zoznam." };
+  if (kind === "contract" && ORG_LOCKED.includes(value)) return { error: "TPP a DOH sa nedajú zmazať." };
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("employees")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", me.company_id)
+    .eq(ORG_COL[kind], value);
+  if (count)
+    return {
+      error: `„${value}“ má ${count} ${count === 1 ? "zamestnanec" : count < 5 ? "zamestnanci" : "zamestnancov"} (aj skrytí). Najprv im ho zmeňte, potom sa dá zmazať.`,
+    };
+  const { error } = await supabase.from("org_options").delete().eq("company_id", me.company_id).eq("kind", kind).eq("value", value);
+  if (error) return { error: error.message };
+  await audit(`${ORG_NAME[kind]}: zmazané „${value}“`);
+  done();
+  return { list: await orgList(me.company_id, kind) };
 }

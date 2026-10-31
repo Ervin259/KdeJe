@@ -859,3 +859,29 @@ nav.tabs :is(button,a)[aria-selected="true"]:hover{color:var(--accent)}
 .stickyhead .seg,.stickyhead .btn:not(.primary),.stickyhead .icon-btn,.stickyhead .ypbtn{background:rgba(255,255,255,.06);color:var(--ink)}
 .stickyhead .seg :is(button,a)[aria-pressed="true"]{background:var(--accent-soft)}
 body{padding-top:0}
+
+/* Výber zo zoznamu firmy s úpravou zoznamu (Typ vzťahu, Prevádzka, Oddelenie) */
+.lsel{position:relative;display:inline-flex;align-items:center;gap:4px}
+.lsel.grow{flex:1;min-width:160px}
+.lsel.grow select{flex:1;min-width:0;width:100%}
+.lsel select{height:34px}
+.lsel-edit{all:unset;box-sizing:border-box;width:30px;height:34px;display:inline-grid;place-items:center;border-radius:8px;color:var(--muted);cursor:pointer;border:1px solid transparent}
+.lsel-edit:hover,.lsel-edit[aria-expanded="true"]{color:var(--accent);border-color:var(--grid);background:var(--surface)}
+.lsel-edit:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.lsel-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:30;width:320px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--grid);border-radius:10px;box-shadow:0 8px 24px rgba(16,24,40,.14);padding:8px}
+.lsel-head{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:2px 6px 6px}
+.lsel-err{background:var(--bad-soft);color:var(--bad);border-radius:7px;padding:7px 9px;font-size:12.5px;margin:0 0 6px}
+.lsel-panel ul{list-style:none;margin:0;padding:0;max-height:240px;overflow:auto}
+.lsel-panel li{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:7px;min-height:34px}
+.lsel-panel li:hover{background:var(--sunk)}
+.lsel-panel li .v{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.lsel-panel li input{flex:1;min-width:0;height:28px}
+.lsel-empty{font-size:13px}
+.lsel-lock{font-size:12px}
+.lsel-act{all:unset;cursor:pointer;font-size:12.5px;color:var(--accent);padding:2px 6px;border-radius:6px;opacity:.75}
+.lsel-act:hover{opacity:1;background:var(--accent-soft)}
+.lsel-act.del{color:var(--bad);font-size:16px;line-height:1;padding:2px 7px}
+.lsel-act.del:hover{background:var(--bad-soft)}
+.lsel-act[disabled]{opacity:.35;cursor:default}
+.lsel-add{display:flex;gap:6px;border-top:1px solid var(--grid);margin-top:6px;padding-top:8px}
+.lsel-add input{flex:1;min-width:0;height:30px}

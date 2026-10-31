@@ -4,7 +4,7 @@ import { requireLead } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
 import { applyFilter, getFilter, sortGrouped } from "@/lib/filters";
 import { MNC, TYPE_NAME, balance, monthRange, nf, typeClass } from "@/lib/calc";
-import { PP_LABEL, PP_ORDER, isOn, payCols, valsIn, type Vals } from "@/lib/report";
+import { ppLabel, ppOrder, isOn, payCols, valsIn, type Vals } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { CheckDropdown } from "@/components/Dropdown";
 import { RowLink } from "@/components/RowLink";
@@ -30,7 +30,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const cur = Number(calc.today.slice(5, 7));
 
   const selM = sp.m ? sp.m.split(",").filter((x) => MONTHS.includes(x)) : MONTHS;
-  const selPP = sp.pp ? sp.pp.split(",").filter((x) => PP_ORDER.includes(x)) : PP_ORDER;
+  const PP = ppOrder(emps.map((e) => e.contract_type));
+  const selPP = sp.pp ? sp.pp.split(",").filter((x) => PP.includes(x)) : PP;
   const whole = selM.length === 12;
   const future = selM.every((x) => Number(x) > cur);
 
@@ -73,14 +74,14 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         label={monthsLabel(selM)}
       />
       <span className="lbl" style={{ margin: "0 6px 0 18px" }}>
-        Pracovný pomer
+        Typ vzťahu
       </span>
       <CheckDropdown
         param="pp"
-        options={PP_ORDER.map((g) => ({ value: g, label: PP_LABEL[g], count: emps.filter((e) => e.contract_type === g).length }))}
+        options={PP.map((g) => ({ value: g, label: ppLabel(g), count: emps.filter((e) => e.contract_type === g).length }))}
         selected={selPP}
         allLabel="Všetci"
-        label={selPP.map((g) => PP_LABEL[g]).join(", ")}
+        label={selPP.map((g) => ppLabel(g)).join(", ")}
       />
     </div>
   );
@@ -137,7 +138,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 </tr>
               </thead>
               <tbody>
-                {PP_ORDER.filter((g) => selPP.includes(g)).flatMap((g) =>
+                {PP.filter((g) => selPP.includes(g)).flatMap((g) =>
                   all
                     .filter((r) => r.e.contract_type === g)
                     .map((r) => (
@@ -147,7 +148,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                             {r.e.name}
                           </Link>
                         </td>
-                        <td className="ppc">{PP_LABEL[r.e.contract_type]}</td>
+                        <td className="ppc">{ppLabel(r.e.contract_type)}</td>
                         {r.e.contract_type === "DOH" ? (
                           [0, 1, 2, 3, 4].map((i) => (
                             <td key={i} className="ent muted">
