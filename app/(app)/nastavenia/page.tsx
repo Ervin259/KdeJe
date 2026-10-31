@@ -135,13 +135,23 @@ export default async function SettingsPage({
                   <tr>
                     <th>Meno</th>
                     <th>E-mail</th>
-                    <th title="Typ vzťahu">Typ vzťahu</th>
+                    <th title="Typ vzťahu">
+                      Typ<br />vzťahu
+                    </th>
                     {useOrg && <th>Prevádzka</th>}
                     {useOrg && <th>Oddelenie</th>}
-                    <th>Trvanie pomeru</th>
-                    <th>Pracovný čas a SL</th>
-                    <th className="c">Prenos z {year - 1}</th>
-                    <th className="c">Nárok {year}</th>
+                    <th>
+                      Trvanie<br />pomeru
+                    </th>
+                    <th>
+                      Pracovný<br />čas a SL
+                    </th>
+                    <th className="c">
+                      Prenos<br />z {year - 1}
+                    </th>
+                    <th className="c">
+                      Nárok<br />{year}
+                    </th>
                     <th className="c">Zostatok</th>
                     <th className="c" title="Aktívny = je v kalendári, prehľade a mzdách. Skrytý = odišiel alebo sa nemá zobrazovať, údaje zostávajú.">
                       Aktívny
@@ -174,7 +184,11 @@ export default async function SettingsPage({
                         </td>
                         <td className="email">
                           {e.email ? (
-                            e.email
+                            // zalomenie pred @, aby sa dlhý e-mail lámal čitateľne
+                            <>
+                              {e.email.split("@")[0]}
+                              <wbr />@{e.email.split("@").slice(1).join("@")}
+                            </>
                           ) : (
                             <span className="pill warn" title="Bez e-mailu sa nemôže prihlásiť">
                               bez e-mailu
@@ -184,11 +198,14 @@ export default async function SettingsPage({
                         <td>{ppLabel(e.contract_type)}</td>
                         {useOrg && <td>{e.site ?? <span className="muted">—</span>}</td>}
                         {useOrg && <td>{e.department ?? <span className="muted">—</span>}</td>}
-                        <td className="num" style={{ whiteSpace: "nowrap" }}>
+                        <td className="num dur">
                           {!e.date_from && !e.date_to ? (
                             <span className="muted">na neurčito</span>
                           ) : (
-                            `${e.date_from ? fdate(e.date_from) : "…"} – ${e.date_to ? fdate(e.date_to) : "na neurčito"}`
+                            <>
+                              {e.date_from ? fdate(e.date_from) : "…"} –<br />
+                              {e.date_to ? fdate(e.date_to) : "na neurčito"}
+                            </>
                           )}
                         </td>
                         <td>
@@ -228,7 +245,7 @@ export default async function SettingsPage({
                           <Access email={e.email} info={auth} empId={e.id} active={e.active} />
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <Link className="btn" href={`/nastavenia/zamestnanec/${e.id}`} style={{ height: 30, padding: "0 10px" }}>
+                          <Link className="btn editbtn" href={`/nastavenia/zamestnanec/${e.id}`}>
                             Upraviť
                           </Link>
                         </td>
