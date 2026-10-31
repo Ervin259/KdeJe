@@ -7,7 +7,7 @@ import { Header } from "@/components/Header";
 import { StatusPill } from "@/components/ui";
 import { CheckDropdown } from "@/components/Dropdown";
 import { confirmAll, confirmFor, rozpisAll, setMonth } from "./actions";
-import { CopyButton, PayBox, RozpisButton } from "./client";
+import { PayBox, RozpisButton } from "./client";
 
 export default async function PayrollPage({ searchParams }: { searchParams: Promise<{ m?: string; pp?: string }> }) {
   const me = await requireAdmin();
@@ -78,18 +78,13 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
     </div>
   );
 
-  const tsv = (g: string) => {
-    const rows = (groups[g] ?? []).slice().sort((a, b) => byLastName(a.e, b.e));
-    return [
-      ["Meno", ...cols.map((k) => k.replace("Č", "C")), "SL"].join("\t"),
-      ...rows.map((r) => [r.e.name, ...cols.map((k) => (r.v[k] ? nf(r.v[k]) : "")), r.sl ?? ""].join("\t")),
-    ].join("\n");
-  };
   const dohRows = doh.slice().sort((a, b) => byLastName(a.e, b.e));
-  const dohTsv = [
-    ["Meno", ...days.map((d) => Number(d.slice(8))), "SUM"].join("\t"),
-    ...dohRows.map((r) => [r.e.name, ...days.map((d) => nf(r.hours[d] ?? 0)), nf(r.sum)].join("\t")),
-  ].join("\n");
+  // skutočný súbor .xlsx (Podklady pre mzdy za zvolený mesiac a rok)
+  const xls = (g: string) => (
+    <a className="btn xls" href={`/mzdy/export?m=${m}&g=${encodeURIComponent(g)}`} download title={`Stiahne súbor Excel za ${MNC[m - 1]} ${year}`}>
+      Export do Excelu
+    </a>
+  );
 
   return (
     <>
@@ -105,7 +100,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
             .map((g) => {
               const rows = groups[g].slice().sort((a, b) => byLastName(a.e, b.e));
               return (
-                <PayBox key={g} title={ppLabel(g)} count={cntTxt(rows.length)} actions={<CopyButton tsv={tsv(g)} />}>
+                <PayBox key={g} title={ppLabel(g)} count={cntTxt(rows.length)} actions={xls(g)}>
                   <div className="gridwrap">
                     <table className="t yt paytab">
                       <thead>
@@ -188,7 +183,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                         Rozpísať všetkým
                       </button>
                     </form>
-                    <CopyButton tsv={dohTsv} />
+                    {xls("DOH")}
                   </>
                 ) : null
               }

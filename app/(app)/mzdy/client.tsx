@@ -27,30 +27,6 @@ export function PayBox({ title, count, actions, children }: { title: string; cou
   );
 }
 
-/** Export do Excelu = skopírovanie tabuľky (TSV) do schránky, vkladá sa cez Ctrl+V. */
-export function CopyButton({ tsv }: { tsv: string }) {
-  const [state, setState] = useState<"" | "ok" | "fail">("");
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(tsv);
-      setState("ok");
-    } catch {
-      setState("fail");
-    }
-    setTimeout(() => setState(""), 2500);
-  }
-  return (
-    <>
-      <button className="btn xls" onClick={copy} title="Skopíruje tabuľku – v Exceli ju vložte cez Ctrl+V">
-        {state === "ok" ? "Skopírované ✓" : "Export do Excelu"}
-      </button>
-      {state === "fail" && (
-        <textarea className="copyfb" readOnly value={tsv} onFocus={(e) => e.target.select()} style={{ width: 260, height: 60 }} />
-      )}
-    </>
-  );
-}
-
 type Def = { mode: "fixed" | "worked" | "manual"; total: number; worked: number; coef: number; max: number; week: number | null; step: number; flex: boolean };
 
 /** Rozpis hodín dohodára do dní (modálne okno ako v prototype). */
