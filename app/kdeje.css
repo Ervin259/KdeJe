@@ -887,12 +887,17 @@ body{padding-top:0}
 .lsel-add input{flex:1;min-width:0;height:30px}
 
 /* Zoznam zamestnancov bez vodorovného posúvania: nadpisy v 2 riadkoch, užšie stĺpce */
-.emptab th{white-space:normal;line-height:1.3;vertical-align:bottom;letter-spacing:.03em;padding:8px 6px}
+.emptab thead th{white-space:normal;line-height:1.3;vertical-align:top;letter-spacing:.04em;padding:11px 6px 10px;font-size:10.5px}
 .emptab td{padding:6px 6px}
-.emptab th:first-child,.emptab td:first-child{padding-left:10px}
-.emptab td.email{font-size:12.5px;overflow-wrap:anywhere;max-width:190px}
+.emptab th:first-child,.emptab td:first-child{padding-left:12px}
+.emptab th:last-child,.emptab td:last-child{padding-right:10px}
+.emptab td.email{font-size:12.5px;white-space:nowrap}
 .emptab td.dur{font-size:12.5px;white-space:nowrap;line-height:1.35}
 .emptab td.c input,.emptab input{width:54px;padding:5px 4px}
 .emptab .grpw{font-size:11px}
 .emptab .pill{margin-left:0}
-.emptab .editbtn{height:28px;padding:0 9px;font-size:12.5px}
+.emptab .acchk{flex-direction:column;gap:5px}
+.emptab .invchk{flex-direction:column;gap:2px}
+.emptab .invd{font-size:10.5px;line-height:1}
+.emptab .editbtn{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;border:1px solid var(--grid);background:var(--surface);color:var(--muted);box-shadow:var(--shadow)}
+.emptab .editbtn:hover{color:var(--accent);border-color:var(--accent)}

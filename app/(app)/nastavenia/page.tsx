@@ -184,11 +184,7 @@ export default async function SettingsPage({
                         </td>
                         <td className="email">
                           {e.email ? (
-                            // zalomenie pred @, aby sa dlhý e-mail lámal čitateľne
-                            <>
-                              {e.email.split("@")[0]}
-                              <wbr />@{e.email.split("@").slice(1).join("@")}
-                            </>
+                            e.email
                           ) : (
                             <span className="pill warn" title="Bez e-mailu sa nemôže prihlásiť">
                               bez e-mailu
@@ -200,11 +196,11 @@ export default async function SettingsPage({
                         {useOrg && <td>{e.department ?? <span className="muted">—</span>}</td>}
                         <td className="num dur">
                           {!e.date_from && !e.date_to ? (
-                            <span className="muted">na neurčito</span>
+                            <span className="muted">neurčito</span>
                           ) : (
                             <>
                               {e.date_from ? fdate(e.date_from) : "…"} –<br />
-                              {e.date_to ? fdate(e.date_to) : "na neurčito"}
+                              {e.date_to ? fdate(e.date_to) : "neurčito"}
                             </>
                           )}
                         </td>
@@ -245,8 +241,10 @@ export default async function SettingsPage({
                           <Access email={e.email} info={auth} empId={e.id} active={e.active} />
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <Link className="btn editbtn" href={`/nastavenia/zamestnanec/${e.id}`}>
-                            Upraviť
+                          <Link className="editbtn" href={`/nastavenia/zamestnanec/${e.id}`} title={`Upraviť – ${e.name}`} aria-label={`Upraviť – ${e.name}`}>
+                            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+                              <path d="M11.2 2.3l2.5 2.5-7.9 7.9-3.1.6.6-3.1 7.9-7.9z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                            </svg>
                           </Link>
                         </td>
                       </tr>
