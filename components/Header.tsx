@@ -9,6 +9,7 @@ import { CompanySwitch } from "./CompanySwitch";
 import { OrgFilter } from "./OrgFilter";
 import { loadCompany } from "@/lib/loaders";
 import { distinctOf, getFilter } from "@/lib/filters";
+import { ppOrder } from "@/lib/report";
 
 /**
  * Hlavička ako v prototype: logo | firma | meno, pod ňou záložky vľavo,
@@ -125,20 +126,23 @@ export async function Header({
     }
   }
 
-  // výber prevádzky a oddelenia – len ak ich firma používa
+  // výber prevádzky, oddelenia a typu vzťahu – len ak ich firma používa
   let orgFilter: React.ReactNode = null;
   if (org && me.company_id) {
     const [{ emps }, f] = await Promise.all([loadCompany(), getFilter()]);
     const act = emps.filter((e) => e.active && !e.is_external);
     const sites = distinctOf(act, "site");
     const depts = distinctOf(act, "department");
-    if (sites.length || depts.length)
+    const pps = ppOrder(act.map((e) => e.contract_type));
+    if (sites.length || depts.length || pps.length > 1)
       orgFilter = (
         <OrgFilter
           sites={sites}
           depts={depts}
+          pps={pps}
           site={f.site}
           dept={f.dept}
+          pp={f.pp}
         />
       );
   }

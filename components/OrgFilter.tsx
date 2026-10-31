@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { setOrgFilter } from "./companyActions";
 
-type Key = "kj_site" | "kj_dept";
+type Key = "kj_site" | "kj_dept" | "kj_pp";
 /** oddeľovač hodnôt v cookie (názvy môžu obsahovať čiarku) */
 const SEP = "|";
 
@@ -64,12 +64,27 @@ function MultiSelect({ k, options, selected, allLabel, title }: { k: Key; option
   );
 }
 
-/** Výber prevádzok a oddelení v hlavičke (viac naraz). */
-export function OrgFilter({ sites, depts, site, dept }: { sites: string[]; depts: string[]; site: string[]; dept: string[] }) {
+/** Výber prevádzok, oddelení a typov vzťahu v hlavičke (viac naraz). */
+export function OrgFilter({
+  sites,
+  depts,
+  pps,
+  site,
+  dept,
+  pp,
+}: {
+  sites: string[];
+  depts: string[];
+  pps: string[];
+  site: string[];
+  dept: string[];
+  pp: string[];
+}) {
   return (
     <span className="orgfilter">
       {sites.length > 0 && <MultiSelect k="kj_site" options={sites} selected={site} allLabel="Všetky prevádzky" title="Prevádzka" />}
       {depts.length > 0 && <MultiSelect k="kj_dept" options={depts} selected={dept} allLabel="Všetky oddelenia" title="Oddelenie" />}
+      {pps.length > 1 && <MultiSelect k="kj_pp" options={pps} selected={pp} allLabel="Všetky typy vzťahu" title="Typ vzťahu" />}
     </span>
   );
 }

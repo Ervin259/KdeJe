@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { byLastName } from "@/lib/calc";
 
-/** Výber zamestnancov v hlavičke: prevádzka a oddelenie (pamätá sa v cookies). Zoradenie je pevné. */
+/** Výber zamestnancov v hlavičke: prevádzka, oddelenie a typ vzťahu (pamätá sa v cookies). Zoradenie je pevné. */
 export const F_SITE = "kj_site";
 export const F_DEPT = "kj_dept";
+export const F_PP = "kj_pp";
 
 export type GroupBy = "site" | "department" | "contract_type" | "none";
 export const GROUP_LABEL: Record<GroupBy, string> = {
@@ -16,22 +17,26 @@ const ppName = (g: string) => (g === "DOH" ? "Dohoda" : g);
 const ppRank = (g: string) => (g === "TPP" ? 0 : g === "DOH" ? 1 : 2);
 
 export type EmpOrg = { name: string; site?: string | null; department?: string | null; contract_type?: string };
-/** vybrané prevádzky a oddelenia (prázdne = všetky) */
-export type Filter = { site: string[]; dept: string[]; group: GroupBy };
+/** vybrané prevádzky, oddelenia a typy vzťahu (prázdne = všetky) */
+export type Filter = { site: string[]; dept: string[]; pp: string[]; group: GroupBy };
 
 export async function getFilter(): Promise<Filter> {
   const c = await cookies();
   return {
     site: (c.get(F_SITE)?.value ?? "").split("|").filter(Boolean),
     dept: (c.get(F_DEPT)?.value ?? "").split("|").filter(Boolean),
+    pp: (c.get(F_PP)?.value ?? "").split("|").filter(Boolean),
     group: "site",
   };
 }
 
-/** Ponechá len zamestnancov vybraných prevádzok a oddelení. */
+/** Ponechá len zamestnancov vybraných prevádzok, oddelení a typov vzťahu. */
 export function applyFilter<T extends EmpOrg>(list: T[], f: Filter) {
   return list.filter(
-    (e) => (!f.site.length || f.site.includes(e.site ?? "")) && (!f.dept.length || f.dept.includes(e.department ?? ""))
+    (e) =>
+      (!f.site.length || f.site.includes(e.site ?? "")) &&
+      (!f.dept.length || f.dept.includes(e.department ?? "")) &&
+      (!f.pp.length || f.pp.includes(e.contract_type ?? ""))
   );
 }
 
