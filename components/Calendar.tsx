@@ -425,11 +425,9 @@ function Grid({
                   <Link className="daylink" href={`${ctx.basePath}?v=day&d=${d}`} title={`Zobraziť deň ${fd(d)}`}>
                   {wide ? (
                     <>
-                      <span className="dn">
-                        {WD[dow(d)]}
-                        {calc.isHol(d) ? " · sviatok" : ""}
-                      </span>
+                      <span className="dn">{WD[dow(d)]}</span>
                       <span className="num">{fd(d)}</span>
+                      {calc.isHol(d) && <span className="hol">sviatok</span>}
                     </>
                   ) : (
                     <>

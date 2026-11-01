@@ -405,3 +405,10 @@ a.namebtn:hover { color: var(--accent); }
 @media (max-width: 420px) {
   .epc .yrtab { display: block; overflow-x: auto; max-width: 100%; }
 }
+/* sviatok v hlavičke týždňa: samostatný malý riadok (zmestí sa aj do úzkeho stĺpca) */
+.cal.wide thead th .hol { display: block; font-size: 8.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-top: 2px; white-space: nowrap; }
+/* nízka obrazovka (mobil na šírku): hlavička sa neprilepí, inak zaberie takmer celú výšku */
+@media (max-height: 640px) {
+  .stickyhead { position: relative !important; }
+  .cal thead th { top: 0 !important; }
+}
