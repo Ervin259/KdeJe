@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { requireAdmin, todayIso } from "@/lib/data";
 import { buildPayroll } from "@/lib/payroll";
-import { MNC, TYPE_NAME, byLastName, fd } from "@/lib/calc";
+import { MNC, TYPE_NAME, byLastName } from "@/lib/calc";
 import { ppLabel } from "@/lib/report";
 
 export const runtime = "nodejs";
@@ -14,12 +14,13 @@ const HEAD = "FF2F3743";
 const HEAD_OFF = "FF262D37";
 const LINE = "FFD9DFE8";
 const OFF = "FFEEF1F5";
-const TOTAL = "FFE4E9FB";
 const WD = ["Ne", "Po", "Ut", "St", "Št", "Pi", "So"];
 
 const fill = (argb: string): ExcelJS.Fill => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
 const thin = { style: "thin" as const, color: { argb: LINE } };
 const box = { top: thin, left: thin, bottom: thin, right: thin };
+/** dátum s rokom, napr. 1. 11. 2026 */
+const fdy = (d: string) => `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}`;
 const num = (n: number) => Math.round(n * 1000) / 1000;
 const safe = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
   ws.getCell(2, 1).value = `${me.company_name} · ${period} · ${wd} pracovných dní`;
   ws.getCell(2, 1).font = { size: 11, bold: true, color: { argb: INK } };
   ws.mergeCells(3, 1, 3, width);
-  ws.getCell(3, 1).value = `Vytvorené ${fd(todayIso())} v aplikácii KdeJe`;
+  ws.getCell(3, 1).value = `Vytvorené ${fdy(todayIso())} v aplikácii KdeJe`;
   ws.getCell(3, 1).font = { size: 9, color: { argb: MUTED } };
   ws.getRow(1).height = 22;
 
@@ -116,26 +117,10 @@ export async function GET(request: Request) {
       row.getCell(1).value = x.e.name;
       cols.forEach((k, i) => (row.getCell(i + 2).value = x.v[k] ? num(x.v[k]) : null));
       row.getCell(cols.length + 2).value = x.sl;
-      row.getCell(cols.length + 3).value = x.e.contract_type === "DOH" ? "–" : x.conf ? fd(x.conf.at) : "nie";
+      row.getCell(cols.length + 3).value = x.e.contract_type === "DOH" ? "–" : x.conf ? fdy(x.conf.at) : "nie";
       if (!x.conf && x.e.contract_type !== "DOH") row.getCell(cols.length + 3).font = { color: { argb: "FFB4314C" } };
       r++;
     }
-  }
-  const last = r - 1;
-
-  // súčet
-  const tr = ws.getRow(r);
-  tr.getCell(1).value = "Spolu";
-  const sumTo = isDoh ? width : width - 1;
-  for (let i = 2; i <= sumTo; i++) {
-    const col = ws.getColumn(i).letter;
-    tr.getCell(i).value = last >= first ? { formula: `SUM(${col}${first}:${col}${last})` } : 0;
-  }
-  for (let i = 1; i <= width; i++) {
-    const c = tr.getCell(i);
-    c.fill = fill(TOTAL);
-    c.font = { bold: true, color: { argb: INK } };
-    c.border = { ...box, top: { style: "medium", color: { argb: HEAD } } };
   }
 
   // formát buniek
@@ -149,11 +134,6 @@ export async function GET(request: Request) {
     }
     row.height = 18;
   }
-  for (let j = 2; j <= width; j++) {
-    tr.getCell(j).alignment = { horizontal: "center" };
-    tr.getCell(j).numFmt = "General;-General;;@";
-  }
-
   // šírky stĺpcov
   const names = [...(isDoh ? doh.map((x) => x.e.name) : (groups[g] ?? []).map((x) => x.e.name)), "Meno"];
   ws.getColumn(1).width = Math.min(34, Math.max(18, ...names.map((n) => n.length + 3)));
@@ -161,18 +141,6 @@ export async function GET(request: Request) {
 
   ws.views = [{ state: "frozen", xSplit: 1, ySplit: first - 1 }];
   ws.pageSetup.printTitlesRow = `${H}:${first - 1}`;
-
-  // vysvetlivky skratiek
-  if (!isDoh) {
-    let lr = r + 2;
-    ws.getCell(lr, 1).value = "Vysvetlivky";
-    ws.getCell(lr, 1).font = { bold: true, size: 9, color: { argb: MUTED } };
-    for (const k of [...cols, "SL"]) {
-      lr++;
-      ws.getCell(lr, 1).value = `${k} – ${k === "SL" ? "stravné lístky" : TYPE_NAME[k] ?? k}`;
-      ws.getCell(lr, 1).font = { size: 9, color: { argb: MUTED } };
-    }
-  }
 
   const buf = await wb.xlsx.writeBuffer();
   const file = `KdeJe-mzdy-${safe(isDoh ? "Dohody" : g)}-${year}-${String(m).padStart(2, "0")}.xlsx`;
