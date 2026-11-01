@@ -339,3 +339,69 @@ a.namebtn:hover { color: var(--accent); }
 .runsdd > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
 .runsdd[open] > summary::before { transform: rotate(90deg); }
 .runsdd > table, .runsdd > p { margin-top: 6px; }
+
+/* ===================== Tablet a mobil ===================== */
+/* Hlavička: logo a meno v prvom riadku, firma a filtre pod nimi (nič sa neprekrýva) */
+@media (max-width: 1180px) {
+  .headrow {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-areas: "brand right" "firm firm";
+    row-gap: 10px !important;
+  }
+  .headrow .brand { grid-area: brand; }
+  .headrow .headright { grid-area: right; min-width: 0; }
+  .headrow .firm { grid-area: firm; display: flex !important; flex-wrap: wrap !important; row-gap: 8px; }
+  .orgfilter { flex-wrap: wrap; }
+}
+@media (max-width: 640px) {
+  .headrow { column-gap: 12px !important; padding: 10px 0 10px !important; }
+  .headrow .brand h1 { font-size: 21px; }
+  .headrow .firm { font-size: 14px !important; }
+  .headrow .firmname { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .headrow .firm select, .firmswitch { max-width: 100%; }
+  .firmswitch.fsel { max-width: 46vw; font-size: 13px; }
+  .headright { gap: 8px !important; }
+  .headright .seg { margin-left: 0 !important; }
+  .headright .who-name { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+}
+.fpairs { gap: 10px 18px; flex-wrap: wrap !important; }
+.fpair { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* Mobil a tablet na výšku: hlavička neprilepená (inak zaberá tretinu obrazovky), posúvateľné záložky a mesiace */
+/* dlhý rad mesiacov (Podklad pre mzdy) sa na užšej obrazovke posúva */
+@media (max-width: 1180px) {
+  .topbar .mnav > .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  .topbar .mnav > .seg::-webkit-scrollbar { display: none; }
+  .topbar .mnav > .seg > * { flex: none; }
+  .topbar .bl, .topbar .mnav { min-width: 0; max-width: 100%; }
+}
+@media (max-width: 760px) {
+  .stickyhead { position: relative !important; }
+  .stickyhead nav.tabs { -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent); mask-image: linear-gradient(90deg, #000 82%, transparent); scrollbar-width: none; }
+  .stickyhead nav.tabs::-webkit-scrollbar { display: none; }
+  .stickyhead nav.tabs :is(a, button) { padding: 0 9px; font-size: 13.5px; }
+  .topbar .bl, .topbar .br, .topbar .mnav { min-width: 0; max-width: 100%; flex-wrap: wrap !important; }
+  .topbar .mnav > .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+  .topbar .mnav > .seg::-webkit-scrollbar { display: none; }
+  .topbar .mnav > .seg > * { flex: none; }
+  .fpair .ypbtn { min-width: 0; max-width: 62vw; }
+  .epc .yrtab td, .epc .yrtab th { padding: 5px 4px; }
+  .epc .yrtab { font-size: 12px; }
+}
+/* rozbalené filtre v hlavičke na mobile: panel na celú šírku pod filtrami (nevyjde mimo obrazovky) */
+@media (max-width: 640px) {
+  .headrow .orgfilter { position: relative; flex-basis: 100%; }
+  .headrow .orgdd { position: static; }
+  .headrow .orgdd .yppanel { left: 0; right: 0; min-width: 0; max-height: 60vh; overflow-y: auto; }
+}
+/* kalendár na mobile: meno sa zalomí do 2 riadkov namiesto orezania */
+@media (max-width: 560px) {
+  .cal th.name, .cal td.name { min-width: 128px; max-width: 128px; padding: 0 6px 0 8px; }
+  .cal td.name { white-space: normal; line-height: 1.2; font-size: 12.5px; }
+  .cal td.name .mename { white-space: normal; gap: 4px; }
+  .cal td.name .mename > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+}
+/* tabuľka rokov v karte zamestnanca: na najužších mobiloch sa posúva v rámci karty */
+@media (max-width: 420px) {
+  .epc .yrtab { display: block; overflow-x: auto; max-width: 100%; }
+}

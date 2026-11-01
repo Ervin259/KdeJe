@@ -62,10 +62,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     });
 
   const center = (
-    <div className="mnav">
-      <span className="lbl" style={{ marginRight: 6 }}>
-        Obdobie
-      </span>
+    <div className="mnav fpairs">
+      <span className="fpair">
+      <span className="lbl">Obdobie</span>
       <CheckDropdown
         param="m"
         options={MONTHS.map((m) => ({ value: m, label: MNC[Number(m) - 1], hint: Number(m) > cur ? "plán" : undefined }))}
@@ -73,9 +72,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         allLabel={`Celý rok ${year}`}
         label={monthsLabel(selM)}
       />
-      <span className="lbl" style={{ margin: "0 6px 0 18px" }}>
-        Typ vzťahu
       </span>
+      <span className="fpair">
+      <span className="lbl">Typ vzťahu</span>
       <CheckDropdown
         param="pp"
         options={PP.map((g) => ({ value: g, label: ppLabel(g), count: emps.filter((e) => e.contract_type === g).length }))}
@@ -83,6 +82,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         allLabel="Všetci"
         label={selPP.map((g) => ppLabel(g)).join(", ")}
       />
+      </span>
     </div>
   );
 
@@ -110,9 +110,9 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 <tr>
                   <th>Zamestnanec</th>
                   <th className="ppc">
-                    Pracovný
+                    Typ
                     <br />
-                    pomer
+                    vzťahu
                   </th>
                   <th className="ent" title={`Nárok na dovolenku v roku ${year}`}>
                     Nárok {year}
