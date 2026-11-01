@@ -23,6 +23,7 @@ import {
 import { Header } from "./Header";
 import { StatusPill, Legend } from "./ui";
 import { CalClick } from "./CalClick";
+import { StickyDays } from "./StickyDays";
 import { ConfirmMonthButton, loadConfirmations } from "./ConfirmMonth";
 import { applyFilter, getFilter, sortGrouped } from "@/lib/filters";
 import { MonthPicker } from "./MonthPicker";
@@ -261,6 +262,7 @@ export async function Calendar({
               />
             )}
           </CalClick>
+          <StickyDays />
           <Legend types={types} />
           {entries.some((x) => x.pend) && (
             <div className="pendlegend">
