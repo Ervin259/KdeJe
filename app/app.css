@@ -412,3 +412,15 @@ a.namebtn:hover { color: var(--accent); }
   .stickyhead { position: relative !important; }
   .cal thead th { top: 0 !important; }
 }
+/* Kalendár pod 1240 px: tabuľka sa posúva vo vlastnom okne (do strán aj nadol),
+   aby riadok s dňami ostal pri posúvaní vždy viditeľný. */
+@media (max-width: 1239px) {
+  :root { --calTop: var(--headH, 0px); }
+  .calwrap { max-height: calc(100dvh - var(--calTop) - 12px); overflow: auto; }
+  .calwrap .cal thead th { position: sticky; top: 0; z-index: 2; }
+  .calwrap .cal thead th.name { z-index: 4; }
+}
+/* tam, kde hlavička nie je prilepená, môže kalendár zabrať celú výšku */
+@media (max-width: 760px), (max-height: 640px) {
+  :root { --calTop: 0px; }
+}

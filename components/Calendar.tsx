@@ -413,7 +413,7 @@ function Grid({
 } & Ctx) {
   const { calc, admin, meId, managed } = ctx;
   return (
-    <div className="gridwrap">
+    <div className="gridwrap calwrap">
       <table className={`cal ${wide ? "wide" : ""}`}>
         <thead>
           <tr>
@@ -535,7 +535,7 @@ function DayTable({
     .filter((g) => g.xs.length);
 
   return (
-    <div className="gridwrap">
+    <div className="gridwrap calwrap">
       <table className="cal dayt">
         <thead>
           <tr>
