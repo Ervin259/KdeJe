@@ -258,7 +258,7 @@ a.namebtn:hover { color: var(--accent); }
 .cal thead th.hcol .daylink { color: var(--ink); }
 /* bunka, ktorú prihlásený nemôže upravovať: sivá („neaktívna“) šípka = len informácia */
 .cal td.c:not(.click),
-.cal:not(.dayt) tbody td.name {
+.cal:not(.dayt) tbody td.name:not(.prof) {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24'%3E%3Cpath d='M2 2 L2 19 L6.4 14.8 L9.4 21.4 L12.2 20.2 L9.3 13.7 L15.2 13.7 Z' fill='%23A6B0C2' stroke='%23ffffff' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, default;
 }
 .editpill { display: inline-block; margin-left: 6px; font-size: 11.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); text-decoration: none; vertical-align: 1px; }
@@ -418,5 +418,5 @@ a.namebtn:hover { color: var(--accent); }
 /* meno v kalendári ako odkaz na kartu zamestnanca (admin) / prehľad (vedúci) */
 .cal a.calname { color: inherit; text-decoration: none; }
 .cal a.calname:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.cal td.name.prof { cursor: pointer; }
+.cal tbody td.name.prof, .cal tbody td.name.prof .mename, .cal tbody td.name.prof .mename > span:first-child { cursor: pointer; }
 .cal td.name.prof:hover a.calname { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
