@@ -9,6 +9,12 @@ export function CalClick({ back, children }: { back: string; children: React.Rea
   const router = useRouter();
   function onClick(e: React.MouseEvent) {
     const t = e.target as HTMLElement;
+    // klik kamkoľvek do bunky s menom → prehľad zamestnanca (okrem tlačidla odsúhlasenia a odkazov)
+    const prof = t.closest<HTMLElement>("[data-prof]");
+    if (prof?.dataset.prof) {
+      if (!t.closest("button, form, a, input, label")) router.push(prof.dataset.prof);
+      return;
+    }
     // náhľad čakajúcej žiadosti sa neotvára
     if (t.closest("[data-req]")) return;
     const rec = t.closest<HTMLElement>("[data-id]");

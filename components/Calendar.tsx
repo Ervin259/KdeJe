@@ -479,7 +479,7 @@ function Grid({
                 </tr>
               )}
               <tr className={mine ? "me" : undefined}>
-                <td className="name">
+                <td className={`name${admin || managed.has(e.id) ? " prof" : ""}`} data-prof={admin || managed.has(e.id) ? `/prehlad/${e.id}` : undefined}>
                   {extra ? (
                     <div className="mename">
                       <span>
@@ -584,7 +584,11 @@ function DayTable({
               return (
                 <tr key={x.id} className={mine ? "me" : undefined}>
                   {i === 0 && (
-                    <td className="name" rowSpan={xs.length}>
+                    <td
+                      className={`name${admin || managed.has(e.id) ? " prof" : ""}`}
+                      rowSpan={xs.length}
+                      data-prof={admin || managed.has(e.id) ? `/prehlad/${e.id}` : undefined}
+                    >
                       <EmpName id={e.id} name={e.name} admin={admin} managed={managed} />
                     </td>
                   )}
