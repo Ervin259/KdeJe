@@ -228,10 +228,12 @@ export async function Calendar({
 
   // Odsúhlasenie mesiaca (len TPP, mesačný náhľad) – v hlavičke za menom
   // v riadku prihláseného za menom
-  // odsúhlasenie: všetci okrem dohodárov; admin aj za ostatných
+  // odsúhlasenie: všetci okrem dohodárov; admin za kohokoľvek, vedúci za svojich ľudí
   const confIds =
     view === "month"
-      ? rows.filter((e) => e.contract_type !== "DOH" && (admin || (e.id === me.id && me.isEmployee))).map((e) => e.id)
+      ? rows
+          .filter((e) => e.contract_type !== "DOH" && (admin || (e.id === me.id && me.isEmployee) || me.managed.includes(e.id)))
+          .map((e) => e.id)
       : [];
   const conf = await loadConfirmations(y, m, confIds);
   const rowExtra = (e: { id: string; name: string }) =>
