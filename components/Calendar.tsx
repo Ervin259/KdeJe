@@ -43,15 +43,9 @@ function isoWeek(s: string) {
   return 1 + Math.round(((t.getTime() - y0.getTime()) / 864e5 - 3 + ((y0.getUTCDay() + 6) % 7)) / 7);
 }
 
-/** Meno v kalendári: admin otvorí kartu zamestnanca, vedúci prehľad svojho človeka, ostatní len text. */
+/** Meno v kalendári: admin a vedúci (pre svojich ľudí) otvoria prehľad zamestnanca (ako Môj prehľad), ostatní len text. */
 function EmpName({ id, name, admin, managed }: { id: string; name: string; admin: boolean; managed: Set<string> }) {
-  if (admin)
-    return (
-      <Link className="calname" href={`/nastavenia/zamestnanec/${id}`} title={`Otvoriť kartu zamestnanca – ${name}`}>
-        {name}
-      </Link>
-    );
-  if (managed.has(id))
+  if (admin || managed.has(id))
     return (
       <Link className="calname" href={`/prehlad/${id}`} title={`Prehľad – ${name}`}>
         {name}
