@@ -43,6 +43,23 @@ function isoWeek(s: string) {
   return 1 + Math.round(((t.getTime() - y0.getTime()) / 864e5 - 3 + ((y0.getUTCDay() + 6) % 7)) / 7);
 }
 
+/** Meno v kalendári: admin otvorí kartu zamestnanca, vedúci prehľad svojho človeka, ostatní len text. */
+function EmpName({ id, name, admin, managed }: { id: string; name: string; admin: boolean; managed: Set<string> }) {
+  if (admin)
+    return (
+      <Link className="calname" href={`/nastavenia/zamestnanec/${id}`} title={`Otvoriť kartu zamestnanca – ${name}`}>
+        {name}
+      </Link>
+    );
+  if (managed.has(id))
+    return (
+      <Link className="calname" href={`/prehlad/${id}`} title={`Prehľad – ${name}`}>
+        {name}
+      </Link>
+    );
+  return <>{name}</>;
+}
+
 /** Kalendár tímu / Môj kalendár – pohľady Deň, Týždeň, Mesiac (prenesené z prototypu). */
 export async function Calendar({
   me,
@@ -471,11 +488,13 @@ function Grid({
                 <td className="name">
                   {extra ? (
                     <div className="mename">
-                      <span>{e.name}</span>
+                      <span>
+                        <EmpName id={e.id} name={e.name} admin={admin} managed={managed} />
+                      </span>
                       {extra}
                     </div>
                   ) : (
-                    e.name
+                    <EmpName id={e.id} name={e.name} admin={admin} managed={managed} />
                   )}
                 </td>
                 {days.map((d) => {
@@ -572,7 +591,7 @@ function DayTable({
                 <tr key={x.id} className={mine ? "me" : undefined}>
                   {i === 0 && (
                     <td className="name" rowSpan={xs.length}>
-                      {e.name}
+                      <EmpName id={e.id} name={e.name} admin={admin} managed={managed} />
                     </td>
                   )}
                   <td className={c} {...at}>
