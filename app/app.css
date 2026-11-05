@@ -420,3 +420,7 @@ a.namebtn:hover { color: var(--accent); }
 .cal a.calname:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 .cal tbody td.name.prof, .cal tbody td.name.prof .mename, .cal tbody td.name.prof .mename > span:first-child { cursor: pointer; }
 .cal td.name.prof:hover a.calname { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+/* stĺpec s dnešným dňom: jemne žltý v hlavičke aj v riadkoch */
+.cal thead th.tdy { background: var(--today) !important; }
+.cal tbody td.c.tdy { background-color: var(--today); }
+.cal:not(.dayt) tbody tr:hover > td.c.tdy { background-color: color-mix(in srgb, var(--today) 82%, var(--ink) 6%); }
