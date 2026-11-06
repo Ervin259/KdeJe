@@ -206,6 +206,10 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                       </thead>
                       <tbody>
                         {dohRows.map((r) => {
+                          // všetko, čo má dohodár v ten deň v kalendári (rovnaké kódy a farby ako v kalendári)
+                          const calCodes = (d: string) => [
+                            ...new Set(entries.filter((x) => x.employee_id === r.e.id && x.date_from <= d && x.date_to >= d).map((x) => x.type)),
+                          ];
                           const absCodes = (d: string) =>
                             entries
                               .filter((x) => x.employee_id === r.e.id && x.date_from <= d && x.date_to >= d && KIND[x.type] === "abs")
@@ -220,14 +224,19 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                               </td>
                               {r.days.map((x) => {
                                 const h = r.hours[x.d] ?? 0;
-                                const ab = x.abs > 0;
+                                const codes = calCodes(x.d);
                                 return (
                                   <td
                                     key={x.d}
-                                    className={`${calc.isWork(x.d) ? "" : "off"}${ab ? " ab" : ""}`}
-                                    title={`${fdw(x.d)}${ab ? " · neprítomnosť v kalendári" : ""}`}
+                                    className={calc.isWork(x.d) ? undefined : "off"}
+                                    title={`${fdw(x.d)}${codes.length ? " · " + codes.map((c) => TYPE_NAME[c] ?? c).join(", ") : ""}`}
                                   >
-                                    {h ? nf(h) : ""}
+                                    {h ? <span className="dh">{nf(h)}</span> : null}
+                                    {codes.map((c) => (
+                                      <span key={c} className={`dab ${typeClass(c)}`}>
+                                        {c}
+                                      </span>
+                                    ))}
                                   </td>
                                 );
                               })}
@@ -250,10 +259,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                       </tbody>
                     </table>
                   </div>
-                  <p className="dohleg">
-                    <span className="legsw" />
-                    deň, keď má dohodár v kalendári neprítomnosť
-                  </p>
+
                 </>
               ) : (
                 <span className="muted">Žiadni dohodári v tomto mesiaci. Pridáte ich v Nastaveniach → Zamestnanci.</span>

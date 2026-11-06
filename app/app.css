@@ -424,3 +424,8 @@ a.namebtn:hover { color: var(--accent); }
 .cal thead th.tdy { background: var(--today) !important; }
 .cal tbody td.c.tdy { background-color: var(--today); }
 .cal:not(.dayt) tbody tr:hover > td.c.tdy { background-color: color-mix(in srgb, var(--today) 82%, var(--ink) 6%); }
+/* Dohody · výkaz hodín: v bunke to, čo má dohodár v kalendári (kód a farba ako v kalendári) */
+.dohgrid td { vertical-align: middle; }
+.dohgrid td .dh { display: block; }
+.dohgrid td .dab { display: block; margin: 1px auto 0; width: fit-content; padding: 1px 3px; border-radius: 4px; font-family: var(--f-mono); font-size: 9px; font-weight: 600; line-height: 1.3; background: var(--cb); color: var(--c); }
+.dohgrid td .dab.t-HO { background: transparent; border: 1px dashed var(--c); padding: 0 2px; }
