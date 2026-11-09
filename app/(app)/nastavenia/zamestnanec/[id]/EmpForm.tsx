@@ -42,7 +42,7 @@ export type EmpInit = {
   entitlement: number;
   carry_in: number;
   note: string;
-  doh: { mode: string; hours: number; coef: number; max_day: number; max_week: number | null; step: number };
+  doh: { mode: string; hours: number; coef: number; max_day: number; max_week: number | null; step: number; kind: string; max_month: number | null };
 };
 
 type Opt = { id: string; name: string; info: string };
@@ -427,6 +427,18 @@ export function EmpForm({
       ) : (
         <section className="box epc epwide">
           <h3>Dohoda · výkaz hodín</h3>
+          <Kf
+            label="Druh dohody"
+            htmlFor="ef-dkind"
+            hint="Podľa druhu aplikácia stráži zákonný limit: pracovná činnosť najviac 10 h v každom týždni, brigádnik (študent) priemerne 20 h týždenne, vykonanie práce najviac 350 h za rok."
+          >
+            <select id="ef-dkind" name="dkind" defaultValue={init.doh.kind}>
+              <option value="">— vyberte —</option>
+              <option value="dopc">Dohoda o pracovnej činnosti (max. 10 h týždenne)</option>
+              <option value="brig">Dohoda o brigádnickej práci študentov (priemer 20 h týždenne)</option>
+              <option value="dovp">Dohoda o vykonaní práce (max. 350 h ročne)</option>
+            </select>
+          </Kf>
           <Kf label="Hodiny na výplatu" htmlFor="ef-dmode">
             <select id="ef-dmode" name="dmode" defaultValue={init.doh.mode}>
               <option value="fixed">Pevný počet hodín mesačne</option>
@@ -447,6 +459,8 @@ export function EmpForm({
               <span className="muted">za deň</span>
               <input name="dweek" className="w-num" type="number" min={0} step={0.5} defaultValue={init.doh.max_week || ""} placeholder="—" aria-label="Max. hodín za týždeň" />
               <span className="muted">za týždeň</span>
+              <input name="dmonth" className="w-num" type="number" min={0} step={0.5} defaultValue={init.doh.max_month || ""} placeholder="—" aria-label="Max. hodín za mesiac" />
+              <span className="muted">za mesiac</span>
             </div>
           </Kf>
           <Kf label="Rozpisovať po" htmlFor="ef-dstep">

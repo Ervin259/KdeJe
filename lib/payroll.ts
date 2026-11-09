@@ -5,6 +5,7 @@ import { isOn, monthVals, payCols, ppOrder, type Vals } from "@/lib/report";
 import type { RzDay } from "@/lib/rozpis";
 import { loadOvertime, type OTMonth } from "@/lib/overtime";
 import { attHours } from "@/lib/attendance";
+import { limits, loadDohHours, warnings, brigPeriod, type DohKind } from "@/lib/dohLimits";
 
 export type ContractHours = {
   employee_id: string;
@@ -13,6 +14,8 @@ export type ContractHours = {
   coef: number | null;
   max_day: number | null;
   max_week: number | null;
+  max_month?: number | null;
+  kind?: DohKind | null;
   step: number;
 };
 
@@ -27,7 +30,21 @@ export type DohRow = {
   rozpisSum: number;
   sum: number;
   days: RzDay[];
-  def: { mode: ContractHours["mode"]; total: number; worked: number; coef: number; max: number; week: number | null; step: number; flex: boolean };
+  def: {
+    mode: ContractHours["mode"];
+    total: number;
+    worked: number;
+    coef: number;
+    max: number;
+    week: number | null;
+    step: number;
+    flex: boolean;
+    /** najviac hodín v tomto mesiaci podľa limitov (mesiac firmy, 350 h ročne, priemer brigádnika) */
+    cap: number | null;
+    capWhy: string;
+  };
+  /** prekročené limity (týždeň, mesiac, rok, priemer) */
+  warn: string[];
 };
 
 /** Všetky dáta pre Podklad pre mzdy za mesiac. */
@@ -76,6 +93,13 @@ export async function buildPayroll(y: number, m: number) {
       .filter((x: Entry) => x.employee_id === id && x.date_from <= d && x.date_to >= d && KIND[x.type] === "abs")
       .reduce((s, x) => s + calc.hoursOf(x), 0);
 
+  // hodiny dohodárov za posledný rok (ročný limit a priemer brigádnika)
+  const dohAll = await loadDohHours(
+    visible.filter((e) => e.contract_type === "DOH").map((e) => e.id),
+    `${y - 1}-${String(m).padStart(2, "0")}-01`,
+    `${y}-12-31`
+  );
+
   const doh: DohRow[] = visible
     .filter((e) => e.contract_type === "DOH")
     .map((e) => {
@@ -108,6 +132,20 @@ export async function buildPayroll(y: number, m: number) {
       const coef = Number(D.coef) || 1;
       const r = (x: number) => Math.round(x / step) * step;
       const total = D.mode === "fixed" ? Number(D.hours) || 0 : D.mode === "worked" ? r(worked / coef) : sum;
+      // limity: zákonné podľa druhu dohody + vlastné z karty
+      const lim = limits(D);
+      const all = { ...(dohAll.get(e.id) ?? {}), ...hours };
+      for (const d of Object.keys(all)) if (d >= a && d <= b && hours[d] === undefined) delete all[d];
+      const outside = (f: (d: string) => boolean) => Object.entries(all).reduce((s, [d, h]) => (f(d) && (d < a || d > b) ? s + h : s), 0);
+      const caps: [number, string][] = [];
+      if (lim.month != null) caps.push([lim.month, `limit firmy ${lim.month} h mesačne`]);
+      if (lim.year != null) caps.push([Math.max(0, lim.year - outside((d) => d.slice(0, 4) === String(y))), `350 h ročne (zvyšok roka)`]);
+      if (lim.avgWeek) {
+        const bp = brigPeriod(e.date_from, e.date_to, b);
+        caps.push([Math.max(0, lim.avgWeek * bp.weeks - outside((d) => d >= bp.from && d <= bp.to)), "priemer 20 h týždenne za obdobie dohody"]);
+      }
+      const capMin = caps.length ? caps.reduce((x, c) => (c[0] < x[0] ? c : x)) : null;
+      const warn = warnings(all, a, b, lim, e);
       return {
         e,
         hours,
@@ -115,7 +153,19 @@ export async function buildPayroll(y: number, m: number) {
         rozpisSum,
         sum,
         days: rd,
-        def: { mode: D.mode, total, worked, coef, max: Number(D.max_day) || 8, week: D.max_week ? Number(D.max_week) : null, step, flex },
+        def: {
+          mode: D.mode,
+          total,
+          worked,
+          coef,
+          max: Math.min(lim.day, Number(D.max_day) || 8),
+          week: lim.week,
+          step,
+          flex,
+          cap: capMin ? Math.round(capMin[0] * 100) / 100 : null,
+          capWhy: capMin ? capMin[1] : "",
+        },
+        warn,
       };
     });
 

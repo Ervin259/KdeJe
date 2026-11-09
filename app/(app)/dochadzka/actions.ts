@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { canManage, requireMe, type Me } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
-import { checkAttendance, checkDoh, computeDay, type Att } from "@/lib/attendance";
+import { attHours, checkAttendance, checkDoh, computeDay, type Att } from "@/lib/attendance";
+import { brigPeriod, checkLimits, limits, loadDohHours } from "@/lib/dohLimits";
 import { safeBack } from "@/lib/params";
 
 export type AttState = { error?: string[]; needReason?: boolean; reasonMsg?: string };
@@ -80,9 +81,20 @@ export async function saveAttendance(_p: AttState, f: FormData): Promise<AttStat
   const entries = await loadEntries(a.day, a.day);
   const info = computeDay(calc, a.employee_id, a.day, entries, null);
   let err: string[];
-  if (emps.find((e) => e.id === a.employee_id)?.contract_type === "DOH") {
-    const { data: ch } = await supabase.from("contract_hours").select("max_day").eq("employee_id", a.employee_id).maybeSingle();
-    err = checkDoh(a, info, Number(ch?.max_day) || 12);
+  const emp = emps.find((e) => e.id === a.employee_id);
+  if (emp?.contract_type === "DOH") {
+    const { data: ch } = await supabase.from("contract_hours").select("kind, max_day, max_week, max_month").eq("employee_id", a.employee_id).maybeSingle();
+    const lim = limits(ch);
+    err = checkDoh(a, info, lim.day);
+    if (!err.length) {
+      // týždeň, mesiac, rok a obdobie brigádnika s novým zápisom
+      const bp = brigPeriod(emp.date_from, emp.date_to, a.day);
+      const from = [`${a.day.slice(0, 4)}-01-01`, bp.from].sort()[0];
+      const to = [`${a.day.slice(0, 4)}-12-31`, bp.to].sort()[1];
+      const h = (await loadDohHours([a.employee_id], from, to)).get(a.employee_id) ?? {};
+      h[a.day] = attHours(a);
+      err = checkLimits(h, a.day, lim, emp);
+    }
   } else err = checkAttendance(w, a, info);
   if (err.length) return { error: err };
 

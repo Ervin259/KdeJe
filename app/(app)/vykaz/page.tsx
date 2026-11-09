@@ -78,7 +78,27 @@ function OtBlock({ v, o, canDecide, back, err }: { v: Vykaz; o: OTMonth; canDeci
   );
 }
 
-function Sheet({ v, from, to, company, o, canDecide, back, err }: { v: Vykaz; from: string; to: string; company: string; o?: OTMonth; canDecide: boolean; back: string; err: boolean }) {
+function Sheet({
+  v,
+  from,
+  to,
+  company,
+  o,
+  canDecide,
+  back,
+  err,
+  doh: di,
+}: {
+  v: Vykaz;
+  from: string;
+  to: string;
+  company: string;
+  o?: OTMonth;
+  canDecide: boolean;
+  back: string;
+  err: boolean;
+  doh?: { label: string; warn: string[] };
+}) {
   const { emp, days, sum } = v;
   const doh = emp.contract_type === "DOH";
   const absKeys = Object.keys(sum.absBy);
@@ -97,7 +117,7 @@ function Sheet({ v, from, to, company, o, canDecide, back, err }: { v: Vykaz; fr
           <b>
             {fdy(from)} – {fdy(to)}
           </b>
-          <div className="muted">{doh ? "dohoda – časy podľa rozpisu hodín" : longInfo(v.w).join(" · ")}</div>
+          <div className="muted">{doh ? `${di?.label ?? "dohoda"} · časy zo zápisu alebo z rozpisu hodín` : longInfo(v.w).join(" · ")}</div>
         </div>
       </header>
 
@@ -212,6 +232,14 @@ function Sheet({ v, from, to, company, o, canDecide, back, err }: { v: Vykaz; fr
         )}
       </div>
 
+      {di && di.warn.length > 0 && (
+        <div className="vkwarnbox">
+          <b>Prekročený limit dohody:</b>
+          {di.warn.map((w, i) => (
+            <div key={i}>{w}</div>
+          ))}
+        </div>
+      )}
       {o && <OtBlock v={v} o={o} canDecide={canDecide} back={back} err={err} />}
 
       <div className="vksign">
@@ -227,7 +255,7 @@ export default async function VykazPage({ searchParams }: { searchParams: Promis
   const me = await requireMe();
   const sp = await searchParams;
   const { from, to, month } = period(sp, todayIso());
-  const { list, allowed, lead, calc } = await loadVykaz(me, sp, from, to);
+  const { list, allowed, lead, calc, dohInfo } = await loadVykaz(me, sp, from, to);
   // nadčasy a náhradné voľno – len pri celom mesiaci
   const ot = month ? await loadOvertime(calc, list.map((v) => v.emp), month) : null;
   const empParam = sp.emp === "all" ? "all" : list.length === 1 ? list[0].emp.id : sp.emp ?? "";
@@ -290,6 +318,7 @@ export default async function VykazPage({ searchParams }: { searchParams: Promis
               canDecide={me.role === "admin" || (me.isManager && me.managed.includes(v.emp.id) && v.emp.id !== me.id)}
               back={qs({ m: month ?? undefined })}
               err={sp.oterr === v.emp.id}
+              doh={dohInfo.get(v.emp.id)}
             />
           ))
         )}

@@ -245,6 +245,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                             <tr key={r.e.id}>
                               <td className="nm">
                                 <b style={{ fontWeight: 500 }}>{r.e.name}</b>
+                                {r.warn.length > 0 && (
+                                  <span className="dohwarn" title={"Prekročený limit dohody:\n" + r.warn.join("\n")} aria-label="Prekročený limit dohody">
+                                    !
+                                  </span>
+                                )}
                               </td>
                               {r.days.map((x) => {
                                 const h = r.hours[x.d] ?? 0;

@@ -326,6 +326,8 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
       coef: Math.max(0.1, numOr(f, "dcoef", 1) ?? 1),
       max_day: Math.max(0.5, numOr(f, "dmax", 8) ?? 8),
       max_week: numOr(f, "dweek", null) || null,
+      max_month: numOr(f, "dmonth", null) || null,
+      kind: ["dopc", "brig", "dovp"].includes(str(f, "dkind")) ? str(f, "dkind") : null,
       step: str(f, "dstep") === "0.5" ? 0.5 : 1,
     });
   } else {

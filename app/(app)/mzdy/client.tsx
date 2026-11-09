@@ -27,7 +27,19 @@ export function PayBox({ title, count, actions, children }: { title: string; cou
   );
 }
 
-type Def = { mode: "fixed" | "worked" | "manual"; total: number; worked: number; coef: number; max: number; week: number | null; step: number; flex: boolean };
+type Def = {
+  mode: "fixed" | "worked" | "manual";
+  total: number;
+  worked: number;
+  coef: number;
+  max: number;
+  week: number | null;
+  step: number;
+  flex: boolean;
+  /** najviac hodín v mesiaci podľa limitov dohody */
+  cap: number | null;
+  capWhy: string;
+};
 
 /** Rozpis hodín dohodára do dní (modálne okno ako v prototype). */
 export function RozpisButton({
@@ -104,6 +116,20 @@ function RozpisModal({
   const [saveErr, setSaveErr] = useState("");
   const sum = Object.values(res.days).reduce((a, h) => a + h, 0);
   const count = Object.values(res.days).filter((h) => h > 0).length;
+  // týždne nad limit (pondelok – nedeľa, len dni tohto mesiaca)
+  const overWeeks = (() => {
+    if (week == null) return [] as string[];
+    const wk: Record<string, number> = {};
+    for (const [d, h] of Object.entries(res.days)) {
+      const t = new Date(d + "T00:00:00Z");
+      const mon = new Date(t.getTime() - ((t.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10);
+      wk[mon] = (wk[mon] || 0) + h;
+    }
+    return Object.entries(wk)
+      .filter(([, h]) => h > week + 0.001)
+      .map(([mon, h]) => `týždeň od ${Number(mon.slice(8))}. ${Number(mon.slice(5, 7))}.: ${nf(h)} h`);
+  })();
+  const overCap = def.cap != null && sum > def.cap + 0.001;
 
   const run = (h = how) => setRes(spread({ days, total, max, week, step: st, how: h }));
   const field = (id: string, lbl: string, val: number | null, set: (v: number | null) => void, small = "", extra: Record<string, unknown> = {}) => (
@@ -175,6 +201,20 @@ function RozpisModal({
           potom do dní s neprítomnosťou. Jednotlivé dni môžete ručne upraviť. Dni, ktoré si dohodár zapísal sám (príchod a odchod), sú
           podčiarknuté a rozpis ich nemení.
         </p>
+        {(overCap || overWeeks.length > 0) && (
+          <div className="msgs">
+            {overCap && (
+              <div className="e">
+                Spolu {nf(sum)} h je viac, ako dovoľuje limit dohody: najviac {nf(def.cap!)} h v tomto mesiaci ({def.capWhy}).
+              </div>
+            )}
+            {overWeeks.length > 0 && (
+              <div className="e">
+                Nad limit {nf(week!)} h za týždeň: {overWeeks.join(", ")}.
+              </div>
+            )}
+          </div>
+        )}
         {(res.err || res.warn || saveErr) && (
           <div className="msgs">
             {res.err && <div className="e">{res.err}</div>}
@@ -232,7 +272,7 @@ function RozpisModal({
             </button>
             <button
               className="btn primary"
-              disabled={pending}
+              disabled={pending || overCap || overWeeks.length > 0}
               onClick={() =>
                 start(async () => {
                   const r = await saveHours(empId, y, m, res.days);

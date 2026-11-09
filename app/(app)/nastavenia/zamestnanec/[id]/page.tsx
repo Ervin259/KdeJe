@@ -9,6 +9,7 @@ import { Header } from "@/components/Header";
 import { rgTxt, type RG } from "@/lib/rights";
 import { EmpForm, type EmpInit } from "./EmpForm";
 import { WT_KEYS, effective, longInfo, type WorkTime } from "@/lib/worktime";
+import { DOH_KIND, DOH_LAW, type DohKind } from "@/lib/dohLimits";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
@@ -81,6 +82,8 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
       max_day: Number(ch?.max_day ?? 8),
       max_week: ch?.max_week ? Number(ch.max_week) : null,
       step: Number(ch?.step ?? 1),
+      kind: (ch?.kind as string | null) ?? "",
+      max_month: ch?.max_month ? Number(ch.max_month) : null,
     },
   };
 
@@ -115,6 +118,11 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     );
     if (init.contract_type === "DOH") {
       const D = init.doh;
+      rules.push(
+        D.kind
+          ? `<b>Druh dohody:</b> ${DOH_KIND[D.kind as DohKind]} – zákonný limit ${DOH_LAW[D.kind as DohKind]}${D.max_month ? `; limit firmy ${nf(D.max_month)} h mesačne` : ""}.`
+          : `<b>Druh dohody:</b> nevyplnený – aplikácia nekontroluje zákonný limit hodín.`
+      );
       rules.push(
         `<b>Hodiny na výplatu:</b> ${
           D.mode === "fixed" ? `pevne ${nf(D.hours)} h mesačne` : D.mode === "worked" ? `odpracované hodiny ÷ ${nf(D.coef)}` : "zadávate ručne každý mesiac"

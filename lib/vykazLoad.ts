@@ -5,6 +5,7 @@ import { byLastName } from "@/lib/calc";
 import { applyFilter, getFilter } from "@/lib/filters";
 import { buildVykaz, type Vykaz } from "@/lib/vykaz";
 import type { Att } from "@/lib/attendance";
+import { DOH_KIND, DOH_LAW, limits, loadDohHours, warnings } from "@/lib/dohLimits";
 
 export type VykazParams = { emp?: string; m?: string; od?: string; do?: string };
 
@@ -55,5 +56,23 @@ export async function loadVykaz(me: Me, sp: VykazParams, from: string, to: strin
   }
   const att = ((atts ?? []) as Att[]).map((a) => ({ ...a, arrive: a.arrive.slice(0, 5), leave: a.leave.slice(0, 5), break_start: a.break_start?.slice(0, 5) ?? null }));
   const list: Vykaz[] = chosen.map((e) => buildVykaz(calc, e, from, to, entries, att, dohBy.get(e.id) ?? null));
-  return { list, allowed, lead, calc };
+
+  // dohodári: druh dohody, zákonný limit a prekročenia v období
+  const dohIds = chosen.filter((e) => e.contract_type === "DOH").map((e) => e.id);
+  const dohInfo = new Map<string, { label: string; warn: string[] }>();
+  if (dohIds.length) {
+    const y0 = `${Number(from.slice(0, 4)) - 1}${from.slice(4)}`;
+    const [{ data: chs }, all] = await Promise.all([
+      supabase.from("contract_hours").select("employee_id, kind, max_day, max_week, max_month").in("employee_id", dohIds),
+      loadDohHours(dohIds, y0, to),
+    ]);
+    for (const e of chosen.filter((x) => dohIds.includes(x.id))) {
+      const lim = limits((chs ?? []).find((c) => c.employee_id === e.id));
+      dohInfo.set(e.id, {
+        label: lim.kind ? `${DOH_KIND[lim.kind]} – ${DOH_LAW[lim.kind]}` : "dohoda",
+        warn: warnings(all.get(e.id) ?? {}, from, to, lim, e),
+      });
+    }
+  }
+  return { list, allowed, lead, calc, dohInfo };
 }

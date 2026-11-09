@@ -8,6 +8,7 @@ import { EntryTabs } from "@/components/EntryTabs";
 import { canEditAttendance, computeDay, defaults, dohDay, editableParts, hmm, type Att } from "@/lib/attendance";
 import { FLEX_PERIOD, OVERTIME, hm } from "@/lib/worktime";
 import { AttForm } from "./AttForm";
+import { DOH_KIND, DOH_LAW, limits, loadDohHours, state, brigPeriod } from "@/lib/dohLimits";
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<{ spat?: string; emp?: string; d?: string }> }) {
   const me = await requireMe();
@@ -34,10 +35,29 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
     supabase.from("attendance").select("*").eq("employee_id", empId).eq("day", day).maybeSingle(),
     loadEntries(day, day),
     isDoh ? supabase.from("contract_hours_days").select("hours").eq("employee_id", empId).eq("date", day).maybeSingle() : Promise.resolve({ data: null }),
-    isDoh ? supabase.from("contract_hours").select("max_day").eq("employee_id", empId).maybeSingle() : Promise.resolve({ data: null }),
+    isDoh ? supabase.from("contract_hours").select("kind, max_day, max_week, max_month").eq("employee_id", empId).maybeSingle() : Promise.resolve({ data: null }),
   ]);
   const rzH = Number(rz?.hours ?? 0);
-  const maxDay = Number(chs?.max_day) || 12;
+  const lim = limits(chs);
+  const maxDay = lim.day;
+  // súčty dohodára okolo dňa (bez tohto dňa) – koľko ešte môže zapísať
+  const limTxt: string[] = [];
+  if (isDoh && emp) {
+    const bp = brigPeriod(emp.date_from, emp.date_to, day);
+    const from = [`${day.slice(0, 4)}-01-01`, bp.from].sort()[0];
+    const to = [`${day.slice(0, 4)}-12-31`, bp.to].sort()[1];
+    const h = (await loadDohHours([empId], from, to)).get(empId) ?? {};
+    delete h[day];
+    const st = state(h, day, lim, emp);
+    const nf2 = (n: number) => String(Math.round(n * 100) / 100).replace(".", ",");
+    const left = (x: number, m: number) => `zapísané ${nf2(x)} h z ${nf2(m)} h, zostáva ${nf2(Math.max(0, m - x))} h`;
+    if (lim.kind) limTxt.push(`${DOH_KIND[lim.kind]} – zákonný limit ${DOH_LAW[lim.kind]}.`);
+    else limTxt.push("Druh dohody nie je v karte vyplnený – zákonný limit hodín sa nekontroluje.");
+    if (st.week.max != null) limTxt.push(`Týždeň: ${left(st.week.h, st.week.max)} (bez tohto dňa).`);
+    if (st.month.max != null) limTxt.push(`Mesiac (limit firmy): ${left(st.month.h, st.month.max)}.`);
+    if (st.year.max != null) limTxt.push(`Rok ${day.slice(0, 4)}: ${left(st.year.h, st.year.max)}.`);
+    if (st.avg) limTxt.push(`Obdobie dohody ${st.avg.from.split("-").reverse().join(". ")} – ${st.avg.to.split("-").reverse().join(". ")}: ${left(st.avg.h, st.avg.max * st.avg.weeks)} (priemer 20 h týždenne).`);
+  }
   const info = computeDay(calc, empId, day, entries, (att as Att | null) ?? null);
   const d = defaults(w);
 
@@ -54,7 +74,8 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const rules: string[] = [];
   if (isDoh) {
     rules.push("Dohoda – zapíšte čas príchodu a odchodu (evidencia podľa § 99 ZP); hodiny sa dopočítajú.");
-    rules.push(`Najviac ${hmm(Math.min(12, maxDay))} h denne. Pri práci dlhšej ako 6 hodín prestávka aspoň 30 minút (§ 91 ZP).`);
+    rules.push(...limTxt);
+    rules.push(`Najviac ${String(Math.min(12, maxDay)).replace(".", ",")} h denne. Pri práci dlhšej ako 6 hodín prestávka aspoň 30 minút (§ 91 ZP).`);
     rules.push(
       rzH > 0
         ? `V rozpise hodín je na tento deň ${hmm(rzH)} h – váš zápis má prednosť a rozpis ho už nezmení.`
