@@ -902,3 +902,10 @@ body{padding-top:0}
 .emptab .editbtn{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;border:1px solid var(--grid);background:var(--surface);color:var(--muted);box-shadow:var(--shadow)}
 .emptab .editbtn:hover{color:var(--accent);border-color:var(--accent)}
 .t-NEV{--c:var(--x-nep);--cb:var(--t-nep);--bar:var(--b-nep)} .t-NEO{--c:var(--x-mimo);--cb:var(--t-mimo);--bar:var(--b-mimo)}
+/* Notifikácie – výber príjemcov */
+.nsel{display:flex;flex-wrap:wrap;gap:6px;padding-left:120px}
+.nsel .ctog{margin:0;padding:5px 10px;border:1px solid var(--grid);border-radius:999px;font-size:12.5px;background:var(--surface)}
+.nsel .ctog:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.nsel .nall{font-weight:600}
+.nsel .dis{opacity:.55;cursor:default}
+@media (max-width:700px){.nsel{padding-left:0}}

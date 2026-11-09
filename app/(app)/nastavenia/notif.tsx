@@ -11,7 +11,7 @@ export type NotifRuleView = {
   dates: string[]; // MM-DD
   notify_admin: boolean;
 };
-export type NotifPreview = { name: string; email: string | null; over: string };
+export type NotifPreview = { id: string; name: string; email: string | null; over: string };
 export type NotifLog = { day: string; n: number; ok: number; info: string };
 
 const mmdd = (s: string) => `${Number(s.slice(3, 5))}. ${Number(s.slice(0, 2))}.`;
@@ -33,6 +33,18 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
   const [sendState, send, sending] = useActionState<SetState, FormData>(sendNotifNow, {});
   const [on, setOn] = useState(r.enabled);
   const withMail = preview.filter((p) => p.email).length;
+  const [test, setTest] = useState(false);
+  // vybraní: predvolene nikto – aby sa omylom neposlalo všetkým
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const can = preview.filter((p) => test || p.email);
+  const chosen = can.filter((p) => sel.has(p.id));
+  const allOn = can.length > 0 && chosen.length === can.length;
+  const toggle = (id: string) => setSel((s) => {
+    const n = new Set(s);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
   return (
     <div className="grpcard">
       <form action={action} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -99,26 +111,45 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
           )}
         </div>
         {preview.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingLeft: 120 }} className="nprev">
-            {preview.map((p) => (
-              <span key={p.name} className={`pill${p.email ? "" : " warn"}`} title={p.email ? p.email : "Bez e-mailu – upozornenie sa nepošle"}>
-                {p.name} · {p.over}
-              </span>
-            ))}
-          </div>
+          <form action={send} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input type="hidden" name="id" value={r.id} />
+            <div className="nsel">
+              <label className="ctog nall">
+                <input type="checkbox" checked={allOn} onChange={() => setSel(allOn ? new Set() : new Set(can.map((p) => p.id)))} />
+                <span>všetci</span>
+              </label>
+              {preview.map((p) => {
+                const dis = !test && !p.email;
+                return (
+                  <label key={p.id} className={`ctog npick${dis ? " dis" : ""}`} title={p.email ?? "Bez e-mailu – upozornenie sa nepošle"}>
+                    <input type="checkbox" name="emp" value={p.id} disabled={dis} checked={!dis && sel.has(p.id)} onChange={() => toggle(p.id)} />
+                    <span>
+                      {p.name} · <b>{p.over}</b>
+                      {!p.email && <span className="muted"> · bez e-mailu</span>}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="row" style={{ gap: 10, justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
+              <label className="ctog" title="E-maily vybraných ľudí prídu len na váš e-mail; nikomu inému sa nepošlú a nezapíšu sa medzi odoslané">
+                <input type="checkbox" name="test" checked={test} onChange={(e) => setTest(e.target.checked)} />
+                <span>skúška – poslať len mne</span>
+              </label>
+              {sendState.ok && <span className="muted" style={{ fontSize: 12.5 }}>{sendState.ok}</span>}
+              {sendState.error && <span style={{ fontSize: 12.5, color: "var(--bad)" }}>{sendState.error.join(" ")}</span>}
+              <button
+                className={`btn sm${test ? "" : " primary"}`}
+                disabled={sending || !chosen.length}
+                onClick={(e) =>
+                  !test && !confirm(`Poslať upozornenie teraz ${chosen.length} ${chosen.length === 1 ? "zamestnancovi" : "zamestnancom"}?`) && e.preventDefault()
+                }
+              >
+                {sending ? "Odosielam…" : test ? `Poslať mne (${chosen.length})` : `Odoslať vybraným (${chosen.length})`}
+              </button>
+            </div>
+          </form>
         )}
-        <form action={send} className="row" style={{ gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-          <input type="hidden" name="id" value={r.id} />
-          {sendState.ok && <span className="muted" style={{ fontSize: 12.5 }}>{sendState.ok}</span>}
-          {sendState.error && <span style={{ fontSize: 12.5, color: "var(--bad)" }}>{sendState.error.join(" ")}</span>}
-          <button
-            className="btn sm"
-            disabled={sending || !withMail}
-            onClick={(e) => !confirm(`Poslať upozornenie teraz ${withMail} ${withMail === 1 ? "zamestnancovi" : "zamestnancom"}?`) && e.preventDefault()}
-          >
-            {sending ? "Odosielam…" : "Odoslať teraz"}
-          </button>
-        </form>
         {logs.length > 0 && (
           <div className="crow" style={{ alignItems: "flex-start" }}>
             <span className="cl">Odoslané</span>

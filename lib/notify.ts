@@ -96,20 +96,27 @@ export async function loadDov(sb: SupabaseClient, ids: string[], from: string, t
 
 const days = (n: number) => `${nf(n)} ${n === 1 ? "deň" : n > 1 && n < 5 && Number.isInteger(n) ? "dni" : "dní"}`;
 
-/** Odošle pravidlo vac_left: e-mail každému s dočerpaním > 0 a súhrn adminom. Výsledok zapíše do notification_log. */
-export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: string, origin: string) {
+/**
+ * Odošle pravidlo vac_left: e-mail každému s dočerpaním > 0 a súhrn adminom. Výsledok zapíše do notification_log.
+ * `only` – len vybraní zamestnanci (Odoslať teraz); `testTo` – skúška: všetky e-maily idú na túto adresu,
+ * bez súhrnu adminom a bez zápisu do logu (nočná úloha sa tým nezablokuje).
+ */
+export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: string, origin: string, opts: { only?: string[]; testTo?: string } = {}) {
   const y = today.slice(0, 4);
-  const list = await vacLeftList(sb, rule.company_id, today);
+  const all = await vacLeftList(sb, rule.company_id, today);
+  const list = opts.only ? all.filter((r) => opts.only!.includes(r.id)) : all;
+  const test = opts.testTo;
   const { data: co } = await sb.from("companies").select("name").eq("id", rule.company_id).maybeSingle();
   const firm = (co?.name as string | undefined) ?? "";
   const log: { rule_id: string; company_id: string; sent_on: string; employee_id: string | null; email: string | null; ok: boolean; info: string }[] = [];
   let sent = 0;
   for (const r of list) {
     let ok = false;
-    if (r.email) {
+    const to = test ?? r.email;
+    if (to) {
       ok = await sendMail(
-        r.email,
-        `Dočerpanie dovolenky do 31. 12. ${y}`,
+        to,
+        `${test ? "[Skúška] " : ""}Dočerpanie dovolenky do 31. 12. ${y}`,
         mailHtml(
           `Dovolenka – dočerpať do 31. 12. ${y}`,
           [
@@ -127,6 +134,7 @@ export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: st
     log.push({ rule_id: rule.id, company_id: rule.company_id, sent_on: today, employee_id: r.id, email: r.email, ok, info: r.email ? `dočerpať ${nf(r.over)}` : "bez e-mailu" });
   }
   let admins = 0;
+  if (test) return { list: list.length, sent, admins, noEmail: 0 };
   if (rule.notify_admin && list.length) {
     const { data: ad } = await sb.from("employees").select("email").eq("company_id", rule.company_id).eq("role", "admin").eq("active", true);
     const rows: [string, string][] = list.map((r) => [r.name, `dočerpať ${days(r.over)}${r.email ? "" : " (bez e-mailu – neposlané)"}`]);

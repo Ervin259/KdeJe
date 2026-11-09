@@ -63,7 +63,7 @@ export default async function SettingsPage({
     dates: (r.dates as string[]) ?? [],
     notify_admin: !!r.notify_admin,
   }));
-  const notifPreview = notifList.map((x) => ({ name: x.name, email: x.email, over: `${nf(x.over)} d` }));
+  const notifPreview = notifList.map((x) => ({ id: x.id, name: x.name, email: x.email, over: `${nf(x.over)} d` }));
   const notifLogs: Record<string, NotifLog[]> = {};
   for (const l of (nl ?? []) as { rule_id: string; sent_on: string; employee_id: string | null; ok: boolean; info: string | null }[]) {
     const arr = (notifLogs[l.rule_id] ??= []);
