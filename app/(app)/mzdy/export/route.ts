@@ -22,6 +22,7 @@ const box = { top: thin, left: thin, bottom: thin, right: thin };
 /** dátum s rokom, napr. 1. 11. 2026 */
 const fdy = (d: string) => `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}`;
 const num = (n: number) => Math.round(n * 1000) / 1000;
+const isDohG = (g: string | null) => g === "DOH";
 const safe = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /**
@@ -38,7 +39,9 @@ export async function GET(request: Request) {
   const g = sp.get("g") || "TPP";
 
   const P = await buildPayroll(year, m);
-  const { calc, cols, days, wd, groups, doh } = P;
+  const { calc, cols, days, wd, groups, doh, otCols } = P;
+  const oc = !isDohG(sp.get("g")) && otCols(sp.get("g") || "TPP");
+  const OTH = ["Nadčas preplatiť h", "Nadčas → NV h", "Zostatok NV h"];
   const period = `${MNC[m - 1]} ${year}`;
   const isDoh = g === "DOH";
   const groupName = isDoh ? "Dohody – výkaz hodín" : ppLabel(g);
@@ -52,7 +55,7 @@ export async function GET(request: Request) {
   });
 
   // hlavička dokumentu
-  const header: string[] = isDoh ? ["Meno", ...days.map((d) => String(Number(d.slice(8)))), "Spolu"] : ["Meno", ...cols, "SL", "Odsúhlasené"];
+  const header: string[] = isDoh ? ["Meno", ...days.map((d) => String(Number(d.slice(8)))), "Spolu"] : ["Meno", ...cols, ...(oc ? OTH : []), "SL", "Odsúhlasené"];
   const width = header.length;
   ws.mergeCells(1, 1, 1, width);
   ws.getCell(1, 1).value = `Podklady pre mzdy – ${groupName}`;
@@ -78,7 +81,7 @@ export async function GET(request: Request) {
     c.border = box;
     if (!isDoh && i > 0 && i <= cols.length && TYPE_NAME[t]) c.note = TYPE_NAME[t];
   });
-  hr.height = 20;
+  hr.height = oc ? 30 : 20;
   if (isDoh) {
     // druhý riadok hlavičky: deň v týždni
     const r2 = ws.getRow(H + 1);
@@ -116,9 +119,19 @@ export async function GET(request: Request) {
       const row = ws.getRow(r);
       row.getCell(1).value = x.e.name;
       cols.forEach((k, i) => (row.getCell(i + 2).value = x.v[k] ? num(x.v[k]) : null));
-      row.getCell(cols.length + 2).value = x.sl;
-      row.getCell(cols.length + 3).value = x.e.contract_type === "DOH" ? "–" : x.conf ? fdy(x.conf.at) : "nie";
-      if (!x.conf && x.e.contract_type !== "DOH") row.getCell(cols.length + 3).font = { color: { argb: "FFB4314C" } };
+      let c0 = cols.length + 2;
+      if (oc) {
+        const o = x.ot;
+        const nz = (n: number) => (Math.abs(n) > 0.004 ? Math.round(n * 100) / 100 : null);
+        row.getCell(c0).value = o ? nz(o.pay + o.expired) : null;
+        if (o?.expired) row.getCell(c0).note = `z toho prepadnuté náhradné voľno ${num(o.expired)} h`;
+        row.getCell(c0 + 1).value = o ? nz(o.nv) : null;
+        row.getCell(c0 + 2).value = o ? nz(o.balance) : null;
+        c0 += 3;
+      }
+      row.getCell(c0).value = x.sl;
+      row.getCell(c0 + 1).value = x.e.contract_type === "DOH" ? "–" : x.conf ? fdy(x.conf.at) : "nie";
+      if (!x.conf && x.e.contract_type !== "DOH") row.getCell(c0 + 1).font = { color: { argb: "FFB4314C" } };
       r++;
     }
   }
@@ -137,7 +150,7 @@ export async function GET(request: Request) {
   // šírky stĺpcov
   const names = [...(isDoh ? doh.map((x) => x.e.name) : (groups[g] ?? []).map((x) => x.e.name)), "Meno"];
   ws.getColumn(1).width = Math.min(34, Math.max(18, ...names.map((n) => n.length + 3)));
-  for (let j = 2; j <= width; j++) ws.getColumn(j).width = isDoh ? (j === width ? 8 : 5) : j === width ? 13 : 8;
+  for (let j = 2; j <= width; j++) ws.getColumn(j).width = isDoh ? (j === width ? 8 : 5) : j === width ? 13 : OTH.includes(header[j - 1]) ? 11 : 8;
 
   ws.views = [{ state: "frozen", xSplit: 1, ySplit: first - 1 }];
   ws.pageSetup.printTitlesRow = `${H}:${first - 1}`;

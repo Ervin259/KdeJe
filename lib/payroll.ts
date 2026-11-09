@@ -3,6 +3,7 @@ import { loadCompany, loadEntries, type EmpFull } from "@/lib/loaders";
 import { KIND, monthDays, monthRange, type Entry } from "@/lib/calc";
 import { isOn, monthVals, payCols, ppOrder, type Vals } from "@/lib/report";
 import type { RzDay } from "@/lib/rozpis";
+import { loadOvertime, type OTMonth } from "@/lib/overtime";
 
 export type ContractHours = {
   employee_id: string;
@@ -14,7 +15,7 @@ export type ContractHours = {
   step: number;
 };
 
-export type PayRow = { e: EmpFull; v: Vals; sl: number | null; conf: { at: string; by: string | null } | null };
+export type PayRow = { e: EmpFull; v: Vals; sl: number | null; conf: { at: string; by: string | null } | null; ot: OTMonth | null };
 export type DohRow = {
   e: EmpFull;
   hours: Record<string, number>;
@@ -45,13 +46,18 @@ export async function buildPayroll(y: number, m: number) {
     return c ? { at: String(c.confirmed_at).slice(0, 10), by: c.confirmed_by as string | null } : null;
   };
 
+  // nadčasy: preplatiť (vrátane prepadnutého náhradného voľna) a do náhradného voľna
+  const mk = `${y}-${String(m).padStart(2, "0")}`;
+  const otMap = await loadOvertime(calc, visible, mk);
+  const otOf = (id: string) => otMap.get(id)?.find((x) => x.month === mk) ?? null;
+
   const groups: Record<string, PayRow[]> = {};
   for (const g of ppOrder(visible.map((e) => e.contract_type)).filter((g) => g !== "DOH")) {
     groups[g] = visible
       .filter((e) => e.contract_type === g)
       .map((e) => {
         const sl = calc.slMonth(e.id, y, m, entries);
-        return { e, v: monthVals(calc, entries, e.id, cols, y, m), sl: sl.none ? null : sl.n, conf: confOf(e.id) };
+        return { e, v: monthVals(calc, entries, e.id, cols, y, m), sl: sl.none ? null : sl.n, conf: confOf(e.id), ot: otOf(e.id) };
       });
   }
 
@@ -95,5 +101,7 @@ export async function buildPayroll(y: number, m: number) {
       };
     });
 
-  return { ...co, cols, days, wd, groups, doh, entries };
+  /** typ vzťahu, v ktorom má niekto nadčas alebo náhradné voľno → stĺpce nadčasov */
+  const otCols = (g: string) => (groups[g] ?? []).some((r) => r.ot && (r.ot.ot || r.ot.pay || r.ot.nv || r.ot.expired || r.ot.balance || r.ot.used));
+  return { ...co, cols, days, wd, groups, doh, entries, otCols };
 }

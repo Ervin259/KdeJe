@@ -5,6 +5,7 @@ import { TYPE_NAME, WD } from "@/lib/calc";
 import { longInfo } from "@/lib/worktime";
 import { ppLabel } from "@/lib/report";
 import { loadVykaz, period } from "@/lib/vykazLoad";
+import { loadOvertime } from "@/lib/overtime";
 
 export const runtime = "nodejs";
 
@@ -26,8 +27,9 @@ const safe = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/
 export async function GET(request: Request) {
   const me = await requireMe();
   const sp = Object.fromEntries(new URL(request.url).searchParams);
-  const { from, to } = period(sp, todayIso());
-  const { list } = await loadVykaz(me, sp, from, to);
+  const { from, to, month } = period(sp, todayIso());
+  const { list, calc } = await loadVykaz(me, sp, from, to);
+  const otMap = month ? await loadOvertime(calc, list.map((v) => v.emp), month) : null;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "KdeJe";
@@ -120,7 +122,19 @@ export async function GET(request: Request) {
     const info: [string, number | null][] = [
       ...(doh ? [] : ([["Fond", sum.fond]] as [string, number][])),
       ["Odpracované", sum.worked],
-      ...(!doh && v.w.overtime !== "none" ? ([[`Nadčas (${v.w.overtime === "nv" ? "predvolene náhradné voľno" : "predvolene preplatiť"})`, sum.overtime]] as [string, number][]) : []),
+      ...((): [string, number][] => {
+        const o = otMap?.get(emp.id)?.find((x) => x.month === month);
+        if (o)
+          return [
+            ["Nadčas", o.ot],
+            ["  z toho preplatiť", o.pay],
+            ["  z toho náhradné voľno", o.nv],
+            ["Náhradné voľno – čerpané", o.used],
+            ...(o.expired ? ([["Náhradné voľno – prepadlo, preplatiť", o.expired]] as [string, number][]) : []),
+            ["Náhradné voľno – zostatok", o.balance],
+          ];
+        return !doh && v.w.overtime !== "none" ? [[`Nadčas (${v.w.overtime === "nv" ? "predvolene náhradné voľno" : "predvolene preplatiť"})`, sum.overtime]] : [];
+      })(),
       ...(!doh && v.w.flexible && v.w.flex_period !== "day" ? ([["Saldo pružného času", sum.saldo]] as [string, number][]) : []),
       ["Nočná práca", sum.night],
       ["Sobota/nedeľa", sum.weekend],

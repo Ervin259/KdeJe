@@ -11,7 +11,12 @@ export type VykazParams = { emp?: string; m?: string; od?: string; do?: string }
 /** Obdobie: ?od=&do= (vlastné) alebo ?m=YYYY-MM (mesiac), predvolene aktuálny mesiac. */
 export function period(sp: VykazParams, today: string) {
   const ok = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
-  if (ok(sp.od) && ok(sp.do) && sp.od! <= sp.do!) return { from: sp.od!, to: sp.do!, month: null as string | null };
+  if (ok(sp.od) && ok(sp.do) && sp.od! <= sp.do!) {
+    // od–do presne na celý mesiac = mesiac
+    const [y, mm] = sp.od!.slice(0, 7).split("-").map(Number);
+    const full = sp.od!.endsWith("-01") && sp.do!.slice(0, 7) === sp.od!.slice(0, 7) && Number(sp.do!.slice(8)) === new Date(Date.UTC(y, mm, 0)).getUTCDate();
+    return { from: sp.od!, to: sp.do!, month: full ? sp.od!.slice(0, 7) : (null as string | null) };
+  }
   const m = sp.m && /^\d{4}-\d{2}$/.test(sp.m) ? sp.m : today.slice(0, 7);
   const [y, mm] = m.split("-").map(Number);
   const last = new Date(Date.UTC(y, mm, 0)).getUTCDate();

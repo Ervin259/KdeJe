@@ -17,7 +17,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const m = sp.m && Number(sp.m) >= 1 && Number(sp.m) <= 12 ? Number(sp.m) : curM;
 
   const P = await buildPayroll(year, m);
-  const { calc, cols, days, wd, groups, doh, mstatus, emps, entries } = P;
+  const { calc, cols, days, wd, groups, doh, mstatus, emps, entries, otCols } = P;
   const st = mstatus(year, m);
   const canConfirm = confirmOpen(calc.today, st.last);
 
@@ -99,6 +99,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
             .filter((g) => g !== "DOH" && (groups[g] ?? []).length)
             .map((g) => {
               const rows = groups[g].slice().sort((a, b) => byLastName(a.e, b.e));
+              const oc = otCols(g);
+              const hv = (n: number | undefined) => (n && Math.abs(n) > 0.004 ? <span className="num">{nf(Math.round(n * 100) / 100)}</span> : <span className="muted">–</span>);
               return (
                 <PayBox key={g} title={ppLabel(g)} count={cntTxt(rows.length)} actions={xls(g)}>
                   <div className="gridwrap">
@@ -111,6 +113,19 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                               {k}
                             </th>
                           ))}
+                          {oc && (
+                            <>
+                              <th className="c otc" title="Nadčas na preplatenie v hodinách (vrátane náhradného voľna, ktoré nebolo vyčerpané do 4 mesiacov)">
+                                Nadčas preplatiť h
+                              </th>
+                              <th className="c otc" title="Nadčas, za ktorý zamestnanec dostane náhradné voľno (hodiny)">
+                                Nadčas → NV h
+                              </th>
+                              <th className="c otc" title="Zostatok náhradného voľna na konci mesiaca (hodiny)">
+                                Zostatok NV h
+                              </th>
+                            </>
+                          )}
                           <th className="c hcol" title="Stravné lístky">
                             SL
                           </th>
@@ -133,6 +148,15 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                                   <span className="muted">–</span>
                                 </td>
                               )
+                            )}
+                            {oc && (
+                              <>
+                                <td className="c otc" title={r.ot?.expired ? `z toho prepadnuté náhradné voľno ${nf(r.ot.expired)} h` : undefined}>
+                                  {hv(r.ot ? r.ot.pay + r.ot.expired : 0)}
+                                </td>
+                                <td className="c otc">{hv(r.ot?.nv)}</td>
+                                <td className="c otc">{hv(r.ot?.balance)}</td>
+                              </>
                             )}
                             <td className="c hcol">{r.sl !== null ? <b className="num">{r.sl}</b> : <span className="muted">–</span>}</td>
                             <td className="c okc">

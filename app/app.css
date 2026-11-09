@@ -512,3 +512,15 @@ a.namebtn:hover { color: var(--accent); }
   .vktab th, .vktab td { padding: 2px 4px; }
   .vknote { max-width: 140px; }
 }
+/* Výkaz – nadčas a náhradné voľno */
+.vkot { margin-top: 10px; display: grid; gap: 6px; font-size: 13px; }
+.vkotrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.vkotf { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.vkotf input[name="nv"] { width: 64px; height: 30px; text-align: center; }
+.vkotf input.bad { border-color: var(--bad); }
+.vkotf .btn { height: 30px; padding: 0 10px; }
+.vkwarn { color: var(--bad); font-size: 12px; }
+.vkot b.minus { color: var(--bad); }
+@media print { .vkotf { display: none !important; } .vkotrow { padding: 4px 0; border: 0; } }
+.paytab th.otc { white-space: normal; min-width: 70px; max-width: 84px; font-size: 11px; line-height: 1.2; }
+.paytab td.otc { background: var(--sunk); }

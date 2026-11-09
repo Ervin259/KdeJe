@@ -8,13 +8,77 @@ import { ppLabel } from "@/lib/report";
 import { loadVykaz, period, type VykazParams } from "@/lib/vykazLoad";
 import type { Vykaz } from "@/lib/vykaz";
 import { EmpPick, PrintBtn } from "./client";
+import { loadOvertime, type OTMonth } from "@/lib/overtime";
+import { saveOvertime } from "./actions";
 
 /** dátum s rokom */
 const fdy = (d: string) => `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}`;
 const h = (n: number) => (Math.abs(n) < 1 / 120 ? "" : hmm(n));
 const sh = (n: number) => (Math.abs(n) < 1 / 120 ? "" : (n > 0 ? "+" : "") + hmm(n));
 
-function Sheet({ v, from, to, company }: { v: Vykaz; from: string; to: string; company: string }) {
+/** Nadčas za mesiac (preplatiť / náhradné voľno) a priebeh náhradného voľna. */
+function OtBlock({ v, o, canDecide, back, err }: { v: Vykaz; o: OTMonth; canDecide: boolean; back: string; err: boolean }) {
+  const d = o.decided;
+  const changed = d && Math.abs(Number(d.pay_h) + Number(d.nv_h) - o.ot) > 0.01;
+  const nvShow = o.start || o.nv || o.used || o.expired || o.balance;
+  return (
+    <div className="vkot">
+      {(o.ot > 0 || d) && (
+        <div className="vkotrow">
+          <span>
+            Nadčas <b>{hmm(o.ot)} h</b> → preplatiť <b>{hmm(o.pay)} h</b> · náhradné voľno <b>{hmm(o.nv)} h</b>{" "}
+            <span className="muted">
+              {d ? `(rozhodnuté ${fdy(String(d.decided_at ?? "").slice(0, 10) || o.month + "-01")})` : `(podľa karty – ${v.w.overtime === "nv" ? "náhradné voľno" : "preplatiť"})`}
+            </span>
+          </span>
+          {changed && <span className="vkwarn">Nadčas sa po rozhodnutí zmenil – skontrolujte rozdelenie.</span>}
+          {canDecide && (
+            <form action={saveOvertime} className="vkotf">
+              <input type="hidden" name="emp" value={v.emp.id} />
+              <input type="hidden" name="month" value={o.month} />
+              <input type="hidden" name="ot" value={o.ot} />
+              <input type="hidden" name="back" value={back} />
+              <label>
+                do náhradného voľna{" "}
+                <input name="nv" defaultValue={hmm(o.nv)} inputMode="decimal" aria-label="Hodiny do náhradného voľna" className={err ? "bad" : undefined} /> h, zvyšok
+                preplatiť
+              </label>
+              <button className="btn">Uložiť</button>
+              {d && (
+                <button className="btn" name="mode" value="reset" title="Zmazať rozhodnutie – platí nastavenie z karty">
+                  Podľa karty
+                </button>
+              )}
+              {err && <span className="vkwarn">Zadajte hodiny od 0 do {hmm(o.ot)} (napr. 4:30).</span>}
+            </form>
+          )}
+        </div>
+      )}
+      {nvShow ? (
+        <div className="vkotrow">
+          <span>
+            Náhradné voľno: na začiatku <b>{hmm(o.start)} h</b> · pribudlo <b>{hmm(o.nv)} h</b> · čerpané <b>{hmm(o.used)} h</b>
+            {o.expired > 0 && (
+              <>
+                {" "}
+                · prepadlo – preplatiť <b className="minus">{hmm(o.expired)} h</b>
+              </>
+            )}{" "}
+            · zostatok <b>{hmm(o.balance)} h</b>
+            {o.balance < -0.004 && <span className="muted"> (čerpané vopred – vyrovná sa ďalším nadčasom)</span>}
+          </span>
+          {o.open.length > 0 && (
+            <span className="muted">
+              Vyčerpať: {o.open.map((x) => `${hmm(x.h)} h do ${fdy(x.deadline)}`).join(", ")}
+            </span>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Sheet({ v, from, to, company, o, canDecide, back, err }: { v: Vykaz; from: string; to: string; company: string; o?: OTMonth; canDecide: boolean; back: string; err: boolean }) {
   const { emp, days, sum } = v;
   const doh = emp.contract_type === "DOH";
   const absKeys = Object.keys(sum.absBy);
@@ -121,7 +185,7 @@ function Sheet({ v, from, to, company }: { v: Vykaz; from: string; to: string; c
             Neprítomnosti <b>{hmm(Object.values(sum.absBy).reduce((a, b) => a + b, 0))} h</b>
           </span>
         )}
-        {!doh && v.w.overtime !== "none" && (
+        {!doh && v.w.overtime !== "none" && !o && (
           <span>
             Nadčas <b>{hmm(sum.overtime)} h</b> <span className="muted">({v.w.overtime === "nv" ? "predvolene náhradné voľno" : "predvolene preplatiť"})</span>
           </span>
@@ -148,6 +212,8 @@ function Sheet({ v, from, to, company }: { v: Vykaz; from: string; to: string; c
         )}
       </div>
 
+      {o && <OtBlock v={v} o={o} canDecide={canDecide} back={back} err={err} />}
+
       <div className="vksign">
         <div>Zamestnanec</div>
         <div>Vedúci / zamestnávateľ</div>
@@ -157,11 +223,13 @@ function Sheet({ v, from, to, company }: { v: Vykaz; from: string; to: string; c
   );
 }
 
-export default async function VykazPage({ searchParams }: { searchParams: Promise<VykazParams> }) {
+export default async function VykazPage({ searchParams }: { searchParams: Promise<VykazParams & { oterr?: string }> }) {
   const me = await requireMe();
   const sp = await searchParams;
   const { from, to, month } = period(sp, todayIso());
-  const { list, allowed, lead } = await loadVykaz(me, sp, from, to);
+  const { list, allowed, lead, calc } = await loadVykaz(me, sp, from, to);
+  // nadčasy a náhradné voľno – len pri celom mesiaci
+  const ot = month ? await loadOvertime(calc, list.map((v) => v.emp), month) : null;
   const empParam = sp.emp === "all" ? "all" : list.length === 1 ? list[0].emp.id : sp.emp ?? "";
 
   const qs = (o: Record<string, string | undefined>) => {
@@ -211,7 +279,19 @@ export default async function VykazPage({ searchParams }: { searchParams: Promis
             <div className="box muted">V tomto období tu nie je nikto na zobrazenie.</div>
           </div>
         ) : (
-          list.map((v) => <Sheet key={v.emp.id} v={v} from={from} to={to} company={me.company_name} />)
+          list.map((v) => (
+            <Sheet
+              key={v.emp.id}
+              v={v}
+              from={from}
+              to={to}
+              company={me.company_name}
+              o={ot?.get(v.emp.id)?.find((x) => x.month === month)}
+              canDecide={me.role === "admin" || (me.isManager && me.managed.includes(v.emp.id) && v.emp.id !== me.id)}
+              back={qs({ m: month ?? undefined })}
+              err={sp.oterr === v.emp.id}
+            />
+          ))
         )}
       </main>
     </>

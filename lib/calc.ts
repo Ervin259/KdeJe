@@ -43,7 +43,7 @@ export type Emp = {
 export type Sched = { s0: number; L: number; b0: number; b1: number; H: number; start: string; end: string };
 
 export const KIND: Record<string, AbsenceKind> = {
-  DOV: "abs", PAR: "abs", "OČR": "abs", PV: "abs", PN: "abs", NV: "abs", NEP: "abs",
+  DOV: "abs", PAR: "abs", "OČR": "abs", PV: "abs", PN: "abs", NV: "abs", NEP: "abs", NAV: "abs",
   SCT: "sc", SCZ: "sc", HO: "work",
 };
 
@@ -246,7 +246,7 @@ export const typeClass = (code: string) => "t-" + code.normalize("NFD").replace(
 export const TYPE_NAME: Record<string, string> = {
   DOV: "Dovolenka", PAR: "Lekár (paragraf)", "OČR": "Opatrovanie člena rodiny", PV: "Platené voľno",
   PN: "Práceneschopnosť", SCT: "Služobná cesta tuzemská", SCZ: "Služobná cesta zahraničná",
-  HO: "Home office", NV: "Náhradné voľno", NEP: "Neplatené voľno", MIMO: "Neprítomný/á",
+  HO: "Home office", NAV: "Náhradné voľno", NV: "Neplatené voľno", NEP: "Neprítomnosť neospravedlnená", MIMO: "Neprítomný/á",
 };
 
 export const partTxt = (x: Pick<Entry, "part" | "time_from" | "time_to">) =>
