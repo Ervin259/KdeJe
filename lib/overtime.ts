@@ -1,7 +1,7 @@
 /**
  * Nadčasy a náhradné voľno (§ 121 ZP).
  * Nadčas za mesiac sa podľa rozhodnutia (overtime_decisions) alebo predvolene podľa karty
- * preplatí, alebo ide do náhradného voľna. Náhradné voľno (typ NAV) sa čerpá od najstaršieho;
+ * preplatí, alebo ide do náhradného voľna. Náhradné voľno (typ NV) sa čerpá od najstaršieho;
  * čo sa nevyčerpá do konca 4. mesiaca po mesiaci nadčasu, prepadá na preplatenie.
  */
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +14,8 @@ import type { Att } from "@/lib/attendance";
 export const OT_START = "2026-11";
 /** Náhradné voľno treba poskytnúť do 4 mesiacov po vykonaní nadčasu. */
 export const NV_MONTHS = 4;
-export const NAV = "NAV";
+/** kód náhradného voľna (§ 121 ZP) */
+export const NAV = "NV";
 
 export type Decision = { employee_id: string; month: string; pay_h: number; nv_h: number; decided_at: string | null; note: string | null };
 
@@ -27,7 +28,7 @@ export type OTMonth = {
   pay: number;
   nv: number;
   decided: Decision | null;
-  /** čerpané náhradné voľno (NAV) v mesiaci */
+  /** čerpané náhradné voľno (NV) v mesiaci */
   used: number;
   /** prepadnuté NV (nevyčerpané do 4 mesiacov) – treba preplatiť v tomto mesiaci */
   expired: number;

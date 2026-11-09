@@ -1,7 +1,7 @@
 import { monthRange, type Calc, type Entry } from "@/lib/calc";
 
 /** Stĺpce súhrnov (PAYCOLS v prototype) – len zapnuté typy. */
-export const PAY_ORDER = ["DOV", "PAR", "OČR", "PV", "NAV", "PN", "SCT", "SCZ", "NV", "NEP", "HO"];
+export const PAY_ORDER = ["DOV", "PAR", "OČR", "PV", "NV", "PN", "SCT", "SCZ", "NEV", "NEO", "HO"];
 export const payCols = (enabled: string[]) => PAY_ORDER.filter((k) => enabled.includes(k));
 
 export type Vals = Record<string, number>;

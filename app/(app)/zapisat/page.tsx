@@ -26,7 +26,7 @@ export default async function EntryPage({
   const { data: allTypes } = await supabase.from("absence_types").select("code, name, parts").eq("enabled", true).order("sort");
   // náhradné voľno ponúknuť len firmám, kde má niekto povolené nadčasy alebo NV už čerpá
   const anyOt = emps.some((e) => calc.group(e.id).overtime !== "none");
-  const types = (allTypes ?? []).filter((t) => t.code !== "NAV" || anyOt || sp.id);
+  const types = (allTypes ?? []).filter((t) => t.code !== "NV" || anyOt || sp.id);
 
   let init: Init;
   let locked = false;
