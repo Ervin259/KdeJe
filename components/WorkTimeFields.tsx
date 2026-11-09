@@ -1,14 +1,15 @@
 "use client";
 import { useState } from "react";
-import { FLEX_PERIOD, dailyHours, hm, type WorkTime } from "@/lib/worktime";
+import { FLEX_PERIOD, dailyHours, hm, noMealVoucher, noOvertime, type WorkTime } from "@/lib/worktime";
 
 const nf = (n: number) => String(Math.round(n * 100) / 100).replace(".", ",");
 
 /**
  * Polia pracovného času – rovnaké v šablóne (Nastavenia → Pracovný čas) aj v karte zamestnanca.
  * `prefix` odlíši názvy polí v karte („wt_“), `disabled` zobrazí hodnoty šablóny len na čítanie.
+ * `contract` (typ vzťahu): dohodári a EXT nemajú stravné lístky, dohodári nemajú nadčasy – tieto riadky sa skryjú.
  */
-export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTime; prefix?: string; disabled?: boolean }) {
+export function WorkTimeFields({ g, prefix = "", disabled = false, contract = null }: { g: WorkTime; prefix?: string; disabled?: boolean; contract?: string | null }) {
   const n = (k: string) => prefix + k;
   const [flex, setFlex] = useState(g.flexible);
   const [sl, setSl] = useState(g.meal_voucher);
@@ -144,6 +145,9 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
         </div>
       </div>
 
+      {noOvertime(contract) ? (
+        <input type="hidden" name={n("overtime")} value="none" />
+      ) : (
       <div className="crow">
         <span className="cl">Nadčasy</span>
         <select className="ci" name={n("overtime")} defaultValue={g.overtime ?? "none"}>
@@ -152,7 +156,15 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
           <option value="nv">povolené – predvolene náhradné voľno</option>
         </select>
       </div>
+      )}
 
+      {noMealVoucher(contract) ? (
+        <>
+          <input type="hidden" name={n("sl_rule")} value={g.sl_rule ?? "gte"} />
+          <input type="hidden" name={n("sl_min_hours")} value={g.sl_min_hours ?? 4} />
+          <input type="hidden" name={n("trip_no_sl_hours")} value={g.trip_no_sl_hours ?? 5} />
+        </>
+      ) : (
       <div className="crow">
         <span className="cl">Stravné lístky</span>
         <label className="ctog">
@@ -179,6 +191,7 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
           </>
         )}
       </div>
+      )}
     </fieldset>
   );
 }

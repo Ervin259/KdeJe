@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, todayIso } from "@/lib/data";
 import { headers } from "next/headers";
-import { checkWorkTime, diffFrom, readWorkTime, type WorkTime } from "@/lib/worktime";
+import { checkWorkTime, diffFrom, forContract, readWorkTime, type WorkTime } from "@/lib/worktime";
 
 export type SetState = { error?: string[]; ok?: string };
 
@@ -31,8 +31,9 @@ export async function saveWorkGroup(_p: SetState, f: FormData): Promise<SetState
   const me = await requireAdmin();
   const supabase = await createClient();
   const id = str(f, "id");
-  const wt = readWorkTime(f);
-  const row = { company_id: me.company_id, name: str(f, "name"), ...wt };
+  const contract = str(f, "contract_type") || null; // prázdne = pre všetky typy vzťahu
+  const wt = forContract(readWorkTime(f), contract);
+  const row = { company_id: me.company_id, name: str(f, "name"), contract_type: contract, ...wt };
   const err: string[] = [];
   if (!row.name) err.push("Vyplňte názov šablóny.");
   err.push(...checkWorkTime(wt));
@@ -269,10 +270,10 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   // pracovný čas: vlastné nastavenie sa ukladá len ako rozdiel voči šablóne
   if (bool(f, "wt_custom")) {
     const { data: tpl } = await supabase.from("work_groups").select("*").eq("id", row.work_group_id ?? "").maybeSingle();
-    const wt = readWorkTime(f, "wt_");
+    const wt = forContract(readWorkTime(f, "wt_"), contract);
     const bad = checkWorkTime(wt);
     if (bad.length) err.push(...bad.map((x) => "Pracovný čas: " + x));
-    else row.work_override = tpl ? diffFrom(tpl as WorkTime, wt) : wt;
+    else row.work_override = tpl ? diffFrom(forContract(tpl as WorkTime, contract), wt) : wt;
   }
   if (err.length) return { error: err };
 

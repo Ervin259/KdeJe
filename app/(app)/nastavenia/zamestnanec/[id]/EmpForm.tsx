@@ -46,7 +46,7 @@ export type EmpInit = {
 };
 
 type Opt = { id: string; name: string; info: string };
-type Tpl = Opt & { wt: WorkTime };
+type Tpl = Opt & { wt: WorkTime; contract_type: string | null };
 const nf = (n: number) => String(Math.round(n * 1000) / 1000).replace(".", ",");
 
 function Kf({ label, hint, htmlFor, children }: { label: string; hint?: React.ReactNode; htmlFor?: string; children: React.ReactNode }) {
@@ -103,6 +103,15 @@ export function EmpForm({
   const [lead, setLead] = useState(init.is_manager);
   const [team, setTeam] = useState(new Set(init.manages));
   const [teamQ, setTeamQ] = useState("");
+  // pri zmene typu vzťahu prejsť na šablónu pre tento typ (ak aktuálna nesedí)
+  const changePp = (v: string) => {
+    setPp(v);
+    const cur = workGroups.find((x) => x.id === grp);
+    if (cur?.contract_type && cur.contract_type !== v) {
+      const fit = workGroups.find((x) => x.contract_type === v) ?? workGroups.find((x) => !x.contract_type);
+      if (fit) setGrp(fit.id);
+    }
+  };
   const [custom, setCustom] = useState(Object.keys(init.work_override ?? {}).length > 0);
   const [scope, setScope] = useState(init.cal_scope);
   const [seen, setSeen] = useState(new Set(init.cal_viewers));
@@ -168,7 +177,7 @@ export function EmpForm({
               hint="TPP – pracovný pomer, DOH – dohoda (výkaz hodín, bez odsúhlasenia mesiaca). Ďalšie typy sa správajú ako TPP. Zoznam upravíte ceruzkou."
             >
               <div className="kin">
-                <ListSelect kind="contract" id="ef-pp" name="contract_type" label="Typ vzťahu" value={pp} onChange={(v) => setPp(v || "TPP")} options={orgOpts.contract} locked={["TPP", "DOH"]} className="w-sm" />
+                <ListSelect kind="contract" id="ef-pp" name="contract_type" label="Typ vzťahu" value={pp} onChange={(v) => changePp(v || "TPP")} options={orgOpts.contract} locked={["TPP", "DOH"]} className="w-sm" />
                 <input name="firm" type="text" maxLength={60} defaultValue={init.firm} aria-label="Firma" placeholder="Firma" />
               </div>
             </Kf>
@@ -332,9 +341,9 @@ export function EmpForm({
         <div className="wtsel">
           <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Pravidlá → Pracovný čas.">
             <select id="ef-grp" name="work_group_id" value={grp} onChange={(e) => setGrp(e.target.value)}>
-              {workGroups.map((x) => (
+              {workGroups.filter((x) => x.id === grp || !x.contract_type || x.contract_type === pp).map((x) => (
                 <option key={x.id} value={x.id}>
-                  {x.name} · {shortInfo(x.wt)}
+                  {x.name} · {shortInfo(x.wt, pp)}
                 </option>
               ))}
             </select>
@@ -345,7 +354,7 @@ export function EmpForm({
           </label>
         </div>
         <div className={`grpcard wtcard${custom ? "" : " ro"}`}>
-          <WorkTimeFields key={`${grp}-${custom}`} g={wtShown} prefix="wt_" disabled={!custom} />
+          <WorkTimeFields key={`${grp}-${custom}-${pp}`} g={wtShown} prefix="wt_" disabled={!custom} contract={pp} />
           {!custom && <div className="wtnote muted">Platí šablóna „{workGroups.find((g) => g.id === grp)?.name}“. Na zmenu len pre tohto zamestnanca zaškrtnite vlastné nastavenie.</div>}
         </div>
       </section>

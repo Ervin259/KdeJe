@@ -146,8 +146,10 @@ export function AccAll() {
 }
 
 // ---------- skupiny (pracovný čas / práva) ----------
-type Member = { id: string; name: string; group: string };
-type G = { id: string; name: string };
+type Member = { id: string; name: string; group: string; contract?: string };
+type G = { id: string; name: string; contract_type?: string | null };
+/** šablóna pracovného času sa hodí k zamestnancovi, ak nemá typ vzťahu alebo je rovnaký */
+const fits = (g: G, m: Member) => !g.contract_type || !m.contract || g.contract_type === m.contract;
 
 const cntTxt = (n: number) => `${n} ${n === 1 ? "zamestnanec" : n > 1 && n < 5 ? "zamestnanci" : "zamestnancov"}`;
 const PEOPLE = (
@@ -175,7 +177,7 @@ function MembersDD({ g, groups, members, kind }: { g: G; groups: G[]; members: M
     return () => document.removeEventListener("mousedown", c);
   }, []);
   const mem = members.filter((e) => e.group === g.id);
-  const oth = members.filter((e) => e.group !== g.id);
+  const oth = members.filter((e) => e.group !== g.id && fits(g, e));
   const move = (emp: string, to: string) => start(() => moveEmployee(emp, kind, to));
   return (
     <div className="ypdd gmdd" ref={ref} onClick={(e) => e.stopPropagation()}>
@@ -192,7 +194,7 @@ function MembersDD({ g, groups, members, kind }: { g: G; groups: G[]; members: M
               <div key={e.id} className="gmrow">
                 <span>{e.name}</span>
                 <select value={g.id} onChange={(ev) => move(e.id, ev.target.value)} aria-label={`Presunúť ${e.name} do skupiny`}>
-                  {groups.map((x) => (
+                  {groups.filter((x) => x.id === g.id || fits(x, e)).map((x) => (
                     <option key={x.id} value={x.id}>
                       {x.name}
                     </option>
@@ -235,6 +237,8 @@ export type WG = WorkTime & {
   id: string;
   name: string;
   is_default: boolean;
+  /** typ vzťahu, pre ktorý je šablóna (null = pre všetky) */
+  contract_type: string | null;
 };
 
 /** Nová šablóna: pevný 8:30–17:00, prestávka 30 min o 12:00, bez nadčasov. */
@@ -252,8 +256,9 @@ const toMin = (t: string) => {
   return h * 60 + (m || 0);
 };
 
-function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
+function WorkEditor({ g, onClose, contracts }: { g: WG | null; onClose: () => void; contracts: string[] }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveWorkGroup, {});
+  const [ct, setCt] = useState(g?.contract_type ?? "");
   useEffect(() => {
     if (state.ok) onClose();
   }, [state.ok, onClose]);
@@ -264,7 +269,19 @@ function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
         <label className="cl">Názov</label>
         <input className="ci w-name" name="name" maxLength={40} defaultValue={g?.name ?? ""} placeholder="Napr. TPP skrátený" required />
       </div>
-      <WorkTimeFields g={g ?? NEW_WT} />
+      <div className="crow">
+        <label className="cl" htmlFor="wg-ct">Typ vzťahu</label>
+        <select id="wg-ct" className="ci" name="contract_type" value={ct} onChange={(e) => setCt(e.target.value)}>
+          <option value="">všetky</option>
+          {[...new Set([...contracts, ...(ct ? [ct] : [])])].map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <span className="ct">{ct === "DOH" ? "bez stravných lístkov a nadčasov" : ct === "EXT" ? "bez stravných lístkov" : ""}</span>
+      </div>
+      <WorkTimeFields key={ct} g={g ?? NEW_WT} contract={ct || null} />
       {state.error && (
         <div className="msgs">
           {state.error.map((e, i) => (
@@ -298,10 +315,10 @@ function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
   );
 }
 
-export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[] }) {
+export function WorkGroups({ groups, members, contracts }: { groups: WG[]; members: Member[]; contracts: string[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const close = () => setOpen(null);
-  const info = (g: WG) => shortInfo(g);
+  const info = (g: WG) => shortInfo(g, g.contract_type);
   return (
     <>
       <div className="grplbl">Šablóny · {groups.length} · u zamestnanca sa dajú zmeniť v jeho karte</div>
@@ -310,6 +327,11 @@ export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[
           <div key={g.id} className={`grprow${open === g.id ? " open" : ""}`}>
             <div className="grprhead" data-grow={g.id} onClick={() => setOpen(open === g.id ? null : g.id)} title={open === g.id ? "Kliknutím zatvoríte" : "Kliknutím upravíte skupinu"}>
               <b>{g.name}</b>
+              {g.contract_type && (
+                <span className="pill" title={`Šablóna pre typ vzťahu ${g.contract_type}`}>
+                  {g.contract_type}
+                </span>
+              )}
               {g.is_default && <span className="pill closed">predvolená</span>}
               <span className="muted" style={{ fontSize: 12.5 }}>
                 {info(g)}
@@ -320,7 +342,7 @@ export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[
                 {PEN}
               </button>
             </div>
-            {open === g.id && <WorkEditor g={g} onClose={close} />}
+            {open === g.id && <WorkEditor g={g} onClose={close} contracts={contracts} />}
           </div>
         ))}
         {open === "new" && (
@@ -328,7 +350,7 @@ export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[
             <div className="grprhead">
               <b>Nová šablóna</b>
             </div>
-            <WorkEditor g={null} onClose={close} />
+            <WorkEditor g={null} onClose={close} contracts={contracts} />
           </div>
         )}
       </div>

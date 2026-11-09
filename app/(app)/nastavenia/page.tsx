@@ -81,7 +81,7 @@ export default async function SettingsPage({
   );
 
   const members = (key: "work_group_id" | "rights_group_id", def: string | undefined) =>
-    act.map((e) => ({ id: e.id, name: e.name, group: (e[key] as string | null) ?? def ?? "" }));
+    act.map((e) => ({ id: e.id, name: e.name, contract: e.contract_type, group: (e[key] as string | null) ?? def ?? "" }));
 
   // sviatky po rokoch: roky so sviatkami + aktuálny a nasledujúci
   const years = [...new Set([year, year + 1, ...holidays.map((h) => Number(h.date.slice(0, 4)))])].sort((a, b) => a - b);
@@ -216,7 +216,7 @@ export default async function SettingsPage({
                               </span>
                             )}
                           </span>
-                          <span className="grpw">{shortInfo(w)}</span>
+                          <span className="grpw">{shortInfo(w, e.contract_type)}</span>
                         </td>
                         {e.contract_type === "DOH" ? (
                           <>
@@ -325,6 +325,7 @@ export default async function SettingsPage({
             <WorkGroups
               groups={groups as WG[]}
               members={members("work_group_id", groups.find((g) => g.is_default)?.id)}
+              contracts={PP}
             />
           </Acc>
 

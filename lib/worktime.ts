@@ -40,6 +40,16 @@ export const WT_KEYS: (keyof WorkTime)[] = [
   "break_len", "overtime", "meal_voucher", "sl_rule", "sl_min_hours", "trip_no_sl_hours",
 ];
 
+/** Typy vzťahu bez nároku na stravné lístky (dohodári, živnostníci a s.r.o.). */
+export const noMealVoucher = (contract: string | null | undefined) => contract === "DOH" || contract === "EXT";
+/** Typy vzťahu bez nadčasov (dohodári – evidujú sa len odpracované hodiny). */
+export const noOvertime = (contract: string | null | undefined) => contract === "DOH";
+/** Pracovný čas upravený podľa typu vzťahu: bez SL a bez nadčasov tam, kde nemajú zmysel. */
+export function forContract<T extends WorkTime>(w: T, contract: string | null | undefined): T {
+  if (!noMealVoucher(contract) && !noOvertime(contract)) return w;
+  return { ...w, ...(noMealVoucher(contract) ? { meal_voucher: false } : {}), ...(noOvertime(contract) ? { overtime: "none" as Overtime } : {}) };
+}
+
 export const FLEX_PERIOD: Record<FlexPeriod, string> = { day: "deň", week: "týždeň", "4w": "4 týždne" };
 export const OVERTIME: Record<Overtime, string> = { none: "nepovolené", pay: "povolené – preplatiť", nv: "povolené – náhradné voľno" };
 
@@ -136,13 +146,13 @@ export function checkWorkTime(w: WorkTime): string[] {
 }
 
 /** Krátky popis do zoznamov („08:30–17:00 · SL“). */
-export function shortInfo(w: WorkTime): string {
+export function shortInfo(w: WorkTime, contract?: string | null): string {
   const t = w.flexible ? `pružný ${hm(w.arrive_from)}–${hm(w.leave_to)}` : `${hm(w.day_start)}–${hm(w.day_end)}`;
-  return `${t} · ${w.meal_voucher ? "SL" : "bez SL"}`;
+  return noMealVoucher(contract) ? t : `${t} · ${w.meal_voucher ? "SL" : "bez SL"}`;
 }
 
 /** Podrobný popis pre kartu zamestnanca („Ako aplikácia počíta“). */
-export function longInfo(w: WorkTime): string[] {
+export function longInfo(w: WorkTime, contract?: string | null): string[] {
   const H = dailyHours(w);
   const out: string[] = [];
   out.push(
@@ -161,7 +171,7 @@ export function longInfo(w: WorkTime): string[] {
         }${w.break_len === "min" ? " (dlhšiu si nadrobí)" : ""}`
       : "bez prestávky"
   );
-  out.push(`nadčasy ${OVERTIME[w.overtime]}`);
+  if (!noOvertime(contract)) out.push(`nadčasy ${OVERTIME[w.overtime]}`);
   return out;
 }
 

@@ -2,7 +2,7 @@
  * Výpočty prenesené z prototypu kdeje.html (span, hoursOf, frac, amount, bal, slDay …).
  * Všetko pracuje s dátumami ako reťazcami YYYY-MM-DD a časmi HH:MM.
  */
-import { effective, type WorkTime } from "./worktime";
+import { effective, forContract, type WorkTime } from "./worktime";
 
 export type Part = "full" | "am" | "pm" | "hrs";
 
@@ -24,6 +24,8 @@ export type WorkGroup = WorkTime & {
   id: string;
   name: string;
   is_default: boolean;
+  /** typ vzťahu, pre ktorý je šablóna (null = pre všetky; migrácia 18) */
+  contract_type?: string | null;
 };
 
 export type AbsenceKind = "abs" | "sc" | "work";
@@ -123,7 +125,7 @@ export class Calc {
   group(empId: string): WorkGroup {
     const e = this.emps.get(empId);
     const g = (e?.work_group_id && this.groups.get(e.work_group_id)) || this.defGroup;
-    return effective(g, e?.work_override);
+    return forContract(effective(g, e?.work_override), e?.contract_type);
   }
 
   /** Pracovný čas zamestnanca; flexibilná skupina počíta so štandardným dňom firmy. */

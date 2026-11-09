@@ -8,7 +8,7 @@ import { ppLabel, ppOrder } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { rgTxt, type RG } from "@/lib/rights";
 import { EmpForm, type EmpInit } from "./EmpForm";
-import { WT_KEYS, effective, longInfo, type WorkTime } from "@/lib/worktime";
+import { WT_KEYS, effective, forContract, longInfo, type WorkTime } from "@/lib/worktime";
 import { DOH_KIND, DOH_LAW, type DohKind } from "@/lib/dohLimits";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -114,7 +114,7 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     );
     const own = Object.keys(init.work_override).length > 0;
     rules.push(
-      `<b>Pracovný čas:</b> ${own ? `vlastné nastavenie (šablóna „${esc(g.name)}“)` : `šablóna „${esc(g.name)}“`} – ${longInfo(effective(g, init.work_override)).join(", ")}.`
+      `<b>Pracovný čas:</b> ${own ? `vlastné nastavenie (šablóna „${esc(g.name)}“)` : `šablóna „${esc(g.name)}“`} – ${longInfo(forContract(effective(g, init.work_override), init.contract_type), init.contract_type).join(", ")}.`
     );
     if (init.contract_type === "DOH") {
       const D = init.doh;
@@ -168,8 +168,9 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const workGroups = groups.map((x) => ({
     id: x.id,
     name: x.name,
-    info: longInfo(x).join(", "),
+    info: longInfo(x, x.contract_type).join(", "),
     wt: Object.fromEntries(WT_KEYS.map((k) => [k, x[k] ?? null])) as WorkTime,
+    contract_type: (x.contract_type as string | null) ?? null,
   }));
   const rightsGroups = rights.map((x) => ({ id: x.id, name: x.name, info: rgTxt(x as RG) }));
 
