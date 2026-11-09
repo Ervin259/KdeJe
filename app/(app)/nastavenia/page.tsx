@@ -320,97 +320,6 @@ export default async function SettingsPage({
             </div>
           </Acc>
           </SetGroup>
-          <SetGroup k="rules" title="Pravidlá" sub="Pracovný čas · Typy neprítomností · Uzávierka a úpravy" forceOpen={["work","types","appr"].includes(sp.open ?? "")}>
-          <Acc k="work" title="Pracovný čas">
-            <WorkGroups
-              groups={groups as WG[]}
-              members={members("work_group_id", groups.find((g) => g.is_default)?.id)}
-              contracts={PP}
-            />
-          </Acc>
-
-          <Acc k="types" title="Typy neprítomností">
-            <div className="typegrid">
-              {types.map((t) => {
-                const p = t.parts.includes("hrs") ? "hrs" : t.parts.includes("half") ? "half" : "full";
-                const desc = `${PARTS_TXT[p]}${t.kind === "work" ? " · počíta sa ako práca" : t.kind === "sc" ? " · služobne" : ""}${
-                  t.code === "DOV" ? " · vždy zapnutá" : ""
-                }`;
-                return <TypeCard key={t.code} code={t.code} cls={typeClass(t.code)} name={t.name} desc={desc} on={t.enabled} />;
-              })}
-            </div>
-          </Acc>
-
-          <Acc k="appr" title="Uzávierka a úpravy">
-            <p className="muted sethelp">Kedy sa mesiac zamkne, či zápisy schvaľuje oprávnená osoba a čo smie zamestnanec meniť po uzávierke.</p>
-            <RightsGroups groups={rights as RG[]} members={members("rights_group_id", rights.find((r) => r.is_default)?.id)} />
-          </Acc>
-          </SetGroup>
-          <SetGroup k="cal" title="Kalendár" sub="Sviatky" forceOpen={["hol"].includes(sp.open ?? "")}>
-          <Acc k="hol" title="Sviatky" forceOpen={sp.open === "hol"}>
-            {years.map((y) => {
-              const hol = holidays.filter((h) => h.date.startsWith(`${y}-`));
-              const loaded = hol.some((h) => h.is_state);
-              return (
-                <details key={y} className="holyear" open={y === openYear}>
-                  <summary>
-                    <b>{y}</b>
-                    <span className="muted">
-                      {hol.length ? `${hol.length} ${hol.length === 1 ? "deň" : hol.length < 5 ? "dni" : "dní"}` : "zatiaľ bez sviatkov"}
-                    </span>
-                  </summary>
-                  {!loaded && stateYears.has(y) && (
-                    <form action={loadStateHolidays} className="row holload">
-                      <input type="hidden" name="year" value={y} />
-                      <button className="btn primary">Načítať štátne sviatky {y}</button>
-                    </form>
-                  )}
-                  {!loaded && !stateYears.has(y) && (
-                    <p className="muted sethelp">Štátne sviatky {y} zatiaľ nie sú pripravené. Pridať ich môžete aj ručne.</p>
-                  )}
-                  <div className="hollist">
-                    {hol.map((h) => {
-                      const w = dow(h.date);
-                      return (
-                        <div key={h.date} className={`holrow${w === 0 || w === 6 ? " wk" : ""}`}>
-                          <span className="hold num">
-                            {Number(h.date.slice(8))}. {Number(h.date.slice(5, 7))}.
-                          </span>
-                          <span className="holw">{WD[w]}</span>
-                          <span className="holn">
-                            {h.name}
-                            {!h.is_state && <span className="pill lead"> vlastné voľno</span>}
-                          </span>
-                          {h.is_state ? (
-                            <span className="iconx lockd" title="Štátny sviatok sa nedá odstrániť" aria-hidden="true">
-                              🔒
-                            </span>
-                          ) : (
-                            <form action={deleteHoliday} style={{ display: "contents" }}>
-                              <input type="hidden" name="date" value={h.date} />
-                              <button className="iconx" title="Odstrániť" aria-label={`Odstrániť ${h.date}`}>
-                                ×
-                              </button>
-                            </form>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <form action={addHoliday} className="row holadd">
-                    <input name="date" type="date" min={`${y}-01-01`} max={`${y}-12-31`} aria-label={`Nový voľný deň ${y}`} required />
-                    <input name="name" type="text" placeholder="Názov, napr. firemné voľno" style={{ maxWidth: 240 }} />
-                    <button className="btn">+ Pridať voľný deň</button>
-                  </form>
-                </details>
-              );
-            })}
-            <p className="muted sethelp" style={{ marginTop: 8 }}>
-              Štátne sviatky sú zamknuté. Vlastné voľné dni firmy (napr. medzi sviatkami) sa dajú pridať aj odstrániť. Sviatok cez víkend sa
-              nepočíta ako voľný deň navyše.
-            </p>
-          </Acc>
-          </SetGroup>
           <SetGroup k="firm" title="Firma" sub="Údaje o firme · Súkromie (GDPR) · Predplatné" forceOpen={["firm","gdpr","plan"].includes(sp.open ?? "")}>
           <Acc k="firm" title="Údaje o firme" forceOpen={sp.open === "firm"}>
             <CompanyForm
@@ -558,6 +467,96 @@ export default async function SettingsPage({
                 </table>
               </div>
             )}
+          </Acc>
+          </SetGroup>
+          <SetGroup k="rules" title="Všeobecné" sub="Pracovný čas · Typy neprítomností · Uzávierka a úpravy · Sviatky" forceOpen={["work","types","appr","hol"].includes(sp.open ?? "")}>
+          <Acc k="work" title="Pracovný čas">
+            <WorkGroups
+              groups={groups as WG[]}
+              members={members("work_group_id", groups.find((g) => g.is_default)?.id)}
+              contracts={PP}
+            />
+          </Acc>
+
+          <Acc k="types" title="Typy neprítomností">
+            <div className="typegrid">
+              {types.map((t) => {
+                const p = t.parts.includes("hrs") ? "hrs" : t.parts.includes("half") ? "half" : "full";
+                const desc = `${PARTS_TXT[p]}${t.kind === "work" ? " · počíta sa ako práca" : t.kind === "sc" ? " · služobne" : ""}${
+                  t.code === "DOV" ? " · vždy zapnutá" : ""
+                }`;
+                return <TypeCard key={t.code} code={t.code} cls={typeClass(t.code)} name={t.name} desc={desc} on={t.enabled} />;
+              })}
+            </div>
+          </Acc>
+
+          <Acc k="appr" title="Uzávierka a úpravy">
+            <p className="muted sethelp">Kedy sa mesiac zamkne, či zápisy schvaľuje oprávnená osoba a čo smie zamestnanec meniť po uzávierke.</p>
+            <RightsGroups groups={rights as RG[]} members={members("rights_group_id", rights.find((r) => r.is_default)?.id)} />
+          </Acc>
+
+          <Acc k="hol" title="Sviatky" forceOpen={sp.open === "hol"}>
+            {years.map((y) => {
+              const hol = holidays.filter((h) => h.date.startsWith(`${y}-`));
+              const loaded = hol.some((h) => h.is_state);
+              return (
+                <details key={y} className="holyear" open={y === openYear}>
+                  <summary>
+                    <b>{y}</b>
+                    <span className="muted">
+                      {hol.length ? `${hol.length} ${hol.length === 1 ? "deň" : hol.length < 5 ? "dni" : "dní"}` : "zatiaľ bez sviatkov"}
+                    </span>
+                  </summary>
+                  {!loaded && stateYears.has(y) && (
+                    <form action={loadStateHolidays} className="row holload">
+                      <input type="hidden" name="year" value={y} />
+                      <button className="btn primary">Načítať štátne sviatky {y}</button>
+                    </form>
+                  )}
+                  {!loaded && !stateYears.has(y) && (
+                    <p className="muted sethelp">Štátne sviatky {y} zatiaľ nie sú pripravené. Pridať ich môžete aj ručne.</p>
+                  )}
+                  <div className="hollist">
+                    {hol.map((h) => {
+                      const w = dow(h.date);
+                      return (
+                        <div key={h.date} className={`holrow${w === 0 || w === 6 ? " wk" : ""}`}>
+                          <span className="hold num">
+                            {Number(h.date.slice(8))}. {Number(h.date.slice(5, 7))}.
+                          </span>
+                          <span className="holw">{WD[w]}</span>
+                          <span className="holn">
+                            {h.name}
+                            {!h.is_state && <span className="pill lead"> vlastné voľno</span>}
+                          </span>
+                          {h.is_state ? (
+                            <span className="iconx lockd" title="Štátny sviatok sa nedá odstrániť" aria-hidden="true">
+                              🔒
+                            </span>
+                          ) : (
+                            <form action={deleteHoliday} style={{ display: "contents" }}>
+                              <input type="hidden" name="date" value={h.date} />
+                              <button className="iconx" title="Odstrániť" aria-label={`Odstrániť ${h.date}`}>
+                                ×
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <form action={addHoliday} className="row holadd">
+                    <input name="date" type="date" min={`${y}-01-01`} max={`${y}-12-31`} aria-label={`Nový voľný deň ${y}`} required />
+                    <input name="name" type="text" placeholder="Názov, napr. firemné voľno" style={{ maxWidth: 240 }} />
+                    <button className="btn">+ Pridať voľný deň</button>
+                  </form>
+                </details>
+              );
+            })}
+            <p className="muted sethelp" style={{ marginTop: 8 }}>
+              Štátne sviatky sú zamknuté. Vlastné voľné dni firmy (napr. medzi sviatkami) sa dajú pridať aj odstrániť. Sviatok cez víkend sa
+              nepočíta ako voľný deň navyše.
+            </p>
           </Acc>
           </SetGroup>
         </div>

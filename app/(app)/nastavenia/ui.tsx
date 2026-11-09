@@ -789,7 +789,7 @@ export function CompanyForm({ name, ico, address, billing }: { name: string; ico
   );
 }
 
-/** Hlavná kategória Nastavení (Ľudia, Pravidlá, Kalendár, Firma) – rozbaľovacia, štandardne zbalená. */
+/** Hlavná kategória Nastavení (Užívatelia, Firma, Všeobecné) – rozbaľovacia, štandardne zbalená. */
 export function SetGroup({
   k,
   title,

@@ -64,11 +64,11 @@ export default function GuidePage() {
               <b>Nastavenia → Firma → Údaje o firme:</b> skontrolujte názov, IČO a doplňte fakturačné údaje.
             </li>
             <li>
-              <b>Nastavenia → Pravidlá:</b> pracovný čas (časy, obed, stravné lístky), typy neprítomností, ktoré používate, a kedy sa mesiac
+              <b>Nastavenia → Všeobecné:</b> pracovný čas (časy, obed, stravné lístky), typy neprítomností, ktoré používate, a kedy sa mesiac
               uzamkne.
             </li>
             <li>
-              <b>Nastavenia → Kalendár → Sviatky:</b> načítajte štátne sviatky na rok a pridajte prípadné firemné voľno.
+              <b>Nastavenia → Všeobecné → Sviatky:</b> načítajte štátne sviatky na rok a pridajte prípadné firemné voľno.
             </li>
             <li>
               <b>Nastavenia → Užívatelia → Zamestnanci:</b> pridajte zamestnancov (meno, e-mail, typ vzťahu, nárok na dovolenku a prenos z minulého

@@ -339,7 +339,7 @@ export function EmpForm({
       <section className="box epc epwide">
         <h3>Pracovný čas</h3>
         <div className="wtsel">
-          <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Pravidlá → Pracovný čas.">
+          <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Všeobecné → Pracovný čas.">
             <select id="ef-grp" name="work_group_id" value={grp} onChange={(e) => setGrp(e.target.value)}>
               {workGroups.filter((x) => x.id === grp || !x.contract_type || x.contract_type === pp).map((x) => (
                 <option key={x.id} value={x.id}>
