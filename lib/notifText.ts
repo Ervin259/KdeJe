@@ -5,7 +5,11 @@
  */
 
 export const VAC_VARS: [string, string][] = [
-  ["meno", "meno a priezvisko"],
+  ["pozdrav", "„Dobrý deň, pán Novák“ / „Dobrý deň, pani Nováková“ / „Ahoj Jano“ – podľa oslovenia v karte"],
+  ["meno", "meno"],
+  ["priezvisko", "priezvisko"],
+  ["prezývka", "prezývka (ak nie je, meno)"],
+  ["celé meno", "meno a priezvisko"],
   ["firma", "názov firmy"],
   ["rok", "rok"],
   ["zostatok", "zostatok dovolenky"],
@@ -16,7 +20,7 @@ export const VAC_VARS: [string, string][] = [
 export const VAC_DEFAULT = {
   subject: "Dočerpanie dovolenky do 31. 12. {rok}",
   body: [
-    "Dobrý deň, {meno},",
+    "{pozdrav},",
     "",
     "podľa evidencie v KdeJe máte do 31. 12. {rok} dočerpať **{dočerpať}** dovolenky.",
     "",
@@ -25,9 +29,29 @@ export const VAC_DEFAULT = {
     "",
     "Naplánujte si ju, prosím, v kalendári KdeJe.",
   ].join("\n"),
+  body_ty: [
+    "{pozdrav},",
+    "",
+    "podľa evidencie v KdeJe máš do 31. 12. {rok} dočerpať **{dočerpať}** dovolenky.",
+    "",
+    "Zostatok dovolenky: {zostatok}",
+    "Do nového roka sa prenáša najviac: {prenos}",
+    "",
+    "Naplánuj si ju, prosím, v kalendári KdeJe.",
+  ].join("\n"),
 };
 
-const norm = (k: string) => k.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+export type Salutation = "pan" | "pani" | "ty" | null | undefined;
+
+/** „Dobrý deň, pán Novák“ / „Dobrý deň, pani Nováková“ / „Ahoj Jano“ / „Dobrý deň“ */
+export function greeting(sal: Salutation, first: string, last: string, nick: string): string {
+  if (sal === "ty") return `Ahoj ${nick || first || last}`.trim();
+  if (sal === "pan" && last) return `Dobrý deň, pán ${last}`;
+  if (sal === "pani" && last) return `Dobrý deň, pani ${last}`;
+  return "Dobrý deň";
+}
+
+const norm = (k: string) => k.trim().replace(/\s+/g, " ").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 const KNOWN = new Set(VAC_VARS.map(([k]) => norm(k)));
 
 /** Neznáme značky v texte (napr. preklep {zostatk}). */
@@ -67,13 +91,35 @@ export function textMailHtml(text: string, button?: { href: string; label: strin
   return `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#161D2B">${paras}${btn}<p style="color:#596379;font-size:12px;margin-top:24px">KdeJe · kdeje.app</p></div>`;
 }
 
-export type VacMail = { name: string; firm: string; year: string; left: number; carry: number; over: number };
+export type VacMail = {
+  first: string;
+  last: string;
+  nick: string;
+  sal: Salutation;
+  firm: string;
+  year: string;
+  left: number;
+  carry: number;
+  over: number;
+};
 
-/** Hotový e-mail pre zamestnanca podľa textu pravidla (prázdne = predvolený). */
-export function vacMail(rule: { subject?: string | null; body?: string | null }, m: VacMail, origin: string) {
-  const vars = { meno: m.name, firma: m.firm, rok: m.year, zostatok: days(m.left), prenos: days(m.carry), "dočerpať": days(m.over) };
+/** Hotový e-mail pre zamestnanca podľa textu pravidla (prázdne = predvolený); pri tykaní text pre tykanie. */
+export function vacMail(rule: { subject?: string | null; body?: string | null; body_ty?: string | null }, m: VacMail, origin: string) {
+  const vars = {
+    pozdrav: greeting(m.sal, m.first, m.last, m.nick),
+    meno: m.first || m.last,
+    priezvisko: m.last,
+    "prezývka": m.nick || m.first || m.last,
+    "celé meno": `${m.first} ${m.last}`.trim(),
+    firma: m.firm,
+    rok: m.year,
+    zostatok: days(m.left),
+    prenos: days(m.carry),
+    "dočerpať": days(m.over),
+  };
+  const body = m.sal === "ty" ? rule.body_ty?.trim() || VAC_DEFAULT.body_ty : rule.body?.trim() || VAC_DEFAULT.body;
   return {
     subject: fill(rule.subject?.trim() || VAC_DEFAULT.subject, vars),
-    html: textMailHtml(fill(rule.body?.trim() || VAC_DEFAULT.body, vars), { href: `${origin}/moj-prehlad`, label: "Otvoriť môj prehľad" }),
+    html: textMailHtml(fill(body, vars), { href: `${origin}/moj-prehlad`, label: "Otvoriť môj prehľad" }),
   };
 }

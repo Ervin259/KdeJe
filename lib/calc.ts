@@ -32,7 +32,13 @@ export type AbsenceKind = "abs" | "sc" | "work";
 
 export type Emp = {
   id: string;
+  /** celé meno (meno + priezvisko – drží ho trigger v DB, migrácia 21) */
   name: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  nickname?: string | null;
+  /** oslovenie v e-mailoch: pán / pani / tykanie */
+  salutation?: "pan" | "pani" | "ty" | null;
   contract_type: string;
   work_group_id: string | null;
   date_from: string | null;

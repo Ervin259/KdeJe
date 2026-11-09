@@ -9,6 +9,10 @@ import { effective, shortInfo, type WorkTime } from "@/lib/worktime";
 export type EmpInit = {
   id: string | null;
   name: string;
+  first_name: string;
+  last_name: string;
+  nickname: string;
+  salutation: "" | "pan" | "pani" | "ty";
   email: string;
   /** typ vzťahu (TPP, DOH, EXT… – zoznam firmy) */
   contract_type: string;
@@ -154,8 +158,26 @@ export function EmpForm({
         <div className="epcol">
           <section className="box epc">
             <h3>Základné údaje</h3>
-            <Kf label="Meno" htmlFor="ef-n">
-              <input id="ef-n" name="name" type="text" maxLength={60} defaultValue={init.name} placeholder="Napr. Ján Novák" required />
+            <Kf label="Meno" htmlFor="ef-fn">
+              <div className="kin">
+                <input id="ef-fn" name="first_name" type="text" maxLength={40} defaultValue={init.first_name} placeholder="Meno" aria-label="Meno" />
+                <input id="ef-ln" name="last_name" type="text" maxLength={40} defaultValue={init.last_name} placeholder="Priezvisko" aria-label="Priezvisko" required />
+              </div>
+            </Kf>
+            <Kf
+              label="Oslovenie"
+              htmlFor="ef-sal"
+              hint="Ako sa zamestnanec oslovuje v e-mailoch z KdeJe: „Dobrý deň, pán Novák“, „Dobrý deň, pani Nováková“ alebo „Ahoj Jano“ (prezývka, inak meno). Pri tykaní sa použije text notifikácie pre tykanie."
+            >
+              <div className="kin">
+                <select id="ef-sal" name="salutation" defaultValue={init.salutation}>
+                  <option value="pan">pán</option>
+                  <option value="pani">pani</option>
+                  <option value="ty">tykanie</option>
+                  <option value="">neuvedené</option>
+                </select>
+                <input name="nickname" type="text" maxLength={30} defaultValue={init.nickname} placeholder="Prezývka (napr. Jano)" aria-label="Prezývka" />
+              </div>
             </Kf>
             <Kf
               label="E-mail"

@@ -11,7 +11,17 @@ import { days, vacMail } from "@/lib/notifText";
  */
 
 export type NotifKind = "vac_left";
-export type NotifRule = { id: string; company_id: string; kind: NotifKind; enabled: boolean; dates: string[]; notify_admin: boolean; subject?: string | null; body?: string | null };
+export type NotifRule = {
+  id: string;
+  company_id: string;
+  kind: NotifKind;
+  enabled: boolean;
+  dates: string[];
+  notify_admin: boolean;
+  subject?: string | null;
+  body?: string | null;
+  body_ty?: string | null;
+};
 
 export const NOTIF: Record<NotifKind, { title: string; desc: string }> = {
   vac_left: {
@@ -38,7 +48,18 @@ export function parseDates(txt: string): string[] | null {
   return [...out].sort();
 }
 
-export type VacLeftRow = { id: string; name: string; email: string | null; left: number; over: number; carryMax: number };
+export type VacLeftRow = {
+  id: string;
+  name: string;
+  first: string;
+  last: string;
+  nick: string;
+  sal: "pan" | "pani" | "ty" | null;
+  email: string | null;
+  left: number;
+  over: number;
+  carryMax: number;
+};
 
 type EmpRow = Emp & { company_id: string; is_external: boolean; email: string | null; role: string };
 
@@ -48,7 +69,7 @@ export async function vacLeftList(sb: SupabaseClient, cid: string, today: string
   const from = `${y}-01-01`, to = `${y}-12-31`;
   const { data: er } = await sb
     .from("employees")
-    .select("id, company_id, name, email, role, contract_type, work_group_id, work_override, date_from, date_to, active, is_external")
+    .select("id, company_id, name, first_name, last_name, nickname, salutation, email, role, contract_type, work_group_id, work_override, date_from, date_to, active, is_external")
     .eq("company_id", cid);
   const emps = ((er ?? []) as EmpRow[]).filter(
     (e) => e.active && !e.is_external && e.contract_type !== "DOH" && (!e.date_to || e.date_to >= today) && (!e.date_from || e.date_from <= to)
@@ -69,7 +90,19 @@ export async function vacLeftList(sb: SupabaseClient, cid: string, today: string
     const vac = (v.data ?? []).find((x) => x.employee_id === e.id);
     if (!vac) continue;
     const b = balance(calc, e.id, en, { entitlement: Number(vac.entitlement), carry_in: Number(vac.carry_in) }, max);
-    if (b.over > 0.001) out.push({ id: e.id, name: e.name, email: e.email, left: b.left, over: b.over, carryMax: max });
+    if (b.over > 0.001)
+      out.push({
+        id: e.id,
+        name: e.name,
+        first: e.first_name ?? "",
+        last: e.last_name ?? e.name,
+        nick: e.nickname ?? "",
+        sal: e.salutation ?? null,
+        email: e.email,
+        left: b.left,
+        over: b.over,
+        carryMax: max,
+      });
   }
   return out.sort((a, b) => b.over - a.over || a.name.localeCompare(b.name, "sk"));
 }
@@ -114,7 +147,7 @@ export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: st
     let ok = false;
     const to = test ?? r.email;
     if (to) {
-      const m = vacMail(rule, { name: r.name, firm, year: y, left: r.left, carry: r.carryMax, over: r.over }, origin);
+      const m = vacMail(rule, { first: r.first, last: r.last, nick: r.nick, sal: r.sal, firm, year: y, left: r.left, carry: r.carryMax, over: r.over }, origin);
       ok = await sendMail(to, `${test ? "[Skúška] " : ""}${m.subject}`, m.html);
       if (ok) sent++;
     }
@@ -145,7 +178,7 @@ export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: st
 export async function runNotifications(sb: SupabaseClient, today: string, origin: string) {
   const out: string[] = [];
   const mmdd = today.slice(5, 10);
-  const { data: rules } = await sb.from("notification_rules").select("id, company_id, kind, enabled, dates, notify_admin, subject, body").eq("enabled", true).contains("dates", [mmdd]);
+  const { data: rules } = await sb.from("notification_rules").select("id, company_id, kind, enabled, dates, notify_admin, subject, body, body_ty").eq("enabled", true).contains("dates", [mmdd]);
   for (const rule of (rules ?? []) as NotifRule[]) {
     const { data: co } = await sb.from("companies").select("name, status").eq("id", rule.company_id).maybeSingle();
     if (!co || co.status === "suspended") continue;

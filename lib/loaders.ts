@@ -40,7 +40,7 @@ export const loadCompany = cache(async () => {
     supabase
       .from("employees")
       .select(
-        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, cal_scope, work_override, in_stats, in_payroll, role, is_manager, is_external, site, department"
+        "id, user_id, name, first_name, last_name, nickname, salutation, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, cal_scope, work_override, in_stats, in_payroll, role, is_manager, is_external, site, department"
       ),
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),

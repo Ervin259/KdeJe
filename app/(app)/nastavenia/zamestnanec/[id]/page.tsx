@@ -43,6 +43,10 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const init: EmpInit = {
     id: e?.id ?? null,
     name: e?.name ?? "",
+    first_name: e?.first_name ?? "",
+    last_name: e?.last_name ?? "",
+    nickname: e?.nickname ?? "",
+    salutation: e ? (e.salutation ?? "") : "pan",
     email: e?.email ?? "",
     contract_type: e?.contract_type ?? "TPP",
     firm: e?.firm ?? me.company_name,

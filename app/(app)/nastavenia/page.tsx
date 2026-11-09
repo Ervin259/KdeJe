@@ -50,7 +50,7 @@ export default async function SettingsPage({
 
   // notifikácie: pravidlá firmy, kto by dnes dostal upozornenie, posledné odoslania
   const [{ data: nr }, { data: nl }, notifList] = await Promise.all([
-    supabase.from("notification_rules").select("id, kind, enabled, dates, notify_admin, subject, body").eq("company_id", me.company_id).order("kind"),
+    supabase.from("notification_rules").select("id, kind, enabled, dates, notify_admin, subject, body, body_ty").eq("company_id", me.company_id).order("kind"),
     supabase.from("notification_log").select("rule_id, sent_on, employee_id, ok, info").eq("company_id", me.company_id).order("sent_on", { ascending: false }).limit(500),
     vacLeftList(supabase, me.company_id, calc.today).catch(() => []),
   ]);
@@ -64,8 +64,9 @@ export default async function SettingsPage({
     notify_admin: !!r.notify_admin,
     subject: (r.subject as string | null) ?? null,
     body: (r.body as string | null) ?? null,
+    body_ty: (r.body_ty as string | null) ?? null,
   }));
-  const notifPreview = notifList.map((x) => ({ id: x.id, left: x.left, carry: x.carryMax, overN: x.over, name: x.name, email: x.email, over: `${nf(x.over)} d` }));
+  const notifPreview = notifList.map((x) => ({ id: x.id, first: x.first, last: x.last, nick: x.nick, sal: x.sal, left: x.left, carry: x.carryMax, overN: x.over, name: x.name, email: x.email, over: `${nf(x.over)} d` }));
   const notifLogs: Record<string, NotifLog[]> = {};
   for (const l of (nl ?? []) as { rule_id: string; sent_on: string; employee_id: string | null; ok: boolean; info: string | null }[]) {
     const arr = (notifLogs[l.rule_id] ??= []);
@@ -171,6 +172,7 @@ export default async function SettingsPage({
                 <thead>
                   <tr>
                     <th>Meno</th>
+                    <th>Priezvisko</th>
                     <th>E-mail</th>
                     <th title="Typ vzťahu">
                       Typ<br />vzťahu
@@ -213,7 +215,13 @@ export default async function SettingsPage({
                       <tr key={e.id} className={`${e.active ? "" : "off"}${sp.flash === e.id ? " flash" : ""}`}>
                         <td>
                           <Link className="namebtn" href={`/nastavenia/zamestnanec/${e.id}`}>
-                            {e.name}
+                            {e.first_name ?? ""}
+                          </Link>
+                          {e.nickname && <span className="muted" title="Prezývka"> ({e.nickname})</span>}
+                        </td>
+                        <td>
+                          <Link className="namebtn" href={`/nastavenia/zamestnanec/${e.id}`}>
+                            {e.last_name ?? e.name}
                           </Link>
                           {note && <span className="notedot" title={`Poznámka: ${note}`} aria-label="Má poznámku" />}
                           {e.role === "admin" && <span className="pill closed"> admin</span>}

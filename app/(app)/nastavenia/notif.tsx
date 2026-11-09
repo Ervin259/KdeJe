@@ -13,8 +13,21 @@ export type NotifRuleView = {
   notify_admin: boolean;
   subject: string | null;
   body: string | null;
+  body_ty: string | null;
 };
-export type NotifPreview = { id: string; name: string; email: string | null; over: string; left: number; carry: number; overN: number };
+export type NotifPreview = {
+  id: string;
+  name: string;
+  email: string | null;
+  over: string;
+  left: number;
+  carry: number;
+  overN: number;
+  first: string;
+  last: string;
+  nick: string;
+  sal: "pan" | "pani" | "ty" | null;
+};
 export type NotifLog = { day: string; n: number; ok: number; info: string };
 
 const mmdd = (s: string) => `${Number(s.slice(3, 5))}. ${Number(s.slice(0, 2))}.`;
@@ -37,15 +50,19 @@ function NotifRuleCard({ r, preview, logs, firm, year }: { r: NotifRuleView; pre
   const [on, setOn] = useState(r.enabled);
   const [subject, setSubject] = useState(r.subject ?? VAC_DEFAULT.subject);
   const [body, setBody] = useState(r.body ?? VAC_DEFAULT.body);
+  const [bodyTy, setBodyTy] = useState(r.body_ty ?? VAC_DEFAULT.body_ty);
+  const [tab, setTab] = useState<"vy" | "ty">("vy");
   const [showPrev, setShowPrev] = useState(false);
-  const isDefault = subject === VAC_DEFAULT.subject && body.trim() === VAC_DEFAULT.body;
-  const bad = unknownVars(subject, body);
-  // náhľad: prvý človek zo zoznamu, inak vzorové hodnoty
-  const p0 = preview[0];
+  const isDefault = subject === VAC_DEFAULT.subject && body.trim() === VAC_DEFAULT.body && bodyTy.trim() === VAC_DEFAULT.body_ty;
+  const bad = unknownVars(subject, body, bodyTy);
+  // náhľad: prvý človek zo zoznamu s týmto oslovením, inak vzorové hodnoty
+  const p0 = preview.find((p) => (tab === "ty" ? p.sal === "ty" : p.sal !== "ty"));
   const sample = p0
-    ? { name: p0.name, firm, year, left: p0.left, carry: p0.carry, over: p0.overN }
-    : { name: "Ján Novák", firm, year, left: 13, carry: 10, over: 3 };
-  const mail = vacMail({ subject, body }, sample, "https://kdeje.app");
+    ? { first: p0.first, last: p0.last, nick: p0.nick, sal: p0.sal, firm, year, left: p0.left, carry: p0.carry, over: p0.overN }
+    : tab === "ty"
+      ? { first: "Ján", last: "Novák", nick: "Jano", sal: "ty" as const, firm, year, left: 13, carry: 10, over: 3 }
+      : { first: "Ján", last: "Novák", nick: "", sal: "pan" as const, firm, year, left: 13, carry: 10, over: 3 };
+  const mail = vacMail({ subject, body, body_ty: bodyTy }, sample, "https://kdeje.app");
   const withMail = preview.filter((p) => p.email).length;
   // vybraní: predvolene nikto – aby sa omylom neposlalo všetkým
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -98,7 +115,25 @@ function NotifRuleCard({ r, preview, logs, firm, year }: { r: NotifRuleView; pre
             Text e-mailu
           </label>
           <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 6 }}>
-            <textarea id={`nb-${r.id}`} name="body" rows={9} value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} className="ntext" />
+            <div className="seg" style={{ alignSelf: "flex-start" }}>
+              <button type="button" aria-pressed={tab === "vy"} onClick={() => setTab("vy")}>
+                Vykanie (pán / pani)
+              </button>
+              <button type="button" aria-pressed={tab === "ty"} onClick={() => setTab("ty")}>
+                Tykanie
+              </button>
+            </div>
+            {tab === "vy" ? (
+              <>
+                <textarea id={`nb-${r.id}`} name="body" rows={9} value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} className="ntext" />
+                <input type="hidden" name="body_ty" value={bodyTy} />
+              </>
+            ) : (
+              <>
+                <textarea id={`nb-${r.id}`} name="body_ty" rows={9} value={bodyTy} onChange={(e) => setBodyTy(e.target.value)} maxLength={4000} className="ntext" />
+                <input type="hidden" name="body" value={body} />
+              </>
+            )}
             <div className="muted" style={{ fontSize: 12 }}>
               Značky:{" "}
               {VAC_VARS.map(([k, t], i) => (
@@ -121,6 +156,7 @@ function NotifRuleCard({ r, preview, logs, firm, year }: { r: NotifRuleView; pre
                   onClick={() => {
                     setSubject(VAC_DEFAULT.subject);
                     setBody(VAC_DEFAULT.body);
+                    setBodyTy(VAC_DEFAULT.body_ty);
                   }}
                 >
                   Pôvodný text

@@ -239,7 +239,11 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   const email = str(f, "email").toLowerCase() || null;
   const row = {
     company_id: me.company_id,
-    name: str(f, "name").replace(/\s+/g, " "),
+    first_name: str(f, "first_name").replace(/\s+/g, " ") || null,
+    last_name: str(f, "last_name").replace(/\s+/g, " ") || null,
+    name: `${str(f, "first_name")} ${str(f, "last_name")}`.replace(/\s+/g, " ").trim(),
+    nickname: str(f, "nickname") || null,
+    salutation: (["pan", "pani", "ty"].includes(str(f, "salutation")) ? str(f, "salutation") : null) as "pan" | "pani" | "ty" | null,
     email,
     contract_type: contract,
     firm: str(f, "firm") || null,
@@ -533,8 +537,9 @@ export async function saveNotifRule(_p: SetState, f: FormData): Promise<SetState
   if (enabled && !dates.length) return { error: ["Zadajte aspoň jeden dátum odoslania alebo pravidlo vypnite."] };
   const { VAC_DEFAULT, unknownVars } = await import("@/lib/notifText");
   const subject = str(f, "subject"), body = (f.get("body") as string | null)?.replace(/\r/g, "").trim() ?? "";
-  if (!subject || !body) return { error: ["Predmet ani text e-mailu nesmú byť prázdne (tlačidlo Pôvodný text ich vráti)."] };
-  const bad = unknownVars(subject, body);
+  const bodyTy = (f.get("body_ty") as string | null)?.replace(/\r/g, "").trim() ?? "";
+  if (!subject || !body || !bodyTy) return { error: ["Predmet ani text e-mailu nesmú byť prázdne (tlačidlo Pôvodný text ich vráti)."] };
+  const bad = unknownVars(subject, body, bodyTy);
   if (bad.length) return { error: [`Neznáme značky: ${bad.join(", ")}. Použiť sa dajú len značky uvedené pod textom.`] };
   const { data, error } = await supabase
     .from("notification_rules")
@@ -545,6 +550,7 @@ export async function saveNotifRule(_p: SetState, f: FormData): Promise<SetState
       // predvolený text sa neukladá – keď sa predvolený text v aplikácii zlepší, firma ho dostane
       subject: subject === VAC_DEFAULT.subject ? null : subject,
       body: body === VAC_DEFAULT.body ? null : body,
+      body_ty: bodyTy === VAC_DEFAULT.body_ty ? null : bodyTy,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -565,7 +571,7 @@ export async function sendNotifNow(_p: SetState, f: FormData): Promise<SetState>
   if (!sb) return { error: ["Vo Verceli chýba SUPABASE_SERVICE_ROLE_KEY – e-maily sa nedajú odoslať."] };
   const { data: rule } = await sb
     .from("notification_rules")
-    .select("id, company_id, kind, enabled, dates, notify_admin, subject, body")
+    .select("id, company_id, kind, enabled, dates, notify_admin, subject, body, body_ty")
     .eq("id", str(f, "id"))
     .eq("company_id", me.company_id)
     .maybeSingle();
