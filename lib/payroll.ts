@@ -129,7 +129,7 @@ export async function buildPayroll(y: number, m: number) {
       const flex = calc.group(e.id).flexible;
       const H = calc.sched(e.id).H;
       const worked = flex ? 0 : rd.filter((x) => x.work).reduce((s, x) => s + Math.max(0, H - x.abs), 0);
-      const coef = Number(D.coef) || 1;
+      const coef = 1; // evidujú sa skutočne odpracované hodiny (koeficient sa nepoužíva)
       const r = (x: number) => Math.round(x / step) * step;
       const total = D.mode === "fixed" ? Number(D.hours) || 0 : D.mode === "worked" ? r(worked / coef) : sum;
       // limity: zákonné podľa druhu dohody + vlastné z karty

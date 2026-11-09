@@ -125,7 +125,7 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
       );
       rules.push(
         `<b>Hodiny na výplatu:</b> ${
-          D.mode === "fixed" ? `pevne ${nf(D.hours)} h mesačne` : D.mode === "worked" ? `odpracované hodiny ÷ ${nf(D.coef)}` : "zadávate ručne každý mesiac"
+          D.mode === "fixed" ? `pevne ${nf(D.hours)} h mesačne` : D.mode === "worked" ? "odpracované hodiny podľa pracovnej doby" : "zadávate ručne každý mesiac"
         }; rozpis po ${D.step === 0.5 ? "polhodinách" : "celých hodinách"}, max. ${nf(D.max_day)} h za deň${D.max_week ? `, max. ${nf(D.max_week)} h za týždeň` : ""}.`
       );
       rules.push("<b>Dovolenka:</b> neeviduje sa (dohoda). Neprítomnosti si zapisuje do kalendára, aby kolegovia vedeli, či pracuje.");

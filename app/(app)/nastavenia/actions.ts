@@ -323,7 +323,7 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
       employee_id: empId,
       mode: (["fixed", "worked", "manual"].includes(str(f, "dmode")) ? str(f, "dmode") : "manual") as string,
       hours: numOr(f, "dhours", 0),
-      coef: Math.max(0.1, numOr(f, "dcoef", 1) ?? 1),
+      coef: 1, // evidujú sa skutočne odpracované hodiny (koeficient sa nepoužíva)
       max_day: Math.max(0.5, numOr(f, "dmax", 8) ?? 8),
       max_week: numOr(f, "dweek", null) || null,
       max_month: numOr(f, "dmonth", null) || null,

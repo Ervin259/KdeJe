@@ -442,15 +442,14 @@ export function EmpForm({
           <Kf label="Hodiny na výplatu" htmlFor="ef-dmode">
             <select id="ef-dmode" name="dmode" defaultValue={init.doh.mode}>
               <option value="fixed">Pevný počet hodín mesačne</option>
-              <option value="worked">Odpracované hodiny ÷ koeficient</option>
+              <option value="worked">Odpracované hodiny podľa pracovnej doby</option>
               <option value="manual">Zadám ručne každý mesiac</option>
             </select>
           </Kf>
           <Kf label="Hodín mesačne" htmlFor="ef-dhours">
             <div className="kin">
               <input id="ef-dhours" name="dhours" className="w-num" type="number" min={0} step={0.5} defaultValue={init.doh.hours || ""} />
-              <span className="muted">koeficient</span>
-              <input name="dcoef" className="w-num" type="number" min={0.1} step={0.1} defaultValue={init.doh.coef || 1} aria-label="Koeficient" />
+              <span className="muted">len pri pevnom počte</span>
             </div>
           </Kf>
           <Kf label="Max. hodín" htmlFor="ef-dmax">

@@ -100,12 +100,12 @@ function RozpisModal({
 }) {
   const st = def.step || 1;
   const [worked, setWorked] = useState(def.worked);
-  const [coef, setCoef] = useState(def.coef);
+
   const [fixedTotal, setFixedTotal] = useState(def.total);
   const [max, setMax] = useState(def.max);
   const [week, setWeek] = useState<number | null>(def.week);
   const [how, setHow] = useState<"even" | "seq">("even");
-  const total = def.mode === "worked" ? Math.round(worked / (coef || 1) / st) * st : fixedTotal;
+  const total = def.mode === "worked" ? Math.round(worked / st) * st : fixedTotal;
   const initial = useMemo(() => {
     if (Object.keys(current).length) return { days: current, err: "", warn: "" };
     return spread({ days, total, max, week, step: st, how });
@@ -165,17 +165,7 @@ function RozpisModal({
           {def.mode === "worked" ? (
             <>
               {field("rz-worked", "Odpracované hodiny", worked, (v) => setWorked(v ?? 0), def.flex ? "Zadajte, koľko odpracoval(a)." : `Podľa pracovnej doby ${workTxt} bez neprítomností.`)}
-              {field("rz-coef", "Koeficient", coef, (v) => setCoef(v || 1), "", { step: 0.1, min: 0.1 })}
-              <div className="field">
-                <span className="lbl">Na výplatu</span>
-                <div className="rzcalc">
-                  <b className="num">{nf(total)} h</b>
-                  <span className="muted">
-                    {" "}
-                    = {nf(worked)} ÷ {nf(coef)}
-                  </span>
-                </div>
-              </div>
+
             </>
           ) : (
             field("rz-total", "Hodín na výplatu", fixedTotal, (v) => setFixedTotal(v ?? 0), def.mode === "fixed" ? "Pevný počet z nastavení dohody." : "")
