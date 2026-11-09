@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Calc, balance, nf, type Emp, type Entry, type WorkGroup } from "@/lib/calc";
 import { mailHtml, sendMail } from "@/lib/mail";
+import { days, vacMail } from "@/lib/notifText";
 
 /**
  * Notifikácie – e-mailové upozornenia podľa pravidiel firmy (tabuľka notification_rules, migrácia 19).
@@ -10,7 +11,7 @@ import { mailHtml, sendMail } from "@/lib/mail";
  */
 
 export type NotifKind = "vac_left";
-export type NotifRule = { id: string; company_id: string; kind: NotifKind; enabled: boolean; dates: string[]; notify_admin: boolean };
+export type NotifRule = { id: string; company_id: string; kind: NotifKind; enabled: boolean; dates: string[]; notify_admin: boolean; subject?: string | null; body?: string | null };
 
 export const NOTIF: Record<NotifKind, { title: string; desc: string }> = {
   vac_left: {
@@ -94,7 +95,6 @@ export async function loadDov(sb: SupabaseClient, ids: string[], from: string, t
   return out;
 }
 
-const days = (n: number) => `${nf(n)} ${n === 1 ? "deň" : n > 1 && n < 5 && Number.isInteger(n) ? "dni" : "dní"}`;
 
 /**
  * Odošle pravidlo vac_left: e-mail každému s dočerpaním > 0 a súhrn adminom. Výsledok zapíše do notification_log.
@@ -114,21 +114,8 @@ export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: st
     let ok = false;
     const to = test ?? r.email;
     if (to) {
-      ok = await sendMail(
-        to,
-        `${test ? "[Skúška] " : ""}Dočerpanie dovolenky do 31. 12. ${y}`,
-        mailHtml(
-          `Dovolenka – dočerpať do 31. 12. ${y}`,
-          [
-            ["Firma", firm],
-            ["Zamestnanec", r.name],
-            ["Zostatok dovolenky", days(r.left)],
-            ["Do nového roka sa prenáša najviac", days(r.carryMax)],
-            ["Dočerpať do 31. 12.", days(r.over)],
-          ],
-          { href: `${origin}/moj-prehlad`, label: "Otvoriť môj prehľad" }
-        )
-      );
+      const m = vacMail(rule, { name: r.name, firm, year: y, left: r.left, carry: r.carryMax, over: r.over }, origin);
+      ok = await sendMail(to, `${test ? "[Skúška] " : ""}${m.subject}`, m.html);
       if (ok) sent++;
     }
     log.push({ rule_id: rule.id, company_id: rule.company_id, sent_on: today, employee_id: r.id, email: r.email, ok, info: r.email ? `dočerpať ${nf(r.over)}` : "bez e-mailu" });
@@ -158,7 +145,7 @@ export async function sendVacLeft(sb: SupabaseClient, rule: NotifRule, today: st
 export async function runNotifications(sb: SupabaseClient, today: string, origin: string) {
   const out: string[] = [];
   const mmdd = today.slice(5, 10);
-  const { data: rules } = await sb.from("notification_rules").select("id, company_id, kind, enabled, dates, notify_admin").eq("enabled", true).contains("dates", [mmdd]);
+  const { data: rules } = await sb.from("notification_rules").select("id, company_id, kind, enabled, dates, notify_admin, subject, body").eq("enabled", true).contains("dates", [mmdd]);
   for (const rule of (rules ?? []) as NotifRule[]) {
     const { data: co } = await sb.from("companies").select("name, status").eq("id", rule.company_id).maybeSingle();
     if (!co || co.status === "suspended") continue;

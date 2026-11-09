@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { saveNotifRule, sendNotifNow, type SetState } from "./actions";
+import { VAC_DEFAULT, VAC_VARS, unknownVars, vacMail } from "@/lib/notifText";
 
 export type NotifRuleView = {
   id: string;
@@ -10,28 +11,41 @@ export type NotifRuleView = {
   enabled: boolean;
   dates: string[]; // MM-DD
   notify_admin: boolean;
+  subject: string | null;
+  body: string | null;
 };
-export type NotifPreview = { id: string; name: string; email: string | null; over: string };
+export type NotifPreview = { id: string; name: string; email: string | null; over: string; left: number; carry: number; overN: number };
 export type NotifLog = { day: string; n: number; ok: number; info: string };
 
 const mmdd = (s: string) => `${Number(s.slice(3, 5))}. ${Number(s.slice(0, 2))}.`;
 const fday = (s: string) => `${Number(s.slice(8, 10))}. ${Number(s.slice(5, 7))}. ${s.slice(0, 4)}`;
 
 /** Nastavenia → Všeobecné → Notifikácie: pravidlá e-mailových upozornení firmy. */
-export function NotifRules({ rules, preview, logs }: { rules: NotifRuleView[]; preview: NotifPreview[]; logs: Record<string, NotifLog[]> }) {
+export function NotifRules({ rules, preview, logs, firm, year }: { rules: NotifRuleView[]; preview: NotifPreview[]; logs: Record<string, NotifLog[]>; firm: string; year: string }) {
   return (
     <div className="grplist">
       {rules.map((r) => (
-        <NotifRuleCard key={r.id} r={r} preview={preview} logs={logs[r.id] ?? []} />
+        <NotifRuleCard key={r.id} r={r} preview={preview} logs={logs[r.id] ?? []} firm={firm} year={year} />
       ))}
     </div>
   );
 }
 
-function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifPreview[]; logs: NotifLog[] }) {
+function NotifRuleCard({ r, preview, logs, firm, year }: { r: NotifRuleView; preview: NotifPreview[]; logs: NotifLog[]; firm: string; year: string }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveNotifRule, {});
   const [sendState, send, sending] = useActionState<SetState, FormData>(sendNotifNow, {});
   const [on, setOn] = useState(r.enabled);
+  const [subject, setSubject] = useState(r.subject ?? VAC_DEFAULT.subject);
+  const [body, setBody] = useState(r.body ?? VAC_DEFAULT.body);
+  const [showPrev, setShowPrev] = useState(false);
+  const isDefault = subject === VAC_DEFAULT.subject && body.trim() === VAC_DEFAULT.body;
+  const bad = unknownVars(subject, body);
+  // náhľad: prvý človek zo zoznamu, inak vzorové hodnoty
+  const p0 = preview[0];
+  const sample = p0
+    ? { name: p0.name, firm, year, left: p0.left, carry: p0.carry, over: p0.overN }
+    : { name: "Ján Novák", firm, year, left: 13, carry: 10, over: 3 };
+  const mail = vacMail({ subject, body }, sample, "https://kdeje.app");
   const withMail = preview.filter((p) => p.email).length;
   // vybraní: predvolene nikto – aby sa omylom neposlalo všetkým
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -72,6 +86,57 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
             placeholder="napr. 1. 10., 1. 11., 1. 12."
           />
           <span className="ct">každý rok, ráno</span>
+        </div>
+        <div className="crow">
+          <label className="cl" htmlFor={`ns-${r.id}`}>
+            Predmet
+          </label>
+          <input id={`ns-${r.id}`} className="ci" style={{ flex: 1, minWidth: 220, width: "auto" }} name="subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} />
+        </div>
+        <div className="crow" style={{ alignItems: "flex-start" }}>
+          <label className="cl" htmlFor={`nb-${r.id}`} style={{ paddingTop: 8 }}>
+            Text e-mailu
+          </label>
+          <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 6 }}>
+            <textarea id={`nb-${r.id}`} name="body" rows={9} value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} className="ntext" />
+            <div className="muted" style={{ fontSize: 12 }}>
+              Značky:{" "}
+              {VAC_VARS.map(([k, t], i) => (
+                <span key={k}>
+                  {i > 0 && ", "}
+                  <code title={t}>{`{${k}}`}</code>
+                </span>
+              ))}
+              {" "}· **text** = tučné · prázdny riadok = nový odsek · na konci je vždy tlačidlo „Otvoriť môj prehľad“
+            </div>
+            {bad.length > 0 && <div style={{ fontSize: 12.5, color: "var(--bad)" }}>Neznáme značky: {bad.join(", ")}</div>}
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn sm" onClick={() => setShowPrev((x) => !x)}>
+                {showPrev ? "Skryť náhľad" : "Náhľad"}
+              </button>
+              {!isDefault && (
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => {
+                    setSubject(VAC_DEFAULT.subject);
+                    setBody(VAC_DEFAULT.body);
+                  }}
+                >
+                  Pôvodný text
+                </button>
+              )}
+            </div>
+            {showPrev && (
+              <div className="nmail">
+                <div className="nmail-h">
+                  <span className="muted">Predmet:</span> <b>{mail.subject}</b>
+                  <span className="muted" style={{ marginLeft: 8 }}>{p0 ? `(${p0.name})` : "(vzorové hodnoty)"}</span>
+                </div>
+                <div dangerouslySetInnerHTML={{ __html: mail.html }} />
+              </div>
+            )}
+          </div>
         </div>
         <div className="crow">
           <span className="cl">Admin</span>

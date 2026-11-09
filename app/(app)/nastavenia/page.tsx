@@ -50,7 +50,7 @@ export default async function SettingsPage({
 
   // notifikácie: pravidlá firmy, kto by dnes dostal upozornenie, posledné odoslania
   const [{ data: nr }, { data: nl }, notifList] = await Promise.all([
-    supabase.from("notification_rules").select("id, kind, enabled, dates, notify_admin").eq("company_id", me.company_id).order("kind"),
+    supabase.from("notification_rules").select("id, kind, enabled, dates, notify_admin, subject, body").eq("company_id", me.company_id).order("kind"),
     supabase.from("notification_log").select("rule_id, sent_on, employee_id, ok, info").eq("company_id", me.company_id).order("sent_on", { ascending: false }).limit(500),
     vacLeftList(supabase, me.company_id, calc.today).catch(() => []),
   ]);
@@ -62,8 +62,10 @@ export default async function SettingsPage({
     enabled: !!r.enabled,
     dates: (r.dates as string[]) ?? [],
     notify_admin: !!r.notify_admin,
+    subject: (r.subject as string | null) ?? null,
+    body: (r.body as string | null) ?? null,
   }));
-  const notifPreview = notifList.map((x) => ({ id: x.id, name: x.name, email: x.email, over: `${nf(x.over)} d` }));
+  const notifPreview = notifList.map((x) => ({ id: x.id, left: x.left, carry: x.carryMax, overN: x.over, name: x.name, email: x.email, over: `${nf(x.over)} d` }));
   const notifLogs: Record<string, NotifLog[]> = {};
   for (const l of (nl ?? []) as { rule_id: string; sent_on: string; employee_id: string | null; ok: boolean; info: string | null }[]) {
     const arr = (notifLogs[l.rule_id] ??= []);
@@ -594,7 +596,7 @@ export default async function SettingsPage({
           </Acc>
 
           <Acc k="notif" title="Notifikácie" forceOpen={sp.open === "notif"}>
-            <NotifRules rules={notifRules} preview={notifPreview} logs={notifLogs} />
+            <NotifRules rules={notifRules} preview={notifPreview} logs={notifLogs} firm={company?.name ?? ""} year={String(year)} />
           </Acc>
           </SetGroup>
         </div>

@@ -531,9 +531,22 @@ export async function saveNotifRule(_p: SetState, f: FormData): Promise<SetState
   if (!dates) return { error: ["Dátumy zadajte ako deň a mesiac oddelené čiarkou, napr. 1. 10., 1. 11., 1. 12."] };
   const enabled = bool(f, "enabled");
   if (enabled && !dates.length) return { error: ["Zadajte aspoň jeden dátum odoslania alebo pravidlo vypnite."] };
+  const { VAC_DEFAULT, unknownVars } = await import("@/lib/notifText");
+  const subject = str(f, "subject"), body = (f.get("body") as string | null)?.replace(/\r/g, "").trim() ?? "";
+  if (!subject || !body) return { error: ["Predmet ani text e-mailu nesmú byť prázdne (tlačidlo Pôvodný text ich vráti)."] };
+  const bad = unknownVars(subject, body);
+  if (bad.length) return { error: [`Neznáme značky: ${bad.join(", ")}. Použiť sa dajú len značky uvedené pod textom.`] };
   const { data, error } = await supabase
     .from("notification_rules")
-    .update({ enabled, dates, notify_admin: bool(f, "notify_admin"), updated_at: new Date().toISOString() })
+    .update({
+      enabled,
+      dates,
+      notify_admin: bool(f, "notify_admin"),
+      // predvolený text sa neukladá – keď sa predvolený text v aplikácii zlepší, firma ho dostane
+      subject: subject === VAC_DEFAULT.subject ? null : subject,
+      body: body === VAC_DEFAULT.body ? null : body,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .select("kind")
     .single();
@@ -552,7 +565,7 @@ export async function sendNotifNow(_p: SetState, f: FormData): Promise<SetState>
   if (!sb) return { error: ["Vo Verceli chýba SUPABASE_SERVICE_ROLE_KEY – e-maily sa nedajú odoslať."] };
   const { data: rule } = await sb
     .from("notification_rules")
-    .select("id, company_id, kind, enabled, dates, notify_admin")
+    .select("id, company_id, kind, enabled, dates, notify_admin, subject, body")
     .eq("id", str(f, "id"))
     .eq("company_id", me.company_id)
     .maybeSingle();

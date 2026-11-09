@@ -909,3 +909,7 @@ body{padding-top:0}
 .nsel .nall{font-weight:600}
 .nsel .dis{opacity:.55;cursor:default}
 @media (max-width:700px){.nsel{padding-left:0}}
+.ntext{width:100%;font:inherit;font-size:13px;line-height:1.5;padding:8px 10px;border:1px solid var(--grid);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+.nmail{border:1px solid var(--grid);border-radius:10px;padding:12px 14px;background:#fff;color:#161D2B}
+.nmail-h{font-size:12.5px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #e5e8ef}
+.nmail-h .muted{color:#596379}
