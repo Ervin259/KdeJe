@@ -150,6 +150,8 @@ export class Calc {
   }
   hoursOf(x: Pick<Entry, "employee_id" | "part" | "time_from" | "time_to">) {
     const sc = this.sched(x.employee_id);
+    // pol dňa je vždy presne polovica dňa (nezávisle od času prestávky v šablóne)
+    if (x.part === "am" || x.part === "pm") return sc.H / 2;
     const [a, b] = this.span(x);
     return Math.max(0, this.wpos(b, sc) - this.wpos(a, sc));
   }
