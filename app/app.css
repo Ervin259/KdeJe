@@ -465,3 +465,50 @@ a.namebtn:hover { color: var(--accent); }
 .wtf .wtk { width: 96px; flex: none; font-size: 12.5px; font-weight: 600; color: var(--ink); }
 .wtf .wtsep { width: 1px; height: 18px; background: var(--grid); margin: 0 6px; }
 @media (max-width: 700px) { .wtf .wtsub { margin-left: 0; } .wtf .wtk { width: 100%; } }
+
+/* ===== Výkaz dochádzky ===== */
+.vkview { display: grid; gap: 18px; }
+.vksheet { background: var(--surface); border: 1px solid var(--grid); border-radius: 12px; padding: 18px 20px; box-shadow: var(--shadow); }
+.vkhead { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; margin-bottom: 12px; }
+.vkhead h2 { margin: 0 0 2px; font-size: 18px; }
+.vkhead .muted { font-size: 12.5px; }
+.vkper { text-align: right; max-width: 60%; }
+.vkper b { font-size: 14px; }
+.vktab { width: 100%; font-size: 12.5px; }
+.vktab th, .vktab td { padding: 4px 6px; }
+.vktab tr.off td { background: var(--sunk); color: var(--muted); }
+.vktab td.plus { color: var(--ok, #1F8A4C); font-weight: 600; }
+.vktab td.minus { color: var(--bad); font-weight: 600; }
+.vktab tfoot td { font-weight: 700; border-top: 2px solid var(--ink); background: var(--accent-soft); }
+.vkwd { display: inline-block; width: 20px; color: var(--muted); }
+.vkhol { margin-left: 6px; font-size: 10px; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.vked { color: var(--accent); margin-left: 3px; }
+.vkab { display: inline-block; margin: 0 4px 0 0; padding: 0 4px; border-radius: 4px; background: var(--sunk); font-family: var(--f-mono); font-size: 11px; }
+.vknote { max-width: 240px; color: var(--muted); }
+.vksum { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 12px; padding: 10px 12px; background: var(--sunk); border-radius: 8px; font-size: 13px; }
+.vksign { display: none; }
+.vknav { flex-wrap: wrap; gap: 8px; }
+.vkmonth { font-weight: 700; font-size: 18px; min-width: 150px; text-align: center; }
+.vkrange { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; }
+.vkrange input { height: 32px; }
+.vkpick { height: 34px; max-width: 260px; }
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: #fff !important; }
+  #stickyhead, .stickyhead, header.top, nav, .vkacts, .vknav { display: none !important; }
+  main#view.vkview { padding: 0 !important; margin: 0 !important; max-width: none !important; display: block; }
+  .vksheet { border: 0; box-shadow: none; padding: 0; border-radius: 0; break-after: page; }
+  .vksheet:last-child { break-after: auto; }
+  .vktab { font-size: 9.5pt; }
+  .vktab th { background: #2F3743 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .vktab tr.off td, .vksum, .vktab tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .vksign { display: grid; grid-template-columns: 1fr 1fr 0.6fr; gap: 28px; margin-top: 36px; font-size: 10pt; }
+  .vksign > div { border-top: 1px solid #000; padding-top: 4px; }
+}
+.vktab td:first-child { white-space: nowrap; }
+@media print {
+  .vkhead { display: block; }
+  .vkper { text-align: left; max-width: none; margin-top: 6px; }
+  .vktab th, .vktab td { padding: 2px 4px; }
+  .vknote { max-width: 140px; }
+}

@@ -43,6 +43,7 @@ export async function Header({
       { href: "/kalendar", label: "Kalendár" },
       ...(me.isEmployee ? [{ href: "/moj-prehlad", label: "Môj prehľad" }] : []),
       { href: "/prehlad", label: "Prehľad" },
+      { href: "/vykaz", label: "Výkaz" },
       { href: "/mzdy", label: "Podklad pre mzdy" },
       { href: "/nastavenia", label: "Nastavenia" },
       { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
@@ -53,11 +54,12 @@ export async function Header({
       { href: "/kalendar", label: "Kalendár" },
       ...(me.isEmployee ? [{ href: "/moj-prehlad", label: "Môj prehľad" }] : []),
       { href: "/prehlad", label: "Prehľad" },
+      { href: "/vykaz", label: "Výkaz" },
       { href: "/schvalovanie", label: "Schvaľovanie", badge: pending || undefined }
     );
   } else {
     tabs.push({ href: "/kalendar", label: "Kalendár" });
-    if (me.isEmployee) tabs.push({ href: "/moj-prehlad", label: "Môj prehľad" });
+    if (me.isEmployee) tabs.push({ href: "/moj-prehlad", label: "Môj prehľad" }, { href: "/vykaz", label: "Výkaz" });
   }
 
   if (me.isPlatform) {

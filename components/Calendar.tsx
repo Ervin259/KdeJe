@@ -498,6 +498,8 @@ function Grid({
           {rows.map((e, i) => {
             const mine = e.id === meId;
             const can = admin || e.id === meId || managed.has(e.id);
+            const wt = calc.group(e.id);
+            const otOk = wt.overtime !== "none" && e.contract_type !== "DOH";
             const extra = rowExtra?.(e);
             // nadpis skupiny pred prvým riadkom skupiny (vlastný riadok hore sa nezoskupuje)
             const g = groupLabel && !mine ? groupLabel(e) : null;
@@ -526,12 +528,16 @@ function Grid({
                 </td>
                 {days.map((d) => {
                   const off = !calc.isWork(d);
+                  // víkend/sviatok: klik otvorí úpravu dochádzky, ak má povolené nadčasy
+                  const offAtt = off && can && otOk;
                   return (
                     <td
                       key={d}
-                      className={["c", off && "off", d === calc.today && "tdy", can && !off && "click"].filter(Boolean).join(" ")}
+                      className={["c", off && "off", d === calc.today && "tdy", ((can && !off) || offAtt) && "click"].filter(Boolean).join(" ")}
                       data-emp={e.id}
                       data-d={d}
+                      data-offatt={offAtt ? "1" : undefined}
+                      title={offAtt ? "Zapísať prácu v tento deň (nadčas)" : undefined}
                     >
                       <div className="cell">
                         {off ? null : <Cell empId={e.id} empName={e.name} d={d} wide={wide} {...ctx} />}
