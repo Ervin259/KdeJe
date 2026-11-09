@@ -279,7 +279,6 @@ function WorkEditor({ g, onClose, contracts }: { g: WG | null; onClose: () => vo
             </option>
           ))}
         </select>
-        <span className="ct">{ct === "DOH" ? "bez stravných lístkov a nadčasov" : ct === "EXT" ? "bez stravných lístkov" : ""}</span>
       </div>
       <WorkTimeFields key={ct} g={g ?? NEW_WT} contract={ct || null} />
       {state.error && (
