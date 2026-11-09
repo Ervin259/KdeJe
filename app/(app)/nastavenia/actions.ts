@@ -520,3 +520,50 @@ export async function deleteOrgOption(kind: string, value: string): Promise<OrgR
   done();
   return { list: await orgList(me.company_id, kind) };
 }
+
+// ---------- notifikácie ----------
+export async function saveNotifRule(_p: SetState, f: FormData): Promise<SetState> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { parseDates, NOTIF } = await import("@/lib/notify");
+  const id = str(f, "id");
+  const dates = parseDates(str(f, "dates"));
+  if (!dates) return { error: ["Dátumy zadajte ako deň a mesiac oddelené čiarkou, napr. 1. 10., 1. 11., 1. 12."] };
+  const enabled = bool(f, "enabled");
+  if (enabled && !dates.length) return { error: ["Zadajte aspoň jeden dátum odoslania alebo pravidlo vypnite."] };
+  const { data, error } = await supabase
+    .from("notification_rules")
+    .update({ enabled, dates, notify_admin: bool(f, "notify_admin"), updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("kind")
+    .single();
+  if (error) return { error: [error.message] };
+  await audit(`Notifikácia „${NOTIF[data.kind as "vac_left"]?.title ?? data.kind}“ ${enabled ? "zapnutá" : "vypnutá"}`);
+  done();
+  return { ok: "Uložené" };
+}
+
+/** Odošle pravidlo hneď (mimo dátumov z pravidla). */
+export async function sendNotifNow(_p: SetState, f: FormData): Promise<SetState> {
+  const me = await requireAdmin();
+  const { adminClient } = await import("@/lib/supabase/admin");
+  const { sendVacLeft } = await import("@/lib/notify");
+  const sb = adminClient();
+  if (!sb) return { error: ["Vo Verceli chýba SUPABASE_SERVICE_ROLE_KEY – e-maily sa nedajú odoslať."] };
+  const { data: rule } = await sb
+    .from("notification_rules")
+    .select("id, company_id, kind, enabled, dates, notify_admin")
+    .eq("id", str(f, "id"))
+    .eq("company_id", me.company_id)
+    .maybeSingle();
+  if (!rule) return { error: ["Pravidlo sa nenašlo."] };
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
+  const r = await sendVacLeft(sb, rule, todayIso(), origin);
+  await audit(`Notifikácia odoslaná ručne: ${r.sent} e-mailov`);
+  done();
+  if (!r.list) return { ok: "Nikto nemá čo dočerpať – nič sa neposlalo." };
+  return {
+    ok: `Odoslané ${r.sent} z ${r.list} e-mailov${r.noEmail ? ` (${r.noEmail} bez e-mailu)` : ""}${r.admins ? `, súhrn ${r.admins} ${r.admins === 1 ? "adminovi" : "adminom"}` : ""}.`,
+  };
+}

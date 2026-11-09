@@ -2,12 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Calc, balance, plus, type Emp, type Entry, type WorkGroup } from "@/lib/calc";
 import { skHolidays } from "@/lib/holidays";
 import { mailHtml, sendMail } from "@/lib/mail";
+import { runNotifications } from "@/lib/notify";
 
 /**
  * Denná úloha prechodu na nový rok (volá ju Vercel Cron cez /api/cron/denne, beží s kľúčom service_role):
  *  1. od 1. 10. pripraví návrh štátnych sviatkov na ďalší rok a pošle ho superadminovi na kontrolu,
  *  2. od 1. 12. založí každému nárok na dovolenku na ďalší rok (kópia plného nároku z predošlého roka),
- *  3. v decembri a januári denne prepočíta prenos zostatku; po uzávierke decembra ho uzavrie.
+ *  3. v decembri a januári denne prepočíta prenos zostatku; po uzávierke decembra ho uzavrie,
+ *  4. odošle notifikácie podľa pravidiel firiem (lib/notify.ts).
  * Ručné zmeny admina (nárok, prenos) sa nikdy neprepisujú.
  */
 export async function runDaily(sb: SupabaseClient, today: string, origin: string) {
@@ -19,6 +21,7 @@ export async function runDaily(sb: SupabaseClient, today: string, origin: string
   if (m === 12) log.push(...(await ensureVacationYears(sb, y + 1)));
   if (m === 1) log.push(...(await ensureVacationYears(sb, y)));
   if (m === 12 || m === 1) log.push(...(await updateCarry(sb, m === 12 ? y + 1 : y, today)));
+  log.push(...(await runNotifications(sb, today, origin)));
   return log;
 }
 

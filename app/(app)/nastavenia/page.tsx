@@ -9,6 +9,8 @@ import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
 import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, EntCheck, WorkGroups, type RG, type WG } from "./ui";
 import { authUsersByEmail } from "@/lib/supabase/admin";
+import { NOTIF, vacLeftList } from "@/lib/notify";
+import { NotifRules, type NotifLog, type NotifRuleView } from "./notif";
 import { eur, loadPlatformSettings, yearlyPrice, type Invoice } from "@/lib/billing";
 
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
@@ -45,6 +47,38 @@ export default async function SettingsPage({
     loadPlatformSettings(),
   ]);
   const invoices = (invs ?? []) as Invoice[];
+
+  // notifikácie: pravidlá firmy, kto by dnes dostal upozornenie, posledné odoslania
+  const [{ data: nr }, { data: nl }, notifList] = await Promise.all([
+    supabase.from("notification_rules").select("id, kind, enabled, dates, notify_admin").eq("company_id", me.company_id).order("kind"),
+    supabase.from("notification_log").select("rule_id, sent_on, employee_id, ok, info").eq("company_id", me.company_id).order("sent_on", { ascending: false }).limit(500),
+    vacLeftList(supabase, me.company_id, calc.today).catch(() => []),
+  ]);
+  const notifRules: NotifRuleView[] = (nr ?? []).map((r) => ({
+    id: r.id as string,
+    kind: r.kind as string,
+    title: NOTIF[r.kind as "vac_left"]?.title ?? (r.kind as string),
+    desc: NOTIF[r.kind as "vac_left"]?.desc ?? "",
+    enabled: !!r.enabled,
+    dates: (r.dates as string[]) ?? [],
+    notify_admin: !!r.notify_admin,
+  }));
+  const notifPreview = notifList.map((x) => ({ name: x.name, email: x.email, over: `${nf(x.over)} d` }));
+  const notifLogs: Record<string, NotifLog[]> = {};
+  for (const l of (nl ?? []) as { rule_id: string; sent_on: string; employee_id: string | null; ok: boolean; info: string | null }[]) {
+    const arr = (notifLogs[l.rule_id] ??= []);
+    let d = arr.find((x) => x.day === l.sent_on);
+    if (!d) {
+      if (arr.length >= 5) continue;
+      d = { day: l.sent_on, n: 0, ok: 0, info: "" };
+      arr.push(d);
+    }
+    if (l.employee_id) {
+      d.n++;
+      if (l.ok) d.ok++;
+    }
+    d.info = d.n ? `${d.ok} z ${d.n} e-mailov odoslaných` : l.info ?? "";
+  }
 
 
   const act = emps.filter((e) => e.active && !e.is_external);
@@ -469,7 +503,7 @@ export default async function SettingsPage({
             )}
           </Acc>
           </SetGroup>
-          <SetGroup k="rules" title="Všeobecné" sub="Pracovný čas · Typy neprítomností · Uzávierka a úpravy · Sviatky" forceOpen={["work","types","appr","hol"].includes(sp.open ?? "")}>
+          <SetGroup k="rules" title="Všeobecné" sub="Pracovný čas · Typy neprítomností · Uzávierka a úpravy · Sviatky · Notifikácie" forceOpen={["work","types","appr","hol","notif"].includes(sp.open ?? "")}>
           <Acc k="work" title="Pracovný čas">
             <WorkGroups
               groups={groups as WG[]}
@@ -557,6 +591,10 @@ export default async function SettingsPage({
               Štátne sviatky sú zamknuté. Vlastné voľné dni firmy (napr. medzi sviatkami) sa dajú pridať aj odstrániť. Sviatok cez víkend sa
               nepočíta ako voľný deň navyše.
             </p>
+          </Acc>
+
+          <Acc k="notif" title="Notifikácie" forceOpen={sp.open === "notif"}>
+            <NotifRules rules={notifRules} preview={notifPreview} logs={notifLogs} />
           </Acc>
           </SetGroup>
         </div>

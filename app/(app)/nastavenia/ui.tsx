@@ -47,6 +47,12 @@ const ICO: Record<string, React.ReactNode> = {
     </>
   ),
   appr: <path d="M5 12.5l4 4L19 7" />,
+  notif: (
+    <>
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z" />
+      <path d="M10 20.5a2.2 2.2 0 0 0 4 0" />
+    </>
+  ),
   hol: (
     <>
       <rect x="4" y="5" width="16" height="15" rx="2" />
