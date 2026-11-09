@@ -429,3 +429,14 @@ a.namebtn:hover { color: var(--accent); }
 .dohgrid td .dh { display: block; }
 .dohgrid td .dab { display: block; margin: 1px auto 0; width: fit-content; padding: 1px 3px; border-radius: 4px; font-family: var(--f-mono); font-size: 9px; font-weight: 600; line-height: 1.3; background: var(--cb); color: var(--c); }
 .dohgrid td .dab.t-HO { background: transparent; border: 1px dashed var(--c); padding: 0 2px; }
+
+/* Pracovný čas v karte zamestnanca a v šablónach */
+.wtf { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; }
+.wtf .crow.sub { margin-top: -2px; }
+.wtsel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-bottom: 10px; }
+.wtsel .kf { flex: 1 1 360px; margin: 0; }
+.wtsel .wtcustom { flex: none; }
+.wtcard { margin: 0; }
+.wtcard.ro .wtf { opacity: .62; }
+.wtcard.ro .wtf :is(input, select) { cursor: not-allowed; }
+.wtnote { font-size: 12.5px; margin-top: 10px; }

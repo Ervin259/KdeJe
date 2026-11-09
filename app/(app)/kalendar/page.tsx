@@ -57,5 +57,5 @@ export default async function TeamCalendarPage({
     }
   }
 
-  return <Calendar me={me} view={view} anchor={anchor} basePath="/kalendar" onlyMe={!me.sees_calendar && me.role !== "admin"} />;
+  return <Calendar me={me} view={view} anchor={anchor} basePath="/kalendar" onlyMe={!me.sees_calendar && me.role !== "admin" && !me.isManager} />;
 }

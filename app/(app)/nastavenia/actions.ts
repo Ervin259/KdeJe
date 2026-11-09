@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, todayIso } from "@/lib/data";
 import { headers } from "next/headers";
+import { checkWorkTime, diffFrom, readWorkTime, type WorkTime } from "@/lib/worktime";
 
 export type SetState = { error?: string[]; ok?: string };
 
@@ -30,33 +31,17 @@ export async function saveWorkGroup(_p: SetState, f: FormData): Promise<SetState
   const me = await requireAdmin();
   const supabase = await createClient();
   const id = str(f, "id");
-  const flexible = str(f, "flexible") === "1";
-  const row = {
-    company_id: me.company_id,
-    name: str(f, "name"),
-    flexible,
-    day_start: flexible ? null : str(f, "day_start") || null,
-    day_end: flexible ? null : str(f, "day_end") || null,
-    break_start: flexible ? null : str(f, "break_start") || null,
-    break_min: flexible ? 0 : numOr(f, "break_min", 0),
-    meal_voucher: bool(f, "meal_voucher"),
-    sl_rule: str(f, "sl_rule") === "gt" ? "gt" : "gte",
-    sl_min_hours: numOr(f, "sl_min_hours", 4),
-    trip_no_sl_hours: numOr(f, "trip_no_sl_hours", 5),
-  };
+  const wt = readWorkTime(f);
+  const row = { company_id: me.company_id, name: str(f, "name"), ...wt };
   const err: string[] = [];
-  if (!row.name) err.push("Vyplňte názov skupiny.");
-  if (!flexible) {
-    if (!row.day_start || !row.day_end || row.day_end <= row.day_start) err.push("Koniec pracovnej doby musí byť neskôr ako začiatok.");
-    else if (row.break_min && row.break_start && (row.break_start < row.day_start || row.break_start > row.day_end))
-      err.push("Obed musí byť v rámci pracovnej doby.");
-  }
+  if (!row.name) err.push("Vyplňte názov šablóny.");
+  err.push(...checkWorkTime(wt));
   if (err.length) return { error: err };
   const res = id
     ? await supabase.from("work_groups").update(row).eq("id", id)
     : await supabase.from("work_groups").insert({ ...row, sort: 99 });
-  if (res.error) return { error: [res.error.code === "23505" ? "Skupina s týmto názvom už existuje." : res.error.message] };
-  await audit(`Skupina pracovného času „${row.name}“ ${id ? "upravená" : "pridaná"}`);
+  if (res.error) return { error: [res.error.code === "23505" ? "Šablóna s týmto názvom už existuje." : res.error.message] };
+  await audit(`Šablóna pracovného času „${row.name}“ ${id ? "upravená" : "pridaná"}`);
   done();
   return { ok: "Uložené" };
 }
@@ -265,7 +250,8 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
     work_group_id: str(f, "work_group_id") || null,
     rights_group_id: str(f, "rights_group_id") || null,
     show_in_calendar: bool(f, "show_in_calendar"),
-    sees_calendar: bool(f, "sees_calendar"),
+    cal_scope: (["self", "all", "selected"].includes(str(f, "cal_scope")) ? str(f, "cal_scope") : "all") as "self" | "all" | "selected",
+    work_override: {} as Partial<WorkTime>,
     in_stats: bool(f, "in_stats"),
     in_payroll: bool(f, "in_payroll"),
     role: bool(f, "is_admin") ? "admin" : "employee",
@@ -280,6 +266,14 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) err.push("E-mail nemá správny tvar.");
   if (id === me.id && row.role !== "admin") err.push("Sám sebe nemôžete odobrať práva admina.");
   if (id === me.id && !row.active) err.push("Sám seba nemôžete skryť.");
+  // pracovný čas: vlastné nastavenie sa ukladá len ako rozdiel voči šablóne
+  if (bool(f, "wt_custom")) {
+    const { data: tpl } = await supabase.from("work_groups").select("*").eq("id", row.work_group_id ?? "").maybeSingle();
+    const wt = readWorkTime(f, "wt_");
+    const bad = checkWorkTime(wt);
+    if (bad.length) err.push(...bad.map((x) => "Pracovný čas: " + x));
+    else row.work_override = tpl ? diffFrom(tpl as WorkTime, wt) : wt;
+  }
   if (err.length) return { error: err };
 
   let empId = id;
@@ -298,6 +292,14 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   if (want.length) {
     const res = await supabase.from("manager_assignments").insert(want.map((employee_id) => ({ manager_id: empId, employee_id })));
     if (res.error) return { error: ["Zoznam ľudí vedúceho sa nepodarilo uložiť: " + res.error.message] };
+  }
+
+  // koho vidí v kalendári (pri „vybraných ľuďoch“)
+  await supabase.from("calendar_viewers").delete().eq("viewer_id", empId);
+  const seen = row.cal_scope === "selected" ? f.getAll("cal_viewers").map(String).filter((x) => x && x !== empId) : [];
+  if (seen.length) {
+    const res = await supabase.from("calendar_viewers").insert(seen.map((target_id) => ({ viewer_id: empId, target_id, company_id: me.company_id })));
+    if (res.error) return { error: ["Zoznam ľudí v kalendári sa nepodarilo uložiť: " + res.error.message] };
   }
 
   // použité hodnoty patria do zoznamov firmy (ak tam ešte nie sú)

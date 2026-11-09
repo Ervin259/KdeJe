@@ -18,6 +18,8 @@ export type EmpFull = Emp & {
   rights_group_id: string | null;
   show_in_calendar: boolean;
   sees_calendar: boolean;
+  /** Kalendár vidí: len seba / všetkých / vybraných (calendar_viewers) */
+  cal_scope: "self" | "all" | "selected";
   in_stats: boolean;
   in_payroll: boolean;
   role: "admin" | "employee";
@@ -38,7 +40,7 @@ export const loadCompany = cache(async () => {
     supabase
       .from("employees")
       .select(
-        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, in_stats, in_payroll, role, is_manager, is_external, site, department"
+        "id, user_id, name, email, contract_type, firm, work_group_id, rights_group_id, date_from, date_to, active, show_in_calendar, sees_calendar, cal_scope, work_override, in_stats, in_payroll, role, is_manager, is_external, site, department"
       ),
     supabase.from("settings").select("*").maybeSingle(),
     supabase.from("rights_groups").select("*").order("sort"),

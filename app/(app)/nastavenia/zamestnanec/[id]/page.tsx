@@ -8,6 +8,7 @@ import { ppLabel, ppOrder } from "@/lib/report";
 import { Header } from "@/components/Header";
 import { rgTxt, type RG } from "@/lib/rights";
 import { EmpForm, type EmpInit } from "./EmpForm";
+import { WT_KEYS, effective, longInfo, type WorkTime } from "@/lib/worktime";
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const fdate = (d: string | null) => (d ? `${Number(d.slice(8, 10))}. ${Number(d.slice(5, 7))}. ${d.slice(0, 4)}` : "");
@@ -26,13 +27,14 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const e = isNew ? null : emps.find((x) => x.id === id);
   if (!isNew && !e) notFound();
 
-  const [{ data: vac }, { data: ch }, { data: note }, { data: link }, { data: asg }, { data: orgRows }] = await Promise.all([
+  const [{ data: vac }, { data: ch }, { data: note }, { data: link }, { data: asg }, { data: orgRows }, { data: viewers }] = await Promise.all([
     supabase.from("vacation_years").select("*").eq("employee_id", id).eq("year", year).maybeSingle(),
     supabase.from("contract_hours").select("*").eq("employee_id", id).maybeSingle(),
     supabase.from("employee_notes").select("note").eq("employee_id", id).maybeSingle(),
     isNew ? Promise.resolve({ data: null }) : supabase.from("employees").select("user_id").eq("id", id).maybeSingle(),
     supabase.from("manager_assignments").select("manager_id, employee_id"),
     supabase.from("org_options").select("kind, value").eq("company_id", me.company_id),
+    isNew ? Promise.resolve({ data: [] }) : supabase.from("calendar_viewers").select("target_id").eq("viewer_id", id),
   ]);
   const org = (k: string) => ((orgRows ?? []) as { kind: string; value: string }[]).filter((r) => r.kind === k).map((r) => r.value);
   const assign = (asg ?? []) as { manager_id: string; employee_id: string }[];
@@ -51,7 +53,9 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
     work_group_id: e?.work_group_id ?? defG.id,
     rights_group_id: e?.rights_group_id ?? defR.id,
     show_in_calendar: e?.show_in_calendar ?? true,
-    sees_calendar: e?.sees_calendar ?? true,
+    cal_scope: e?.cal_scope ?? "all",
+    cal_viewers: ((viewers ?? []) as { target_id: string }[]).map((v) => v.target_id),
+    work_override: (e?.work_override ?? {}) as Partial<WorkTime>,
     in_stats: e?.in_stats ?? true,
     in_payroll: e?.in_payroll ?? true,
     is_admin: e?.role === "admin",
@@ -94,11 +98,8 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   // „Ako aplikácia počíta“ (empRules v prototype)
   const g = groups.find((x) => x.id === init.work_group_id) ?? defG;
   const r = rights.find((x) => x.id === init.rights_group_id) ?? defR;
-  const gH = g.flexible || !g.day_start || !g.day_end ? 0 : (toMin(g.day_end) - toMin(g.day_start) - Number(g.break_min)) / 60;
-  const grpTxt = g.flexible
-    ? "nestanovená (flexibilná)"
-    : `${hm(g.day_start)}–${hm(g.day_end)}${Number(g.break_min) ? `, obed ${hm(g.break_start)} (${g.break_min} min)` : ", bez obeda"} = ${nf(gH)} h`;
-  const slRule = `${g.sl_rule === "gt" ? "viac ako" : "aspoň"} ${nf(Number(g.sl_min_hours))} h`;
+  const gE = effective(g, init.work_override);
+  const slRule = `${gE.sl_rule === "gt" ? "viac ako" : "aspoň"} ${nf(Number(gE.sl_min_hours))} h`;
   const rules: string[] = [];
   if (e) {
     rules.push(
@@ -108,7 +109,10 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           : ", na neurčito"
       }${init.active ? "" : " · <b>skrytý</b>"}.`
     );
-    rules.push(`<b>Pracovný čas:</b> skupina „${esc(g.name)}“ – ${grpTxt}.`);
+    const own = Object.keys(init.work_override).length > 0;
+    rules.push(
+      `<b>Pracovný čas:</b> ${own ? `vlastné nastavenie (šablóna „${esc(g.name)}“)` : `šablóna „${esc(g.name)}“`} – ${longInfo(effective(g, init.work_override)).join(", ")}.`
+    );
     if (init.contract_type === "DOH") {
       const D = init.doh;
       rules.push(
@@ -132,12 +136,12 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
           : "<b>Odsúhlasenie:</b> neodsúhlasuje (len vaša evidencia)."
       );
     }
-    rules.push(`<b>Stravné lístky:</b> ${g.meal_voucher ? `áno – za deň s odpracovanými ${slRule}` : "nie"} (podľa skupiny).`);
+    rules.push(`<b>Stravné lístky:</b> ${gE.meal_voucher ? `áno – za deň s odpracovanými ${slRule}` : "nie"}.`);
     rules.push(`<b>Prístupové práva:</b> skupina „${esc(r.name)}“ – ${rgTxt(r as RG)}.`);
     rules.push(
       `<b>Zobrazenie:</b> ${[
         init.show_in_calendar ? "v spoločnom kalendári" : "nie je v spoločnom kalendári",
-        init.sees_calendar ? "vidí spoločný kalendár" : "nevidí spoločný kalendár",
+        init.cal_scope === "self" ? "v Kalendári vidí len seba" : init.cal_scope === "all" ? "v Kalendári vidí všetkých" : `v Kalendári vidí ${init.cal_viewers.length} vybraných ľudí`,
         init.in_stats ? "v Prehľade" : "nie je v Prehľade",
         init.in_payroll ? "v podkladoch pre mzdy" : "nie je v podkladoch pre mzdy",
       ].join(" · ")}.`
@@ -156,7 +160,8 @@ export default async function EmployeeCard({ params }: { params: Promise<{ id: s
   const workGroups = groups.map((x) => ({
     id: x.id,
     name: x.name,
-    info: `${x.flexible ? "flexibilná" : `${hm(x.day_start)}–${hm(x.day_end)}`} · ${x.meal_voucher ? "stravné lístky" : "bez stravných lístkov"}`,
+    info: longInfo(x).join(", "),
+    wt: Object.fromEntries(WT_KEYS.map((k) => [k, x[k] ?? null])) as WorkTime,
   }));
   const rightsGroups = rights.map((x) => ({ id: x.id, name: x.name, info: rgTxt(x as RG) }));
 

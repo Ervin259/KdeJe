@@ -3,6 +3,8 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { saveEmployee, type SetState } from "../../actions";
 import { ListSelect } from "@/components/ListSelect";
+import { WorkTimeFields } from "@/components/WorkTimeFields";
+import { effective, shortInfo, type WorkTime } from "@/lib/worktime";
 
 export type EmpInit = {
   id: string | null;
@@ -19,7 +21,12 @@ export type EmpInit = {
   work_group_id: string;
   rights_group_id: string;
   show_in_calendar: boolean;
-  sees_calendar: boolean;
+  /** Kalendár vidí: len seba / všetkých / vybraných */
+  cal_scope: "self" | "all" | "selected";
+  /** koho vidí pri „vybraných“ */
+  cal_viewers: string[];
+  /** vlastné nastavenie pracovného času (prázdne = podľa šablóny) */
+  work_override: Partial<WorkTime>;
   in_stats: boolean;
   in_payroll: boolean;
   is_admin: boolean;
@@ -39,6 +46,7 @@ export type EmpInit = {
 };
 
 type Opt = { id: string; name: string; info: string };
+type Tpl = Opt & { wt: WorkTime };
 const nf = (n: number) => String(Math.round(n * 1000) / 1000).replace(".", ",");
 
 function Kf({ label, hint, htmlFor, children }: { label: string; hint?: React.ReactNode; htmlFor?: string; children: React.ReactNode }) {
@@ -70,7 +78,7 @@ export function EmpForm({
   orgOpts,
 }: {
   init: EmpInit;
-  workGroups: Opt[];
+  workGroups: Tpl[];
   rightsGroups: Opt[];
   year: number;
   balance: { total: number; used: number; left: number } | null;
@@ -95,6 +103,12 @@ export function EmpForm({
   const [lead, setLead] = useState(init.is_manager);
   const [team, setTeam] = useState(new Set(init.manages));
   const [teamQ, setTeamQ] = useState("");
+  const [custom, setCustom] = useState(Object.keys(init.work_override ?? {}).length > 0);
+  const [scope, setScope] = useState(init.cal_scope);
+  const [seen, setSeen] = useState(new Set(init.cal_viewers));
+  const [seenQ, setSeenQ] = useState("");
+  const tpl = (workGroups.find((g) => g.id === grp) ?? workGroups[0]).wt;
+  const wtShown = custom ? effective(tpl, init.work_group_id === grp ? init.work_override : {}) : tpl;
   const joined = from && Number(from.slice(0, 4)) === year;
 
   // pomerná časť: 1/12 za každý celý kalendárny mesiac do konca roka, nahor na pol dňa
@@ -185,16 +199,7 @@ export function EmpForm({
         </div>
         <div className="epcol">
           <section className="box epc">
-            <h3>Skupiny a prístup</h3>
-            <Kf label="Pracovný čas a SL" htmlFor="ef-grp" hint={workGroups.find((g) => g.id === grp)?.info}>
-              <select id="ef-grp" name="work_group_id" value={grp} onChange={(e) => setGrp(e.target.value)}>
-                {workGroups.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.name}
-                  </option>
-                ))}
-              </select>
-            </Kf>
+            <h3>Prístup a zobrazenie</h3>
             <Kf label="Prístupové práva" htmlFor="ef-rg" hint={rightsGroups.find((g) => g.id === rg)?.info}>
               <select id="ef-rg" name="rights_group_id" value={rg} onChange={(e) => setRg(e.target.value)}>
                 {rightsGroups.map((x) => (
@@ -209,7 +214,6 @@ export function EmpForm({
                 {(
                   [
                     ["show_in_calendar", "V spoločnom kalendári", "Kolegovia ho vidia v Kalendári tímu"],
-                    ["sees_calendar", "Vidí spoločný kalendár", "V Kalendári vidí aj kolegov, nielen seba"],
                     ["in_stats", "V Prehľade", "Je v admin záložke Prehľad"],
                     ["in_payroll", "V podkladoch pre mzdy", "Je v Podklade pre mzdy a v exporte"],
                   ] as const
@@ -221,6 +225,47 @@ export function EmpForm({
                 ))}
               </div>
             </Kf>
+            <Kf label="Kalendár vidí" htmlFor="ef-scope" hint="Koho vidí v Kalendári. Svojich ľudí vidí vedúci vždy, admin všetkých.">
+              <select id="ef-scope" name="cal_scope" value={scope} onChange={(e) => setScope(e.target.value as EmpInit["cal_scope"])}>
+                <option value="self">len seba</option>
+                <option value="all">všetkých</option>
+                <option value="selected">vybraných ľudí</option>
+              </select>
+            </Kf>
+            {scope === "selected" && (
+              <Kf label={`Vidí (${seen.size})`}>
+                <div className="teambox">
+                  {people.length > 8 && (
+                    <input type="search" placeholder="Hľadať meno…" value={seenQ} onChange={(e) => setSeenQ(e.target.value)} className="teamq" />
+                  )}
+                  <div className="teamlist">
+                    {people
+                      .filter((x) => x.id !== init.id)
+                      .map((x) => {
+                        const hide = seenQ && !x.name.toLowerCase().includes(seenQ.toLowerCase()) && !seen.has(x.id);
+                        return (
+                          <label key={x.id} className="teamrow" style={hide ? { display: "none" } : undefined}>
+                            <input
+                              type="checkbox"
+                              name="cal_viewers"
+                              value={x.id}
+                              checked={seen.has(x.id)}
+                              onChange={(e) => {
+                                const n = new Set(seen);
+                                if (e.target.checked) n.add(x.id);
+                                else n.delete(x.id);
+                                setSeen(n);
+                              }}
+                            />
+                            <span>{x.name}</span>
+                            <span className="muted">{x.pp}</span>
+                          </label>
+                        );
+                      })}
+                  </div>
+                </div>
+              </Kf>
+            )}
             <Kf label="Rola" hint="Admin vidí a mení všetko. Vedúci vidí Prehľad a Schvaľovanie len pre svojich ľudí a zapisuje za nich do uzávierky.">
               <div className="kchks">
                 <label className="kchk" title="Vidí admin záložky a môže meniť všetko">
@@ -276,11 +321,34 @@ export function EmpForm({
               <span className={init.managedBy.length ? "" : "muted"}>{init.managedBy.length ? init.managedBy.join(", ") : "nemá vedúceho"}</span>
             </Kf>
             <small className="muted klink">
-              Časy, stravné lístky a práva sa menia pre celú skupinu v <Link href="/nastavenia" className="linkbtn">Nastaveniach</Link>.
+              Prístupové práva sa menia pre celú skupinu v <Link href="/nastavenia" className="linkbtn">Nastaveniach</Link>.
             </small>
           </section>
         </div>
       </div>
+
+      <section className="box epc epwide">
+        <h3>Pracovný čas</h3>
+        <div className="wtsel">
+          <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Pravidlá → Pracovná doba.">
+            <select id="ef-grp" name="work_group_id" value={grp} onChange={(e) => setGrp(e.target.value)}>
+              {workGroups.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name} · {shortInfo(x.wt)}
+                </option>
+              ))}
+            </select>
+          </Kf>
+          <label className="kchk wtcustom" title="Hodnoty platia len pre tohto zamestnanca; zmeny šablóny sa ho týkajú len v tom, čo tu nezmeníte">
+            <input type="checkbox" name="wt_custom" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
+            <span>Vlastné nastavenie len pre tohto zamestnanca</span>
+          </label>
+        </div>
+        <div className={`grpcard wtcard${custom ? "" : " ro"}`}>
+          <WorkTimeFields key={`${grp}-${custom}`} g={wtShown} prefix="wt_" disabled={!custom} />
+          {!custom && <div className="wtnote muted">Platí šablóna „{workGroups.find((g) => g.id === grp)?.name}“. Na zmenu len pre tohto zamestnanca zaškrtnite vlastné nastavenie.</div>}
+        </div>
+      </section>
 
       {pp !== "DOH" ? (
         <section className="box epc epwide">

@@ -2,6 +2,7 @@
  * Výpočty prenesené z prototypu kdeje.html (span, hoursOf, frac, amount, bal, slDay …).
  * Všetko pracuje s dátumami ako reťazcami YYYY-MM-DD a časmi HH:MM.
  */
+import { effective, type WorkTime } from "./worktime";
 
 export type Part = "full" | "am" | "pm" | "hrs";
 
@@ -18,19 +19,11 @@ export type Entry = {
   substitute_id?: string | null;
 };
 
-export type WorkGroup = {
+/** Šablóna pracovného času (work_groups); zamestnanec ju môže mať upravenú (work_override). */
+export type WorkGroup = WorkTime & {
   id: string;
   name: string;
   is_default: boolean;
-  flexible: boolean;
-  day_start: string | null;
-  day_end: string | null;
-  break_start: string | null;
-  break_min: number;
-  meal_voucher: boolean;
-  sl_rule: "gte" | "gt";
-  sl_min_hours: number;
-  trip_no_sl_hours: number | null;
 };
 
 export type AbsenceKind = "abs" | "sc" | "work";
@@ -43,6 +36,8 @@ export type Emp = {
   date_from: string | null;
   date_to: string | null;
   active: boolean;
+  /** vlastné nastavenie pracovného času (prázdne = podľa šablóny) */
+  work_override?: Partial<WorkTime> | null;
 };
 
 export type Sched = { s0: number; L: number; b0: number; b1: number; H: number; start: string; end: string };
@@ -124,9 +119,11 @@ export class Calc {
     return n;
   }
 
+  /** Pracovný čas zamestnanca: šablóna + jeho vlastné nastavenie z karty. */
   group(empId: string): WorkGroup {
     const e = this.emps.get(empId);
-    return (e?.work_group_id && this.groups.get(e.work_group_id)) || this.defGroup;
+    const g = (e?.work_group_id && this.groups.get(e.work_group_id)) || this.defGroup;
+    return effective(g, e?.work_override);
   }
 
   /** Pracovná doba zamestnanca; flexibilná skupina počíta so štandardným dňom firmy. */

@@ -19,6 +19,8 @@ import {
   type SetState,
 } from "./actions";
 import { dniTxt, rgTxt, type RG } from "@/lib/rights";
+import { shortInfo, type WorkTime } from "@/lib/worktime";
+import { WorkTimeFields } from "@/components/WorkTimeFields";
 export type { RG };
 
 const ICO: Record<string, React.ReactNode> = {
@@ -229,19 +231,18 @@ function MembersDD({ g, groups, members, kind }: { g: G; groups: G[]; members: M
   );
 }
 
-export type WG = {
+export type WG = WorkTime & {
   id: string;
   name: string;
   is_default: boolean;
-  flexible: boolean;
-  day_start: string | null;
-  day_end: string | null;
-  break_start: string | null;
-  break_min: number;
-  meal_voucher: boolean;
-  sl_rule: "gte" | "gt";
-  sl_min_hours: number;
-  trip_no_sl_hours: number | null;
+};
+
+/** Nová šablóna: pevný 8:30–17:00, prestávka 30 min o 12:00, bez nadčasov. */
+const NEW_WT: WorkTime = {
+  flexible: false, day_start: "08:30", day_end: "17:00", daily_hours: null,
+  core_start: null, core_end: null, arrive_from: null, arrive_to: null, leave_from: null, leave_to: null, flex_period: "day",
+  break_mode: "fixed", break_start: "12:00", break_from: null, break_to: null, break_min: 30, break_len: "fixed",
+  overtime: "none", meal_voucher: true, sl_rule: "gte", sl_min_hours: 4, trip_no_sl_hours: 5,
 };
 
 const hm = (t: string | null) => (t ? t.slice(0, 5) : "");
@@ -253,13 +254,9 @@ const toMin = (t: string) => {
 
 function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
   const [state, action, pending] = useActionState<SetState, FormData>(saveWorkGroup, {});
-  const [flex, setFlex] = useState(g?.flexible ?? false);
-  const [sl, setSl] = useState(g?.meal_voucher ?? false);
-  const [t, setT] = useState({ s: hm(g?.day_start ?? "08:30") || "08:30", e: hm(g?.day_end ?? "17:00") || "17:00", b: Number(g?.break_min ?? 30) });
   useEffect(() => {
     if (state.ok) onClose();
   }, [state.ok, onClose]);
-  const H = Math.max(0, (toMin(t.e) - toMin(t.s) - t.b) / 60);
   return (
     <form className="grpcard ced" action={action}>
       {g && <input type="hidden" name="id" value={g.id} />}
@@ -267,60 +264,7 @@ function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
         <label className="cl">Názov</label>
         <input className="ci w-name" name="name" maxLength={40} defaultValue={g?.name ?? ""} placeholder="Napr. TPP skrátený" required />
       </div>
-      <div className="crow">
-        <span className="cl">Pracovná doba</span>
-        <select className="ci" name="flexible" value={flex ? "1" : "0"} onChange={(e) => setFlex(e.target.value === "1")}>
-          <option value="0">pevná</option>
-          <option value="1">flexibilná</option>
-        </select>
-        {flex ? (
-          <span className="cm">evidujú sa len hodiny</span>
-        ) : (
-          <>
-            <span className="ct">od</span>
-            <input className="ci t" type="time" step={900} name="day_start" value={t.s} onChange={(e) => setT({ ...t, s: e.target.value })} />
-            <span className="ct">do</span>
-            <input className="ci t" type="time" step={900} name="day_end" value={t.e} onChange={(e) => setT({ ...t, e: e.target.value })} />
-            <span className="ct">· obed od</span>
-            <input className="ci t" type="time" step={900} name="break_start" defaultValue={hm(g?.break_start ?? "12:30") || "12:30"} />
-            <select className="ci" name="break_min" value={t.b} onChange={(e) => setT({ ...t, b: Number(e.target.value) })}>
-              {[0, 15, 30, 45, 60].map((n) => (
-                <option key={n} value={n}>
-                  {n} min
-                </option>
-              ))}
-            </select>
-            <span className="cm">= {nf(H)} h denne</span>
-          </>
-        )}
-      </div>
-      <div className="crow">
-        <span className="cl">Stravné lístky</span>
-        <label className="ctog">
-          <input type="checkbox" name="meal_voucher" checked={sl} onChange={(e) => setSl(e.target.checked)} />
-          <span>{sl ? "áno" : "nie"}</span>
-        </label>
-        {sl && (
-          <>
-            <span className="ct">za deň s odpracovanými</span>
-            <select className="ci" name="sl_rule" defaultValue={g?.sl_rule ?? "gte"}>
-              <option value="gte">aspoň</option>
-              <option value="gt">viac ako</option>
-            </select>
-            <input className="ci n" type="number" min={0} max={12} step={0.5} name="sl_min_hours" defaultValue={g?.sl_min_hours ?? 4} />
-            <span className="ct">h · služobná cesta od</span>
-            <input className="ci n" type="number" min={0} max={24} step={0.5} name="trip_no_sl_hours" defaultValue={g?.trip_no_sl_hours ?? 5} />
-            <span className="ct">h bez SL</span>
-          </>
-        )}
-        {!sl && (
-          <>
-            <input type="hidden" name="sl_rule" value={g?.sl_rule ?? "gte"} />
-            <input type="hidden" name="sl_min_hours" value={g?.sl_min_hours ?? 4} />
-            <input type="hidden" name="trip_no_sl_hours" value={g?.trip_no_sl_hours ?? 5} />
-          </>
-        )}
-      </div>
+      <WorkTimeFields g={g ?? NEW_WT} />
       {state.error && (
         <div className="msgs">
           {state.error.map((e, i) => (
@@ -336,10 +280,10 @@ function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
             className="linkdel"
             formAction={deleteWorkGroup}
             disabled={g.is_default}
-            title={g.is_default ? "Predvolenú skupinu nemožno vymazať" : undefined}
-            onClick={(e) => !confirm(`Vymazať skupinu „${g.name}“? Jej zamestnanci prejdú do predvolenej skupiny.`) && e.preventDefault()}
+            title={g.is_default ? "Predvolenú šablónu nemožno vymazať" : undefined}
+            onClick={(e) => !confirm(`Vymazať šablónu „${g.name}“? Jej zamestnanci prejdú do predvolenej šablóny.`) && e.preventDefault()}
           >
-            Vymazať skupinu
+            Vymazať šablónu
           </button>
         )}
         <span style={{ flex: 1 }} />
@@ -357,11 +301,10 @@ function WorkEditor({ g, onClose }: { g: WG | null; onClose: () => void }) {
 export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const close = () => setOpen(null);
-  const info = (g: WG) =>
-    `${g.flexible ? "flexibilná" : `${hm(g.day_start)}–${hm(g.day_end)}`} · ${g.meal_voucher ? "SL" : "bez SL"}`;
+  const info = (g: WG) => shortInfo(g);
   return (
     <>
-      <div className="grplbl">Skupiny · {groups.length}</div>
+      <div className="grplbl">Šablóny · {groups.length} · u zamestnanca sa dajú zmeniť v jeho karte</div>
       <div className="grplist">
         {groups.map((g) => (
           <div key={g.id} className={`grprow${open === g.id ? " open" : ""}`}>
@@ -383,7 +326,7 @@ export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[
         {open === "new" && (
           <div className="grprow open">
             <div className="grprhead">
-              <b>Nová skupina</b>
+              <b>Nová šablóna</b>
             </div>
             <WorkEditor g={null} onClose={close} />
           </div>
@@ -391,7 +334,7 @@ export function WorkGroups({ groups, members }: { groups: WG[]; members: Member[
       </div>
       <div className="row" style={{ marginTop: 12 }}>
         <button className="btn" disabled={!!open} onClick={() => setOpen("new")}>
-          + Nová skupina
+          + Nová šablóna
         </button>
       </div>
     </>

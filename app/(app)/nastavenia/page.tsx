@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
 import { WD, balance, byLastName, dow, nf, typeClass } from "@/lib/calc";
 import { ppLabel, ppOrder } from "@/lib/report";
+import { effective, shortInfo } from "@/lib/worktime";
 import { Header } from "@/components/Header";
 import { addHoliday, deleteHoliday, loadStateHolidays } from "./actions";
 import { Acc, AccAll, ActiveToggle, ContinueBox, CompanyForm, SetGroup, HideHealth, ManagerTeam, InviteAll, InviteBar, RightsGroups, ShowHidden, TypeCard, VacInput, EntCheck, WorkGroups, type RG, type WG } from "./ui";
@@ -169,6 +170,8 @@ export default async function SettingsPage({
                     const vac = (vacs ?? []).find((v) => v.employee_id === e.id);
                     const b = balance(calc, e.id, entries, vac, settings.carry_max);
                     const g = grp(e.work_group_id);
+                    const own = Object.keys(e.work_override ?? {}).length > 0;
+                    const w = effective(g, e.work_override);
                     const note = noteOf(e.id);
                     return (
                       <tr key={e.id} className={`${e.active ? "" : "off"}${sp.flash === e.id ? " flash" : ""}`}>
@@ -205,10 +208,15 @@ export default async function SettingsPage({
                           )}
                         </td>
                         <td>
-                          <span className="grpn">{g.name}</span>
-                          <span className="grpw">
-                            {g.flexible ? "flexibilná" : `${hm(g.day_start)}–${hm(g.day_end)}`} · {g.meal_voucher ? "SL" : "bez SL"}
+                          <span className="grpn">
+                            {g.name}
+                            {own && (
+                              <span className="pill closed" title="Má vlastné nastavenie pracovného času" style={{ marginLeft: 4 }}>
+                                vlastné
+                              </span>
+                            )}
                           </span>
+                          <span className="grpw">{shortInfo(w)}</span>
                         </td>
                         {e.contract_type === "DOH" ? (
                           <>
