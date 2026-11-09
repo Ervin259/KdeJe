@@ -60,7 +60,9 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
               onChange={(e) => setT({ ...t, h: e.target.value })}
               aria-label="Denný fond hodín"
             />
-            <span className="ct">h denne · pružné obdobie</span>
+            <span className="ct">h denne</span>
+            <span className="wtsep" />
+            <span className="ct">pružné obdobie</span>
             <select className="ci" name={n("flex_period")} defaultValue={g.flex_period ?? "day"} title="Obdobie, za ktoré musí odpracovať fond (deň, týždeň alebo 4 týždne)">
               {(Object.keys(FLEX_PERIOD) as (keyof typeof FLEX_PERIOD)[]).map((k) => (
                 <option key={k} value={k}>
@@ -72,23 +74,32 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
         )}
       </div>
       {flex && (
-        <div className="crow sub">
-          <span className="cl" />
-          <span className="ct">príchod</span>
-          {time("arrive_from", "07:00", "Príchod najskôr")}
-          <span className="ct">–</span>
-          {time("arrive_to", "10:00", "Príchod najneskôr")}
-          <span className="ct" title="S týmto príchodom aplikácia počíta, kým zamestnanec nezapíše iný">(predvolene</span>
-          <input className="ci t" type="time" step={900} name={n("day_start")} defaultValue={hm(g.day_start) || hm(g.arrive_from) || "08:00"} aria-label="Predvolený príchod" />
-          <span className="ct">)</span>
-          <span className="ct">· odchod</span>
-          {time("leave_from", "15:00", "Odchod najskôr")}
-          <span className="ct">–</span>
-          {time("leave_to", "19:00", "Odchod najneskôr")}
-          <span className="ct">· základný čas</span>
-          <input className="ci t" type="time" step={900} name={n("core_start")} defaultValue={hm(g.core_start)} aria-label="Základný čas od" title="Čas, keď musí byť na pracovisku (nepovinné)" />
-          <span className="ct">–</span>
-          <input className="ci t" type="time" step={900} name={n("core_end")} defaultValue={hm(g.core_end)} aria-label="Základný čas do" />
+        <div className="wtsub">
+          <div className="crow wtl">
+            <span className="wtk">Príchod</span>
+            <span className="ct">od</span>
+            {time("arrive_from", "07:00", "Príchod najskôr")}
+            <span className="ct">do</span>
+            {time("arrive_to", "10:00", "Príchod najneskôr")}
+            <span className="wtsep" />
+            <span className="ct" title="S týmto príchodom aplikácia počíta, kým zamestnanec nezapíše iný">predvolene o</span>
+            <input className="ci t" type="time" step={900} name={n("day_start")} defaultValue={hm(g.day_start) || hm(g.arrive_from) || "08:00"} aria-label="Predvolený príchod" />
+          </div>
+          <div className="crow wtl">
+            <span className="wtk">Odchod</span>
+            <span className="ct">od</span>
+            {time("leave_from", "15:00", "Odchod najskôr")}
+            <span className="ct">do</span>
+            {time("leave_to", "19:00", "Odchod najneskôr")}
+          </div>
+          <div className="crow wtl">
+            <span className="wtk" title="Čas, keď musí byť na pracovisku">Základný čas</span>
+            <span className="ct">od</span>
+            <input className="ci t" type="time" step={900} name={n("core_start")} defaultValue={hm(g.core_start)} aria-label="Základný čas od" />
+            <span className="ct">do</span>
+            <input className="ci t" type="time" step={900} name={n("core_end")} defaultValue={hm(g.core_end)} aria-label="Základný čas do" />
+            <span className="cm">nepovinné – kedy musí byť na pracovisku</span>
+          </div>
         </div>
       )}
       {!flex && <input type="hidden" name={n("flex_period")} value={g.flex_period ?? "day"} />}
@@ -106,21 +117,31 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
           <option value="fixed">presne</option>
           <option value="min">aspoň (dlhšiu nadrobí)</option>
         </select>
-        <select className="ci" name={n("break_mode")} value={bMode} onChange={(e) => setBMode(e.target.value as "fixed" | "window")} aria-label="Čas prestávky – fixný alebo pohyblivý">
-          <option value="fixed">vo fixnom čase od</option>
-          <option value="window">kedykoľvek v čase od</option>
-        </select>
-        {bMode === "fixed" ? (
-          time("break_start", "12:00", "Prestávka od")
-        ) : (
-          <>
-            {time("break_from", "11:00", "Prestávka najskôr od")}
-            <span className="ct">do</span>
-            {time("break_to", "14:00", "Prestávka najneskôr do")}
-            <span className="ct" title="S týmto časom aplikácia počíta, kým zamestnanec nezapíše inú prestávku">· predvolene od</span>
-            {time("break_start", "12:00", "Predvolený začiatok prestávky")}
-          </>
-        )}
+      </div>
+      <div className="wtsub">
+        <div className="crow wtl">
+          <span className="wtk">Kedy</span>
+          <select className="ci" name={n("break_mode")} value={bMode} onChange={(e) => setBMode(e.target.value as "fixed" | "window")} aria-label="Čas prestávky – fixný alebo pohyblivý">
+            <option value="fixed">vo fixnom čase</option>
+            <option value="window">kedykoľvek v čase</option>
+          </select>
+          {bMode === "fixed" ? (
+            <>
+              <span className="ct">od</span>
+              {time("break_start", "12:00", "Prestávka od")}
+            </>
+          ) : (
+            <>
+              <span className="ct">od</span>
+              {time("break_from", "11:00", "Prestávka najskôr od")}
+              <span className="ct">do</span>
+              {time("break_to", "14:00", "Prestávka najneskôr do")}
+              <span className="wtsep" />
+              <span className="ct" title="S týmto časom aplikácia počíta, kým zamestnanec nezapíše inú prestávku">predvolene o</span>
+              {time("break_start", "12:00", "Predvolený začiatok prestávky")}
+            </>
+          )}
+        </div>
       </div>
 
       <div className="crow">
