@@ -561,14 +561,7 @@ export async function sendNotifNow(_p: SetState, f: FormData): Promise<SetState>
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
   const only = f.getAll("emp").map(String).filter(Boolean);
   if (!only.length) return { error: ["Vyberte, komu sa má upozornenie poslať."] };
-  let testTo: string | undefined;
-  if (bool(f, "test")) {
-    const { data: u } = await (await createClient()).auth.getUser();
-    testTo = u.user?.email ?? undefined;
-    if (!testTo) return { error: ["Váš účet nemá e-mail – skúšku nie je kam poslať."] };
-  }
-  const r = await sendVacLeft(sb, rule, todayIso(), origin, { only, testTo });
-  if (testTo) return { ok: `Skúška: ${r.sent} ${r.sent === 1 ? "e-mail odoslaný" : r.sent > 1 && r.sent < 5 ? "e-maily odoslané" : "e-mailov odoslaných"} na ${testTo}.` };
+  const r = await sendVacLeft(sb, rule, todayIso(), origin, { only });
   await audit(`Notifikácia odoslaná ručne: ${r.sent} e-mailov`);
   done();
   if (!r.list) return { ok: "Nikto z vybraných nemá čo dočerpať – nič sa neposlalo." };

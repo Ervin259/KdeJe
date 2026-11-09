@@ -33,10 +33,9 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
   const [sendState, send, sending] = useActionState<SetState, FormData>(sendNotifNow, {});
   const [on, setOn] = useState(r.enabled);
   const withMail = preview.filter((p) => p.email).length;
-  const [test, setTest] = useState(false);
   // vybraní: predvolene nikto – aby sa omylom neposlalo všetkým
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const can = preview.filter((p) => test || p.email);
+  const can = preview.filter((p) => p.email);
   const chosen = can.filter((p) => sel.has(p.id));
   const allOn = can.length > 0 && chosen.length === can.length;
   const toggle = (id: string) => setSel((s) => {
@@ -119,7 +118,7 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
                 <span>všetci</span>
               </label>
               {preview.map((p) => {
-                const dis = !test && !p.email;
+                const dis = !p.email;
                 return (
                   <label key={p.id} className={`ctog npick${dis ? " dis" : ""}`} title={p.email ?? "Bez e-mailu – upozornenie sa nepošle"}>
                     <input type="checkbox" name="emp" value={p.id} disabled={dis} checked={!dis && sel.has(p.id)} onChange={() => toggle(p.id)} />
@@ -132,20 +131,16 @@ function NotifRuleCard({ r, preview, logs }: { r: NotifRuleView; preview: NotifP
               })}
             </div>
             <div className="row" style={{ gap: 10, justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
-              <label className="ctog" title="E-maily vybraných ľudí prídu len na váš e-mail; nikomu inému sa nepošlú a nezapíšu sa medzi odoslané">
-                <input type="checkbox" name="test" checked={test} onChange={(e) => setTest(e.target.checked)} />
-                <span>skúška – poslať len mne</span>
-              </label>
               {sendState.ok && <span className="muted" style={{ fontSize: 12.5 }}>{sendState.ok}</span>}
               {sendState.error && <span style={{ fontSize: 12.5, color: "var(--bad)" }}>{sendState.error.join(" ")}</span>}
               <button
-                className={`btn sm${test ? "" : " primary"}`}
+                className="btn sm primary"
                 disabled={sending || !chosen.length}
                 onClick={(e) =>
-                  !test && !confirm(`Poslať upozornenie teraz ${chosen.length} ${chosen.length === 1 ? "zamestnancovi" : "zamestnancom"}?`) && e.preventDefault()
+                  !confirm(`Poslať upozornenie teraz ${chosen.length} ${chosen.length === 1 ? "zamestnancovi" : "zamestnancom"}?`) && e.preventDefault()
                 }
               >
-                {sending ? "Odosielam…" : test ? `Poslať mne (${chosen.length})` : `Odoslať vybraným (${chosen.length})`}
+                {sending ? "Odosielam…" : `Odoslať vybraným (${chosen.length})`}
               </button>
             </div>
           </form>
