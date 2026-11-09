@@ -126,7 +126,7 @@ export class Calc {
     return effective(g, e?.work_override);
   }
 
-  /** Pracovná doba zamestnanca; flexibilná skupina počíta so štandardným dňom firmy. */
+  /** Pracovný čas zamestnanca; flexibilná skupina počíta so štandardným dňom firmy. */
   sched(empId: string): Sched {
     const g = this.group(empId);
     const w = g.flexible || !g.day_start || !g.day_end ? this.defGroup : g;

@@ -5,7 +5,7 @@ import { FLEX_PERIOD, dailyHours, hm, type WorkTime } from "@/lib/worktime";
 const nf = (n: number) => String(Math.round(n * 100) / 100).replace(".", ",");
 
 /**
- * Polia pracovného času – rovnaké v šablóne (Nastavenia → Pracovná doba) aj v karte zamestnanca.
+ * Polia pracovného času – rovnaké v šablóne (Nastavenia → Pracovný čas) aj v karte zamestnanca.
  * `prefix` odlíši názvy polí v karte („wt_“), `disabled` zobrazí hodnoty šablóny len na čítanie.
  */
 export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTime; prefix?: string; disabled?: boolean }) {

@@ -64,7 +64,7 @@ export default function GuidePage() {
               <b>Nastavenia → Firma → Údaje o firme:</b> skontrolujte názov, IČO a doplňte fakturačné údaje.
             </li>
             <li>
-              <b>Nastavenia → Pravidlá:</b> pracovná doba (časy, obed, stravné lístky), typy neprítomností, ktoré používate, a kedy sa mesiac
+              <b>Nastavenia → Pravidlá:</b> pracovný čas (časy, obed, stravné lístky), typy neprítomností, ktoré používate, a kedy sa mesiac
               uzamkne.
             </li>
             <li>

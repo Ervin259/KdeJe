@@ -91,7 +91,7 @@ export async function rozpisAll(form: FormData) {
   const { doh } = await buildPayroll(y, m);
   let n = 0;
   for (const r of doh) {
-    if (r.rozpisSum > 0 || r.def.mode === "manual" || !r.def.total) continue;
+    if (r.rozpisSum > 0 || !r.def.total) continue;
     if (r.def.cap != null && r.def.total > r.def.cap + 0.001) continue; // prekročil by limit dohody
     const res = spread({ days: r.days, total: r.def.total, max: r.def.max, week: r.def.week, step: r.def.step, how: "even" });
     if (res.err) continue;

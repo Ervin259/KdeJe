@@ -39,6 +39,7 @@ type Def = {
   /** najviac hodín v mesiaci podľa limitov dohody */
   cap: number | null;
   capWhy: string;
+  src: string;
 };
 
 /** Rozpis hodín dohodára do dní (modálne okno ako v prototype). */
@@ -99,13 +100,10 @@ function RozpisModal({
   onClose: () => void;
 }) {
   const st = def.step || 1;
-  const [worked, setWorked] = useState(def.worked);
-
-  const [fixedTotal, setFixedTotal] = useState(def.total);
+  const [total, setTotal] = useState(def.total);
   const [max, setMax] = useState(def.max);
   const [week, setWeek] = useState<number | null>(def.week);
   const [how, setHow] = useState<"even" | "seq">("even");
-  const total = def.mode === "worked" ? Math.round(worked / st) * st : fixedTotal;
   const initial = useMemo(() => {
     if (Object.keys(current).length) return { days: current, err: "", warn: "" };
     return spread({ days, total, max, week, step: st, how });
@@ -162,14 +160,7 @@ function RozpisModal({
           </button>
         </div>
         <div className="rzform">
-          {def.mode === "worked" ? (
-            <>
-              {field("rz-worked", "Odpracované hodiny", worked, (v) => setWorked(v ?? 0), def.flex ? "Zadajte, koľko odpracoval(a)." : `Podľa pracovnej doby ${workTxt} bez neprítomností.`)}
-
-            </>
-          ) : (
-            field("rz-total", "Hodín na výplatu", fixedTotal, (v) => setFixedTotal(v ?? 0), def.mode === "fixed" ? "Pevný počet z nastavení dohody." : "")
-          )}
+          {field("rz-total", "Hodín spolu", total, (v) => setTotal(v ?? 0), `${def.src} Vrátane dní, ktoré si zapísal sám${workTxt ? ` · pracovný čas ${workTxt}` : ""}.`)}
           {field("rz-max", "Max. hodín za deň", max, (v) => setMax(v || 8), "", { min: 0.5 })}
           {field("rz-week", "Max. hodín za týždeň", week, setWeek, "", { placeholder: "bez limitu" })}
         </div>

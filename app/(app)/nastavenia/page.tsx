@@ -145,7 +145,7 @@ export default async function SettingsPage({
                       Trvanie<br />pomeru
                     </th>
                     <th>
-                      Pracovná<br />doba a SL
+                      Pracovný<br />čas a SL
                     </th>
                     <th className="c">
                       Prenos<br />z {year - 1}
@@ -320,8 +320,8 @@ export default async function SettingsPage({
             </div>
           </Acc>
           </SetGroup>
-          <SetGroup k="rules" title="Pravidlá" sub="Pracovná doba · Typy neprítomností · Uzávierka a úpravy" forceOpen={["work","types","appr"].includes(sp.open ?? "")}>
-          <Acc k="work" title="Pracovná doba">
+          <SetGroup k="rules" title="Pravidlá" sub="Pracovný čas · Typy neprítomností · Uzávierka a úpravy" forceOpen={["work","types","appr"].includes(sp.open ?? "")}>
+          <Acc k="work" title="Pracovný čas">
             <WorkGroups
               groups={groups as WG[]}
               members={members("work_group_id", groups.find((g) => g.is_default)?.id)}

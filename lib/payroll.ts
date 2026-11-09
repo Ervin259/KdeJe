@@ -42,6 +42,8 @@ export type DohRow = {
     /** najviac hodín v tomto mesiaci podľa limitov (mesiac firmy, 350 h ročne, priemer brigádnika) */
     cap: number | null;
     capWhy: string;
+    /** odkiaľ je predvolený počet hodín pre rozpis */
+    src: string;
   };
   /** prekročené limity (týždeň, mesiac, rok, priemer) */
   warn: string[];
@@ -131,7 +133,9 @@ export async function buildPayroll(y: number, m: number) {
       const worked = flex ? 0 : rd.filter((x) => x.work).reduce((s, x) => s + Math.max(0, H - x.abs), 0);
       const coef = 1; // evidujú sa skutočne odpracované hodiny (koeficient sa nepoužíva)
       const r = (x: number) => Math.round(x / step) * step;
-      const total = D.mode === "fixed" ? Number(D.hours) || 0 : D.mode === "worked" ? r(worked / coef) : sum;
+      // predvolený rozpis: predpoklad z karty, inak hodiny podľa pracovného času (najviac do limitu dohody – nižšie)
+      const plan = Number(D.hours) || 0;
+      const base = plan > 0 ? plan : worked;
       // limity: zákonné podľa druhu dohody + vlastné z karty
       const lim = limits(D);
       const all = { ...(dohAll.get(e.id) ?? {}), ...hours };
@@ -146,6 +150,12 @@ export async function buildPayroll(y: number, m: number) {
       }
       const capMin = caps.length ? caps.reduce((x, c) => (c[0] < x[0] ? c : x)) : null;
       const warn = warnings(all, a, b, lim, e);
+      const capH = capMin ? Math.round(capMin[0] * 100) / 100 : null;
+      const total = capH != null && base > capH ? Math.floor(capH / step + 1e-9) * step : r(base);
+      const src =
+        (plan > 0 ? `Predpoklad ${String(plan).replace(".", ",")} h mesačne` : flex ? "Pružný pracovný čas – zadajte počet hodín" : "Podľa pracovného času bez neprítomností") +
+        (capH != null && base > capH ? `, obmedzené limitom ${String(capH).replace(".", ",")} h (${capMin![1]})` : "") +
+        ".";
       return {
         e,
         hours,
@@ -162,7 +172,8 @@ export async function buildPayroll(y: number, m: number) {
           week: lim.week,
           step,
           flex,
-          cap: capMin ? Math.round(capMin[0] * 100) / 100 : null,
+          cap: capH,
+          src,
           capWhy: capMin ? capMin[1] : "",
         },
         warn,

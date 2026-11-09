@@ -321,7 +321,7 @@ export async function saveEmployee(_p: SetState, f: FormData): Promise<SetState>
   if (contract === "DOH") {
     await supabase.from("contract_hours").upsert({
       employee_id: empId,
-      mode: (["fixed", "worked", "manual"].includes(str(f, "dmode")) ? str(f, "dmode") : "manual") as string,
+      mode: "worked", // jediný spôsob: predpoklad (hours) alebo pracovný čas, najviac do limitu dohody
       hours: numOr(f, "dhours", 0),
       coef: 1, // evidujú sa skutočne odpracované hodiny (koeficient sa nepoužíva)
       max_day: Math.max(0.5, numOr(f, "dmax", 8) ?? 8),

@@ -330,7 +330,7 @@ export function EmpForm({
       <section className="box epc epwide">
         <h3>Pracovný čas</h3>
         <div className="wtsel">
-          <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Pravidlá → Pracovná doba.">
+          <Kf label="Šablóna" htmlFor="ef-grp" hint="Šablóny (napr. pre celé oddelenie) upravíte v Nastaveniach → Pravidlá → Pracovný čas.">
             <select id="ef-grp" name="work_group_id" value={grp} onChange={(e) => setGrp(e.target.value)}>
               {workGroups.map((x) => (
                 <option key={x.id} value={x.id}>
@@ -439,17 +439,14 @@ export function EmpForm({
               <option value="dovp">Dohoda o vykonaní práce (max. 350 h ročne)</option>
             </select>
           </Kf>
-          <Kf label="Hodiny na výplatu" htmlFor="ef-dmode">
-            <select id="ef-dmode" name="dmode" defaultValue={init.doh.mode}>
-              <option value="fixed">Pevný počet hodín mesačne</option>
-              <option value="worked">Odpracované hodiny podľa pracovnej doby</option>
-              <option value="manual">Zadám ručne každý mesiac</option>
-            </select>
-          </Kf>
-          <Kf label="Hodín mesačne" htmlFor="ef-dhours">
+          <Kf
+            label="Predpoklad mesačne"
+            htmlFor="ef-dhours"
+            hint="Predvolený počet hodín pre tlačidlo Rozpísať v Podklade pre mzdy. Prázdne = podľa pracovného času. Rozpis vždy dodrží limity dohody a nemení dni, ktoré si dohodár zapísal sám."
+          >
             <div className="kin">
-              <input id="ef-dhours" name="dhours" className="w-num" type="number" min={0} step={0.5} defaultValue={init.doh.hours || ""} />
-              <span className="muted">len pri pevnom počte</span>
+              <input id="ef-dhours" name="dhours" className="w-num" type="number" min={0} step={0.5} defaultValue={init.doh.hours || ""} placeholder="—" />
+              <span className="muted">h · prázdne = podľa pracovného času</span>
             </div>
           </Kf>
           <Kf label="Max. hodín" htmlFor="ef-dmax">
