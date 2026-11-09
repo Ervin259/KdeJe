@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { canManage, requireMe, type Me } from "@/lib/data";
 import { loadCompany, loadEntries } from "@/lib/loaders";
-import { checkAttendance, computeDay, type Att } from "@/lib/attendance";
+import { checkAttendance, checkDoh, computeDay, type Att } from "@/lib/attendance";
 import { safeBack } from "@/lib/params";
 
 export type AttState = { error?: string[]; needReason?: boolean; reasonMsg?: string };
@@ -75,11 +75,15 @@ export async function saveAttendance(_p: AttState, f: FormData): Promise<AttStat
   const a = readAtt(f, me);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(a.day)) return { error: ["Chýba deň."] };
 
-  const { calc } = await loadCompany();
+  const { calc, emps } = await loadCompany();
   const w = calc.group(a.employee_id);
   const entries = await loadEntries(a.day, a.day);
   const info = computeDay(calc, a.employee_id, a.day, entries, null);
-  const err = checkAttendance(w, a, info);
+  let err: string[];
+  if (emps.find((e) => e.id === a.employee_id)?.contract_type === "DOH") {
+    const { data: ch } = await supabase.from("contract_hours").select("max_day").eq("employee_id", a.employee_id).maybeSingle();
+    err = checkDoh(a, info, Number(ch?.max_day) || 12);
+  } else err = checkAttendance(w, a, info);
   if (err.length) return { error: err };
 
   const { data: old } = await supabase.from("attendance").select("*").eq("employee_id", a.employee_id).eq("day", a.day).maybeSingle();

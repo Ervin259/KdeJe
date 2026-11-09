@@ -196,3 +196,40 @@ export function checkAttendance(w: WorkTime, a: Att, info: Pick<DayInfo, "work" 
   }
   return e;
 }
+
+/** Odpracované hodiny zo zápisu (príchod – odchod – prestávka). */
+export const attHours = (a: { arrive: string; leave: string; break_min: number }) =>
+  Math.max(0, (toMin(a.arrive.slice(0, 5)) > toMin(a.leave.slice(0, 5)) ? 0 : toMin(a.leave.slice(0, 5)) - toMin(a.arrive.slice(0, 5)) - Number(a.break_min || 0)) / 60);
+
+/** Časy dohodára z hodín v deň: príchod podľa nastavenia, pri viac ako 6 h prestávka 30 min. */
+export function dohDay(w: WorkTime, h: number) {
+  const d = defaults(w);
+  const bm = h > 6 ? Math.max(30, d.break_min) : 0;
+  const a = toMin(d.arrive);
+  const l = a + Math.round(h * 60) + bm;
+  const bs = bm ? (d.break_start && toMin(d.break_start) > a && toMin(d.break_start) + bm < l ? d.break_start : fromMin(a + Math.round((l - a - bm) / 2))) : null;
+  return { arrive: d.arrive, leave: fromMin(l), break_start: bs, break_min: bm };
+}
+
+/** Kontrola zápisu hodín dohodára (§ 91 a § 99 ZP, denný strop z nastavenia dohody). */
+export function checkDoh(a: Att, info: Pick<DayInfo, "absentFull">, maxDay: number): string[] {
+  if (!a.arrive || !a.leave) return ["Vyplňte príchod aj odchod."];
+  const A = toMin(a.arrive);
+  const L = toMin(a.leave);
+  if (L <= A) return ["Odchod musí byť neskôr ako príchod."];
+  const e: string[] = [];
+  const worked = (L - A - a.break_min) / 60;
+  if (info.absentFull) e.push("V tento deň má zapísanú celodennú neprítomnosť – najprv ju upravte.");
+  if (worked <= 0) e.push("Odpracovaný čas musí byť dlhší ako prestávka.");
+  if (worked > 6 && a.break_min < 30) e.push("Pri práci dlhšej ako 6 hodín je prestávka aspoň 30 minút (§ 91 ZP).");
+  if (a.break_min) {
+    if (!a.break_start) e.push("Vyplňte začiatok prestávky.");
+    else {
+      const B = toMin(a.break_start);
+      if (B <= A || B + a.break_min >= L) e.push("Prestávka nemôže byť na začiatku ani na konci práce.");
+    }
+  }
+  const max = Math.min(12, maxDay || 12);
+  if (worked > max + 1 / 120) e.push(`Podľa dohody sa dá odpracovať najviac ${hmm(max)} h denne (teraz ${hmm(worked)} h).`);
+  return e;
+}

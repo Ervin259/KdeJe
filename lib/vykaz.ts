@@ -4,7 +4,7 @@
  * Dohodári: časy sa dopočítajú z rozpisu hodín (príchod podľa nastavenia, prestávka nad 6 h).
  */
 import { KIND, eachDay, type Calc, type Emp, type Entry } from "./calc";
-import { computeDay, defaults, fromMin, toMin, type Att, type DayInfo } from "./attendance";
+import { computeDay, defaults, dohDay, type Att, type DayInfo } from "./attendance";
 import type { WorkTime } from "./worktime";
 
 export type VDay = DayInfo & {
@@ -37,16 +37,6 @@ export type VSum = {
 
 export type VEmp = Emp & { site?: string | null; department?: string | null };
 export type Vykaz = { emp: VEmp; w: WorkTime; days: VDay[]; sum: VSum };
-
-/** Časy dohodára z hodín v deň: príchod podľa nastavenia, pri viac ako 6 h prestávka 30 min. */
-function dohDay(w: WorkTime, h: number) {
-  const d = defaults(w);
-  const bm = h > 6 ? Math.max(30, d.break_min) : 0;
-  const a = toMin(d.arrive);
-  const l = a + Math.round(h * 60) + bm;
-  const bs = bm ? (d.break_start && toMin(d.break_start) > a && toMin(d.break_start) + bm < l ? d.break_start : fromMin(a + Math.round((l - a - bm) / 2))) : null;
-  return { arrive: d.arrive, leave: fromMin(l), break_start: bs, break_min: bm };
-}
 
 export function buildVykaz(
   calc: Calc,

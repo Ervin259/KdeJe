@@ -105,7 +105,8 @@ export default async function EntryPage({
                 emp={init.employee_id}
                 day={init.date_from}
                 back={back}
-                attendance={canEditAttendance(calc.group(init.employee_id)) && emps.find((e) => e.id === init.employee_id)?.contract_type !== "DOH"}
+                attendance={canEditAttendance(calc.group(init.employee_id)) || emps.find((e) => e.id === init.employee_id)?.contract_type === "DOH"}
+                doh={emps.find((e) => e.id === init.employee_id)?.contract_type === "DOH"}
               />
             )}
             <h3 style={{ margin: init.id ? "0 0 14px" : "14px 0" }}>{init.id ? "Upraviť záznam" : "Zapísať neprítomnosť"}</h3>

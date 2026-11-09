@@ -2,8 +2,15 @@
  * Rozpis hodín dohodárov do dní (rzSpread v prototype).
  * Najprv pracovné dni bez neprítomnosti, potom navýšenie až po denný strop,
  * až nakoniec dni s neprítomnosťou (s upozornením).
+ * Dni, ktoré si dohodár zapísal sám (fixed), ostávajú a rozpisuje sa len zvyšok.
  */
-export type RzDay = { d: string; work: boolean; abs: number /* hodiny neprítomnosti */ };
+export type RzDay = {
+  d: string;
+  work: boolean;
+  abs: number /* hodiny neprítomnosti */;
+  /** hodiny, ktoré si dohodár zapísal sám (príchod/odchod) – rozpis ich nemení */
+  fixed?: number;
+};
 
 export type RzParams = {
   days: RzDay[]; // všetky dni mesiaca
@@ -27,8 +34,16 @@ export function spread(p: RzParams): { days: Record<string, number>; err: string
   let err = "";
   let warn = "";
   let left = Math.round((p.total || 0) / step);
-  if (!left) return { days: {}, err, warn };
-  const usable = p.days.filter((x) => x.work);
+  // zapísané dni ostávajú, rozpisuje sa len zvyšok
+  for (const x of p.days) {
+    if (x.fixed === undefined) continue;
+    out[x.d] = x.fixed;
+    const w = mondayOf(x.d);
+    wk[w] = (wk[w] || 0) + x.fixed;
+    left -= Math.round(x.fixed / step);
+  }
+  if (left <= 0) return { days: out, err, warn };
+  const usable = p.days.filter((x) => x.work && x.fixed === undefined);
   const free = usable.filter((x) => x.abs <= 0).map((x) => x.d);
   const absd = usable.filter((x) => x.abs > 0).map((x) => x.d);
   const can = (d: string) => {

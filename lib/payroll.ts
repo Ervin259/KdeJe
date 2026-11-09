@@ -4,6 +4,7 @@ import { KIND, monthDays, monthRange, type Entry } from "@/lib/calc";
 import { isOn, monthVals, payCols, ppOrder, type Vals } from "@/lib/report";
 import type { RzDay } from "@/lib/rozpis";
 import { loadOvertime, type OTMonth } from "@/lib/overtime";
+import { attHours } from "@/lib/attendance";
 
 export type ContractHours = {
   employee_id: string;
@@ -18,7 +19,12 @@ export type ContractHours = {
 export type PayRow = { e: EmpFull; v: Vals; sl: number | null; conf: { at: string; by: string | null } | null; ot: OTMonth | null };
 export type DohRow = {
   e: EmpFull;
+  /** hodiny po dňoch: zápis dohodára (príchod/odchod) má prednosť pred rozpisom */
   hours: Record<string, number>;
+  /** dni, ktoré si dohodár zapísal sám */
+  fixed: Record<string, number>;
+  /** súčet len z rozpisu (bez vlastných zápisov) */
+  rozpisSum: number;
   sum: number;
   days: RzDay[];
   def: { mode: ContractHours["mode"]; total: number; worked: number; coef: number; max: number; week: number | null; step: number; flex: boolean };
@@ -30,11 +36,15 @@ export async function buildPayroll(y: number, m: number) {
   const { calc, emps, enabled } = co;
   const supabase = await createClient();
   const [a, b] = monthRange(y, m);
-  const [entries, conf, ch, chd] = await Promise.all([
+  const dohIds = emps.filter((e) => e.contract_type === "DOH").map((e) => e.id);
+  const [entries, conf, ch, chd, datt] = await Promise.all([
     loadEntries(a, b),
     supabase.from("month_confirmations").select("employee_id, confirmed_at, confirmed_by").eq("year", y).eq("month", m),
     supabase.from("contract_hours").select("*"),
     supabase.from("contract_hours_days").select("employee_id, date, hours").gte("date", a).lte("date", b),
+    dohIds.length
+      ? supabase.from("attendance").select("employee_id, day, arrive, leave, break_min").in("employee_id", dohIds).gte("day", a).lte("day", b)
+      : Promise.resolve({ data: [] }),
   ]);
   const cols = payCols(enabled);
   const days = monthDays(y, m);
@@ -71,11 +81,17 @@ export async function buildPayroll(y: number, m: number) {
     .map((e) => {
       const hours: Record<string, number> = {};
       for (const r of chd.data ?? []) if (r.employee_id === e.id) hours[String(r.date)] = Number(r.hours);
+      const rozpisSum = Object.values(hours).reduce((s, h) => s + h, 0);
+      const fixed: Record<string, number> = {};
+      for (const r of (datt.data ?? []) as { employee_id: string; day: string; arrive: string; leave: string; break_min: number }[])
+        if (r.employee_id === e.id) fixed[String(r.day)] = Math.round(attHours(r) * 100) / 100;
+      Object.assign(hours, fixed);
       const sum = Object.values(hours).reduce((s, h) => s + h, 0);
       const rd: RzDay[] = days.map((d) => ({
         d,
         work: calc.isWork(d) && isOn(e, d, d),
         abs: absHours(e.id, d),
+        ...(fixed[d] !== undefined ? { fixed: fixed[d] } : {}),
       }));
       const D = ((ch.data ?? []).find((x) => x.employee_id === e.id) as ContractHours | undefined) ?? {
         mode: "manual" as const,
@@ -95,6 +111,8 @@ export async function buildPayroll(y: number, m: number) {
       return {
         e,
         hours,
+        fixed,
+        rozpisSum,
         sum,
         days: rd,
         def: { mode: D.mode, total, worked, coef, max: Number(D.max_day) || 8, week: D.max_week ? Number(D.max_week) : null, step, flex },

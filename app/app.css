@@ -524,3 +524,11 @@ a.namebtn:hover { color: var(--accent); }
 @media print { .vkotf { display: none !important; } .vkotrow { padding: 4px 0; border: 0; } }
 .paytab th.otc { white-space: normal; min-width: 70px; max-width: 84px; font-size: 11px; line-height: 1.2; }
 .paytab td.otc { background: var(--sunk); }
+/* Dohodári – vlastný zápis hodín */
+.dohgrid .dh.own, .rzfix { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; font-weight: 700; }
+.rzfix { display: inline-block; min-width: 36px; text-align: center; padding: 4px 0; }
+.dohq { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.dohq input { width: 70px; height: 32px; text-align: center; font-weight: 700; }
+/* Kalendár – hodiny dohodára v bunke */
+.cell .dohh { font-style: normal; position: absolute; left: 0; right: 0; text-align: center; bottom: 2px; font-size: 10px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; pointer-events: none; }
+.cell .dohh.own { text-decoration: underline; text-underline-offset: 1px; }

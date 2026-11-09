@@ -27,6 +27,7 @@ import { StickyDays } from "./StickyDays";
 import { ConfirmMonthButton, loadConfirmations } from "./ConfirmMonth";
 import { applyFilter, getFilter, sortGrouped } from "@/lib/filters";
 import { MonthPicker } from "./MonthPicker";
+import { attHours } from "@/lib/attendance";
 
 export type View = "day" | "week" | "month";
 const WDL = ["Nedeľa", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota"];
@@ -127,6 +128,18 @@ export async function Calendar({
       attMap.set(`${a.employee_id}|${a.day}`, a);
   }
 
+  // Hodiny dohodárov: vlastný zápis (príchod/odchod) má prednosť pred rozpisom hodín (vidí dohodár, vedúci, admin – RLS)
+  const dohMap = new Map<string, { h: number; own: boolean }>();
+  {
+    const dohIds = new Set(emps.filter((e) => e.contract_type === "DOH").map((e) => e.id));
+    if (dohIds.size) {
+      const { data: rz } = await supabase.from("contract_hours_days").select("employee_id, date, hours").gte("date", first).lte("date", last);
+      for (const r of (rz ?? []) as { employee_id: string; date: string; hours: number }[])
+        if (dohIds.has(r.employee_id) && Number(r.hours) > 0) dohMap.set(`${r.employee_id}|${r.date}`, { h: Number(r.hours), own: false });
+      for (const [k, a] of attMap) if (dohIds.has(k.split("|")[0])) dohMap.set(k, { h: attHours(a), own: true });
+    }
+  }
+
   // Admin v pohľade zamestnanca: databáza mu vracia všetko, GDPR maskovanie preto doplníme tu
   if (me.realRole === "admin" && !admin && settings.hide_health) {
     const health = new Set(absTypes.filter((t) => t.is_health).map((t) => t.code));
@@ -189,7 +202,11 @@ export async function Calendar({
     : emps.filter(
         (e) =>
           (e.id === me.id && me.isEmployee) ||
-          (e.show_in_calendar && e.active && entries.some((x) => x.employee_id === e.id))
+          (e.show_in_calendar &&
+            e.active &&
+            (entries.some((x) => x.employee_id === e.id) ||
+              // dohodár s odpracovanými hodinami v období (vidí ho on sám, vedúci a admin)
+              (e.contract_type === "DOH" && [...dohMap.keys()].some((k) => k.startsWith(e.id + "|")))))
       );
   // výber prevádzky / oddelenia v hlavičke; zoradenie podľa prevádzky, oddelenia, pomeru a priezviska (vlastný riadok prvý)
   const flt = onlyMe ? null : await getFilter();
@@ -267,7 +284,7 @@ export async function Calendar({
 
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
-  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on, basePath, att: attMap };
+  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on, basePath, att: attMap, doh: dohMap };
 
   return (
     <>
@@ -327,6 +344,8 @@ type Ctx = {
   basePath: string;
   /** úpravy dochádzky: „zamestnanec|deň“ → časy */
   att: Map<string, { arrive: string; leave: string; break_start: string | null; break_min: number; note: string | null }>;
+  /** hodiny dohodárov: „zamestnanec|deň“ → hodiny (own = zapísal sám) */
+  doh: Map<string, { h: number; own: boolean }>;
 };
 
 /** Značka upravenej dochádzky v bunke (klik → úprava dochádzky). */
@@ -499,7 +518,8 @@ function Grid({
             const mine = e.id === meId;
             const can = admin || e.id === meId || managed.has(e.id);
             const wt = calc.group(e.id);
-            const otOk = wt.overtime !== "none" && e.contract_type !== "DOH";
+            const isDoh = e.contract_type === "DOH";
+            const otOk = wt.overtime !== "none" && !isDoh;
             const extra = rowExtra?.(e);
             // nadpis skupiny pred prvým riadkom skupiny (vlastný riadok hore sa nezoskupuje)
             const g = groupLabel && !mine ? groupLabel(e) : null;
@@ -528,8 +548,9 @@ function Grid({
                 </td>
                 {days.map((d) => {
                   const off = !calc.isWork(d);
-                  // víkend/sviatok: klik otvorí úpravu dochádzky, ak má povolené nadčasy
-                  const offAtt = off && can && otOk;
+                  // víkend/sviatok: klik otvorí úpravu dochádzky, ak má povolené nadčasy; dohodár → zápis hodín v ktorýkoľvek deň
+                  const offAtt = can && ((off && otOk) || isDoh);
+                  const dh = isDoh ? ctx.doh.get(`${e.id}|${d}`) : undefined;
                   return (
                     <td
                       key={d}
@@ -537,11 +558,12 @@ function Grid({
                       data-emp={e.id}
                       data-d={d}
                       data-offatt={offAtt ? "1" : undefined}
-                      title={offAtt ? "Zapísať prácu v tento deň (nadčas)" : undefined}
+                      title={isDoh && can ? (dh ? `${dh.own ? "Zapísané" : "Podľa rozpisu"}: ${String(Math.round(dh.h * 100) / 100).replace(".", ",")} h – klik: zapísať hodiny` : "Zapísať hodiny") : offAtt ? "Zapísať prácu v tento deň (nadčas)" : undefined}
                     >
                       <div className="cell">
                         {off ? null : <Cell empId={e.id} empName={e.name} d={d} wide={wide} {...ctx} />}
-                        <AttMark empId={e.id} d={d} att={ctx.att} />
+                        {dh && <i className={`dohh${dh.own ? " own" : ""}`}>{String(Math.round(dh.h * 100) / 100).replace(".", ",")}h</i>}
+                        {!isDoh && <AttMark empId={e.id} d={d} att={ctx.att} />}
                       </div>
                     </td>
                   );

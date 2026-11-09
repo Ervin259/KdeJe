@@ -26,8 +26,8 @@ export function CalClick({ back, children }: { back: string; children: React.Rea
     const spat = "&spat=" + encodeURIComponent(back);
     if (row?.dataset.edit) return router.push(`/zapisat?id=${row.dataset.edit}${spat}`);
     if (!cell || !cell.classList.contains("click")) return;
-    if (cell.dataset.offatt) return router.push(`/dochadzka?emp=${cell.dataset.emp}&d=${cell.dataset.d}${spat}`);
     if (rec?.dataset.id) return router.push(`/zapisat?id=${rec.dataset.id}${spat}`);
+    if (cell.dataset.offatt) return router.push(`/dochadzka?emp=${cell.dataset.emp}&d=${cell.dataset.d}${spat}`);
     router.push(`/zapisat?emp=${cell.dataset.emp}&d=${cell.dataset.d}${spat}`);
   }
   // zvýraznenie stĺpca dňa v hlavičke pri prejdení myšou nad bunkou (riadok zvýrazní CSS)

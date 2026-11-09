@@ -255,7 +255,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                                     className={calc.isWork(x.d) ? undefined : "off"}
                                     title={`${fdw(x.d)}${codes.length ? " · " + codes.map((c) => TYPE_NAME[c] ?? c).join(", ") : ""}`}
                                   >
-                                    {h ? <span className="dh">{nf(h)}</span> : null}
+                                    {h ? (
+                                      <span className={`dh${r.fixed[x.d] !== undefined ? " own" : ""}`} title={r.fixed[x.d] !== undefined ? "Zapísal(a) príchod a odchod" : undefined}>
+                                        {nf(h)}
+                                      </span>
+                                    ) : null}
                                     {codes.map((c) => (
                                       <span key={c} className={`dab ${typeClass(c)}`}>
                                         {c}

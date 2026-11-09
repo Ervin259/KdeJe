@@ -63,17 +63,20 @@ export async function saveHours(empId: string, y: number, m: number, days: Recor
   await requireAdmin();
   const supabase = await createClient();
   const [a, b] = monthRange(y, m);
+  // dni, ktoré si dohodár zapísal sám (príchod/odchod), sa v rozpise neukladajú – majú prednosť
+  const { data: own } = await supabase.from("attendance").select("day").eq("employee_id", empId).gte("day", a).lte("day", b);
+  const fixed = new Set((own ?? []).map((r) => String(r.day)));
   const del = await supabase.from("contract_hours_days").delete().eq("employee_id", empId).gte("date", a).lte("date", b);
   if (del.error) return { error: del.error.message };
   const rows = Object.entries(days)
-    .filter(([d, h]) => h > 0 && d >= a && d <= b)
+    .filter(([d, h]) => h > 0 && d >= a && d <= b && !fixed.has(d))
     .map(([date, hours]) => ({ employee_id: empId, date, hours }));
   if (rows.length) {
     const ins = await supabase.from("contract_hours_days").insert(rows);
     if (ins.error) return { error: ins.error.message };
   }
   const { emps } = await loadCompany();
-  const sum = rows.reduce((s, r) => s + r.hours, 0);
+  const sum = rows.reduce((s, r) => s + r.hours, 0);  // len rozpis (bez vlastných zápisov)
   await audit(`${emps.find((e) => e.id === empId)?.name ?? ""} · rozpis hodín za ${MN[m - 1]}: ${nf(sum)} h`, empId);
   revalidatePath("/mzdy");
   return { ok: true };
@@ -88,10 +91,12 @@ export async function rozpisAll(form: FormData) {
   const { doh } = await buildPayroll(y, m);
   let n = 0;
   for (const r of doh) {
-    if (r.sum > 0 || r.def.mode === "manual" || !r.def.total) continue;
+    if (r.rozpisSum > 0 || r.def.mode === "manual" || !r.def.total) continue;
     const res = spread({ days: r.days, total: r.def.total, max: r.def.max, week: r.def.week, step: r.def.step, how: "even" });
     if (res.err) continue;
-    const rows = Object.entries(res.days).map(([date, hours]) => ({ employee_id: r.e.id, date, hours }));
+    const rows = Object.entries(res.days)
+      .filter(([date]) => r.fixed[date] === undefined)
+      .map(([date, hours]) => ({ employee_id: r.e.id, date, hours }));
     if (rows.length && !(await supabase.from("contract_hours_days").insert(rows)).error) n++;
   }
   await audit(`Rozpis hodín dohôd za ${MN[m - 1]}: ${n} dohodárov`);

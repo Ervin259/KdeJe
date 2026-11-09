@@ -172,7 +172,8 @@ function RozpisModal({
         </div>
         <p className="muted" style={{ margin: 0, fontSize: 12 }}>
           Hodiny idú najprv do pracovných dní bez neprítomnosti. Ak sa nezmestia, pridajú sa do zvyšných dní až po denný strop a až
-          potom do dní s neprítomnosťou. Jednotlivé dni môžete ručne upraviť.
+          potom do dní s neprítomnosťou. Jednotlivé dni môžete ručne upraviť. Dni, ktoré si dohodár zapísal sám (príchod a odchod), sú
+          podčiarknuté a rozpis ich nemení.
         </p>
         {(res.err || res.warn || saveErr) && (
           <div className="msgs">
@@ -189,7 +190,11 @@ function RozpisModal({
                 <span className="rzh">
                   {WD[dt.getUTCDay()]} {dt.getUTCDate()}.
                 </span>
-                {x.work ? (
+                {x.fixed !== undefined ? (
+                  <span className="rzfix" title="Zapísal(a) príchod a odchod – rozpis tento deň nemení">
+                    {nf(x.fixed)}
+                  </span>
+                ) : x.work ? (
                   <input
                     type="number"
                     min={0}

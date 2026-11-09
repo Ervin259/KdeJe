@@ -2,7 +2,7 @@
 import { startTransition, useActionState, useState } from "react";
 import Link from "next/link";
 import { resetAttendance, saveAttendance, type AttState } from "./actions";
-import { hmm, toMin } from "@/lib/attendance";
+import { fromMin, hmm, toMin } from "@/lib/attendance";
 
 export type AttInit = {
   employee_id: string;
@@ -27,6 +27,7 @@ export function AttForm({
   people,
   back,
   locked,
+  doh = false,
 }: {
   init: AttInit;
   defaults: { arrive: string; leave: string; break_start: string; break_min: number };
@@ -41,6 +42,8 @@ export function AttForm({
   people: { id: string; name: string; href: string }[] | null;
   back: string;
   locked: boolean;
+  /** dohodár – zápis hodín bez fondu */
+  doh?: boolean;
 }) {
   const [state, save, saving] = useActionState<AttState, FormData>(saveAttendance, {});
   const [rstate, reset, resetting] = useActionState<AttState, FormData>(resetAttendance, {});
@@ -130,6 +133,32 @@ export function AttForm({
         </label>
       </div>
 
+      {doh ? (
+        <div className="attsum">
+          <label className="dohq">
+            Odpracované hodiny
+            <input
+              type="text"
+              inputMode="decimal"
+              key={`${v.a}|${v.l}|${v.bm}`}
+              defaultValue={String(Math.round(worked * 100) / 100).replace(".", ",")}
+              aria-label="Odpracované hodiny"
+              title="Zadajte počet hodín – odchod sa dopočíta od príchodu (pri viac ako 6 h s prestávkou 30 min)"
+              onBlur={(e) => {
+                const h = Number(e.target.value.replace(",", "."));
+                if (!v.a || !(h > 0) || h > 24) return;
+                const bm = h > 6 ? Math.max(30, v.bm) : v.bm;
+                const A = toMin(v.a);
+                const L = A + Math.round(h * 60) + bm;
+                const bs = bm ? (v.bs && toMin(v.bs) > A && toMin(v.bs) + bm < L ? v.bs : fromMin(A + Math.round((L - A - bm) / 2))) : v.bs;
+                setV({ ...v, l: fromMin(L), bm, bs });
+              }}
+            />
+            h
+          </label>
+          <span className="muted">= odchod − príchod − prestávka</span>
+        </div>
+      ) : (
       <div className={`attsum${daily && Math.abs(diff) > 1 / 120 ? " warn" : ""}`}>
         <span>
           Odpracované <b>{hmm(worked)} h</b>
@@ -150,6 +179,7 @@ export function AttForm({
           </button>
         )}
       </div>
+      )}
 
       <label className="fl">
         Poznámka
@@ -170,7 +200,7 @@ export function AttForm({
               Zmenu dochádzky
             </button>
             <button type="button" aria-pressed={act === "reset"} onClick={() => setAct("reset")}>
-              Vrátenie na predvolené
+              {doh ? "Zmazanie zápisu" : "Vrátenie na predvolené"}
             </button>
           </div>
         </div>
@@ -201,7 +231,7 @@ export function AttForm({
               </Link>
               {act === "reset" && init.edited ? (
                 <button className="btn reqbtn req-del" data-act="reset" disabled={resetting}>
-                  {resetting ? "Odosielam…" : "Odoslať žiadosť o vrátenie"}
+                  {resetting ? "Odosielam…" : doh ? "Odoslať žiadosť o zmazanie" : "Odoslať žiadosť o vrátenie"}
                 </button>
               ) : (
                 <button className={`btn reqbtn ${init.edited ? "req-edit" : "req-new"}`} disabled={saving}>
@@ -218,12 +248,12 @@ export function AttForm({
                 data-act="reset"
                 formNoValidate
                 disabled={resetting}
-                title="Zmaže úpravu – deň sa bude počítať s predvolenými časmi"
+                title={doh ? "Zmaže zápis – deň sa bude počítať podľa rozpisu hodín" : "Zmaže úpravu – deň sa bude počítať s predvolenými časmi"}
                 onClick={(e) => {
-                  if (!confirm("Vrátiť tento deň na predvolené časy?")) e.preventDefault();
+                  if (!confirm(doh ? "Zmazať zápis hodín v tento deň?" : "Vrátiť tento deň na predvolené časy?")) e.preventDefault();
                 }}
               >
-                Vrátiť na predvolené
+                {doh ? "Zmazať zápis" : "Vrátiť na predvolené"}
               </button>
             ) : (
               <span />
