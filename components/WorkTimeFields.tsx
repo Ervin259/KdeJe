@@ -114,6 +114,8 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
             {time("break_from", "11:00", "Prestávka najskôr od")}
             <span className="ct">do</span>
             {time("break_to", "14:00", "Prestávka najneskôr do")}
+            <span className="ct" title="S týmto časom aplikácia počíta, kým zamestnanec nezapíše inú prestávku">· predvolene od</span>
+            {time("break_start", "12:00", "Predvolený začiatok prestávky")}
           </>
         )}
       </div>

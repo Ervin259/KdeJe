@@ -88,7 +88,8 @@ export function readWorkTime(f: FormData, p = ""): WorkTime {
     leave_to: flexible ? t("leave_to") : null,
     flex_period: (["day", "week", "4w"].includes(s("flex_period")) ? s("flex_period") : "day") as FlexPeriod,
     break_mode: breakMode,
-    break_start: breakMode === "fixed" ? t("break_start") : null,
+    // fixný čas = začiatok prestávky; pri okne = predvolený začiatok (zapisuje sa len odchýlka)
+    break_start: t("break_start"),
     break_from: breakMode === "window" ? t("break_from") : null,
     break_to: breakMode === "window" ? t("break_to") : null,
     break_min: Math.max(0, n("break_min", 30) ?? 30),
@@ -122,6 +123,10 @@ export function checkWorkTime(w: WorkTime): string[] {
   if (w.break_mode === "window" && (!w.break_from || !w.break_to || !lt(w.break_from, w.break_to))) e.push("Vyplňte okno, v ktorom si môže vziať prestávku (od – do).");
   if (w.break_mode === "window" && w.break_from && w.break_to && toMin(w.break_to) - toMin(w.break_from) < w.break_min)
     e.push("Okno na prestávku je kratšie ako samotná prestávka.");
+  if (w.break_mode === "window" && w.break_min && w.break_from && w.break_to && w.break_start &&
+      (toMin(w.break_start) < toMin(w.break_from) || toMin(w.break_start) + w.break_min > toMin(w.break_to)))
+    e.push("Predvolená prestávka musí byť celá v okne, v ktorom si ju môže vziať.");
+  if (w.break_mode === "window" && w.break_min && !w.break_start) e.push("Vyplňte, o koľkej je prestávka predvolene.");
   if (dailyHours(w) > 6 && w.break_min < 30) e.push("Pri zmene dlhšej ako 6 hodín musí mať prestávka aspoň 30 minút (§ 91 ZP).");
   return e;
 }
@@ -146,7 +151,9 @@ export function longInfo(w: WorkTime): string[] {
   out.push(
     w.break_min
       ? `prestávka ${w.break_len === "min" ? "aspoň " : ""}${w.break_min} min ${
-          w.break_mode === "window" ? `kedykoľvek ${hm(w.break_from)}–${hm(w.break_to)}` : `od ${hm(w.break_start)}`
+          w.break_mode === "window"
+            ? `kedykoľvek ${hm(w.break_from)}–${hm(w.break_to)} (predvolene od ${hm(w.break_start)})`
+            : `od ${hm(w.break_start)}`
         }${w.break_len === "min" ? " (dlhšiu si nadrobí)" : ""}`
       : "bez prestávky"
   );
