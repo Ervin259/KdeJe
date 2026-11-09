@@ -145,10 +145,9 @@ export function checkWorkTime(w: WorkTime): string[] {
   return e;
 }
 
-/** Krátky popis do zoznamov („08:30–17:00 · SL“). */
-export function shortInfo(w: WorkTime, contract?: string | null): string {
-  const t = w.flexible ? `pružný ${hm(w.arrive_from)}–${hm(w.leave_to)}` : `${hm(w.day_start)}–${hm(w.day_end)}`;
-  return noMealVoucher(contract) ? t : `${t} · ${w.meal_voucher ? "SL" : "bez SL"}`;
+/** Krátky popis do zoznamov („08:30–17:00“, „pružný 07:00–19:00“). */
+export function shortInfo(w: WorkTime): string {
+  return w.flexible ? `pružný ${hm(w.arrive_from)}–${hm(w.leave_to)}` : `${hm(w.day_start)}–${hm(w.day_end)}`;
 }
 
 /** Podrobný popis pre kartu zamestnanca („Ako aplikácia počíta“). */

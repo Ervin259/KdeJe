@@ -317,7 +317,7 @@ function WorkEditor({ g, onClose, contracts }: { g: WG | null; onClose: () => vo
 export function WorkGroups({ groups, members, contracts }: { groups: WG[]; members: Member[]; contracts: string[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const close = () => setOpen(null);
-  const info = (g: WG) => shortInfo(g, g.contract_type);
+  const info = (g: WG) => shortInfo(g);
   return (
     <>
       <div className="grplbl">Šablóny · {groups.length} · u zamestnanca sa dajú zmeniť v jeho karte</div>

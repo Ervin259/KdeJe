@@ -216,7 +216,7 @@ export default async function SettingsPage({
                               </span>
                             )}
                           </span>
-                          <span className="grpw">{shortInfo(w, e.contract_type)}</span>
+                          <span className="grpw">{shortInfo(w)}</span>
                         </td>
                         {e.contract_type === "DOH" ? (
                           <>
