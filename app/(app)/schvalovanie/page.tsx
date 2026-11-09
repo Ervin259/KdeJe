@@ -11,6 +11,8 @@ type Req = {
   id: string;
   employee_id: string;
   kind: "new" | "edit" | "delete";
+  /** entry = neprítomnosť, attendance = úprava dochádzky */
+  target?: "entry" | "attendance";
   payload: Entry;
   original: Entry | null;
   reason: string;
@@ -33,7 +35,48 @@ type Audit = {
   text: string | null;
 };
 
+type AttRec = { day: string; arrive: string; leave: string; break_start: string | null; break_min: number; note?: string | null };
+/** Úprava dochádzky ako štítok: „Dochádzka Po 9. 11. 8:15–16:45 · prestávka 12:30 (30 min)“ */
+function AttChip({ x }: { x: AttRec }) {
+  const t = (s: string | null) => (s ? s.slice(0, 5) : "");
+  return (
+    <span className="dpill t-HO" title={x.note ?? undefined}>
+      <b>Dochádzka</b> {fdw(x.day)} {t(x.arrive)}–{t(x.leave)}
+      {x.break_min ? ` · prestávka ${t(x.break_start)} (${x.break_min} min)` : ""}
+    </span>
+  );
+}
+
 function Change({ r }: { r: Req }) {
+  if (r.target === "attendance") {
+    const p = r.payload as unknown as AttRec;
+    const o = r.original as unknown as AttRec | null;
+    if (r.kind === "delete")
+      return (
+        <>
+          <span className="rk del">Vrátiť na predvolené</span>
+          {o && (
+            <span className="strike">
+              <AttChip x={o} />
+            </span>
+          )}
+        </>
+      );
+    return (
+      <>
+        <span className={`rk${r.kind === "new" ? " add" : ""}`}>{r.kind === "new" ? "Úprava dochádzky" : "Zmena dochádzky"}</span>
+        {o && (
+          <>
+            <span className="strike">
+              <AttChip x={o} />
+            </span>
+            <span className="arr">→</span>
+          </>
+        )}
+        <AttChip x={p} />
+      </>
+    );
+  }
   if (r.kind === "new")
     return (
       <>

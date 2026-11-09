@@ -6,6 +6,8 @@ import { byLastName, hhmm, type Entry } from "@/lib/calc";
 import { safeBack } from "@/lib/params";
 import { Header } from "@/components/Header";
 import { EntryForm, type Init } from "./EntryForm";
+import { EntryTabs } from "@/components/EntryTabs";
+import { canEditAttendance } from "@/lib/attendance";
 
 export default async function EntryPage({
   searchParams,
@@ -94,7 +96,16 @@ export default async function EntryPage({
       <main id="view">
         <div className="panel">
           <div className="box">
-            <h3 style={{ marginBottom: 14 }}>{init.id ? "Upraviť záznam" : "Zapísať neprítomnosť"}</h3>
+            {!init.id && (
+              <EntryTabs
+                active="abs"
+                emp={init.employee_id}
+                day={init.date_from}
+                back={back}
+                attendance={canEditAttendance(calc.group(init.employee_id)) && emps.find((e) => e.id === init.employee_id)?.contract_type !== "DOH"}
+              />
+            )}
+            <h3 style={{ margin: init.id ? "0 0 14px" : "14px 0" }}>{init.id ? "Upraviť záznam" : "Zapísať neprítomnosť"}</h3>
             <EntryForm
               types={(types ?? []) as { code: string; name: string; parts: string[] }[]}
               people={lead ? active.filter((e) => canManage(me, e.id)).map((e) => ({ id: e.id, name: e.name })) : null}

@@ -440,3 +440,22 @@ a.namebtn:hover { color: var(--accent); }
 .wtcard.ro .wtf { opacity: .62; }
 .wtcard.ro .wtf :is(input, select) { cursor: not-allowed; }
 .wtnote { font-size: 12.5px; margin-top: 10px; }
+
+/* Záložky dňa: Zadať neprítomnosť | Upraviť dochádzku */
+.etabs { display: flex; gap: 4px; border-bottom: 1px solid var(--grid); margin: -4px 0 0; }
+.etabs > * { padding: 9px 14px; font-weight: 600; font-size: 14px; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.etabs a:hover { color: var(--ink); }
+.etabs .on { color: var(--accent); border-bottom-color: var(--accent); }
+.etabs .off { opacity: .45; cursor: help; }
+/* súhrn dňa v úprave dochádzky */
+.attsum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 10px 12px; border-radius: 8px; background: var(--sunk); font-size: 13.5px; }
+.attsum.warn { background: var(--warn-soft); }
+.attsum b.plus { color: var(--ok, #1F8A4C); }
+.attsum b.minus { color: var(--bad); }
+.attsum .linkbtn { margin-left: auto; font-size: 12.5px; }
+.attrules { margin: 0; padding-left: 18px; font-size: 12.5px; display: grid; gap: 3px; }
+.fform input[readonly] { background: var(--sunk); color: var(--muted); }
+/* značka upravenej dochádzky v bunke kalendára */
+.cal td.c .cell { position: relative; }
+.attmark { position: absolute; right: 1px; bottom: 1px; z-index: 3; width: 14px; height: 14px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); color: var(--accent); box-shadow: 0 0 0 1px var(--grid); cursor: pointer; line-height: 0; }
+.attmark:hover { color: #fff; background: var(--accent); }

@@ -115,6 +115,18 @@ export async function Calendar({
     entries = (data ?? []) as CalEntry[];
   }
 
+  // Úpravy dochádzky (príchod, odchod, prestávka) – vidí ich zamestnanec sám, jeho vedúci a admin (RLS)
+  const attMap = new Map<string, { arrive: string; leave: string; break_start: string | null; break_min: number; note: string | null }>();
+  {
+    const { data: atts } = await supabase
+      .from("attendance")
+      .select("employee_id, day, arrive, leave, break_start, break_min, note")
+      .gte("day", first)
+      .lte("day", last);
+    for (const a of (atts ?? []) as { employee_id: string; day: string; arrive: string; leave: string; break_start: string | null; break_min: number; note: string | null }[])
+      attMap.set(`${a.employee_id}|${a.day}`, a);
+  }
+
   // Admin v pohľade zamestnanca: databáza mu vracia všetko, GDPR maskovanie preto doplníme tu
   if (me.realRole === "admin" && !admin && settings.hide_health) {
     const health = new Set(absTypes.filter((t) => t.is_health).map((t) => t.code));
@@ -255,7 +267,7 @@ export async function Calendar({
 
 
   const types = ["DOV", "PV", "PAR", "OČR", "SCT", "SCZ", "HO", "PN"];
-  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on, basePath };
+  const ctx = { calc, admin, meId: me.id, managed: new Set(me.managed), on, basePath, att: attMap };
 
   return (
     <>
@@ -313,7 +325,26 @@ type Ctx = {
   on: (empId: string, d: string) => CalEntry[];
   /** cesta kalendára (klik na deň v hlavičke → denný náhľad) */
   basePath: string;
+  /** úpravy dochádzky: „zamestnanec|deň“ → časy */
+  att: Map<string, { arrive: string; leave: string; break_start: string | null; break_min: number; note: string | null }>;
 };
+
+/** Značka upravenej dochádzky v bunke (klik → úprava dochádzky). */
+function AttMark({ empId, d, att }: { empId: string; d: string; att: Ctx["att"] }) {
+  const a = att.get(`${empId}|${d}`);
+  if (!a) return null;
+  const t = (x: string | null) => (x ? x.slice(0, 5) : "");
+  const m = (Number(a.leave.slice(0, 2)) * 60 + Number(a.leave.slice(3, 5))) - (Number(a.arrive.slice(0, 2)) * 60 + Number(a.arrive.slice(3, 5))) - a.break_min;
+  const tip = `Upravená dochádzka: ${t(a.arrive)}–${t(a.leave)}${a.break_min ? `, prestávka ${t(a.break_start)} (${a.break_min} min)` : ""} · odpracované ${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")} h${a.note ? `\nPoznámka: ${a.note}` : ""}`;
+  return (
+    <span className="attmark" data-att={`/dochadzka?emp=${empId}&d=${d}`} title={tip} aria-label={tip}>
+      <svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true">
+        <circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
 
 const PEND_TXT = { new: "žiadosť o zápis", delete: "žiadosť o vymazanie", edit: "žiadosť o zmenu" } as const;
 /** trieda a atribúty záznamu podľa čakajúcej žiadosti (náhľad nového zápisu sa nedá otvoriť ako záznam) */
@@ -502,7 +533,10 @@ function Grid({
                       data-emp={e.id}
                       data-d={d}
                     >
-                      <div className="cell">{off ? null : <Cell empId={e.id} empName={e.name} d={d} wide={wide} {...ctx} />}</div>
+                      <div className="cell">
+                        {off ? null : <Cell empId={e.id} empName={e.name} d={d} wide={wide} {...ctx} />}
+                        <AttMark empId={e.id} d={d} att={ctx.att} />
+                      </div>
                     </td>
                   );
                 })}

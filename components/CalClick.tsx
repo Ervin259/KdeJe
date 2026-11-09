@@ -15,6 +15,9 @@ export function CalClick({ back, children }: { back: string; children: React.Rea
       if (!t.closest("button, form, a, input, label")) router.push(prof.dataset.prof);
       return;
     }
+    // značka upravenej dochádzky → úprava dochádzky v ten deň
+    const am = t.closest<HTMLElement>("[data-att]");
+    if (am?.dataset.att) return router.push(am.dataset.att + "&spat=" + encodeURIComponent(back));
     // náhľad čakajúcej žiadosti sa neotvára
     if (t.closest("[data-req]")) return;
     const rec = t.closest<HTMLElement>("[data-id]");

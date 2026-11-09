@@ -38,6 +38,48 @@ async function decide(_prev: ActState, form: FormData, approve: boolean): Promis
     if (await requestLocked(r)) return { error: "Zmena je po uzávierke – žiadosť vybaví admin." };
   }
   const name = emps.find((e) => e.id === r.employee_id)?.name ?? "";
+
+  // žiadosť o úpravu dochádzky (príchod, odchod, prestávka)
+  if (r.target === "attendance") {
+    const a = r.payload as { employee_id: string; day: string; arrive: string; leave: string; break_start: string | null; break_min: number; note?: string | null };
+    const o = r.original as { day: string } | null;
+    const dayTxt = fd((a?.day ?? o?.day) as string);
+    const desc = r.kind === "delete" ? `Vrátiť dochádzku ${dayTxt} na predvolené` : `Dochádzka ${dayTxt}: ${a.arrive.slice(0, 5)}–${a.leave.slice(0, 5)}`;
+    if (approve) {
+      const res =
+        r.kind === "delete"
+          ? await supabase.from("attendance").delete().eq("employee_id", r.employee_id).eq("day", o?.day ?? a.day)
+          : await supabase.from("attendance").upsert(
+              {
+                employee_id: r.employee_id,
+                day: a.day,
+                arrive: a.arrive,
+                leave: a.leave,
+                break_start: a.break_start,
+                break_min: a.break_min,
+                note: a.note ?? null,
+                created_by: r.created_by,
+              },
+              { onConflict: "employee_id,day" }
+            );
+      if (res.error) return { error: "Zmenu sa nepodarilo uložiť: " + res.error.message };
+    }
+    const { error } = await supabase
+      .from("requests")
+      .update({ status: approve ? "approved" : "rejected", decided_by: me.id || null, decided_at: new Date().toISOString(), reject_reason: approve ? null : note || null })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await supabase.from("audit_log").insert({
+      employee_id: r.employee_id,
+      table_name: "requests",
+      action: approve ? "APPROVE" : "REJECT",
+      row_id: id,
+      after_lock: true,
+      text: `${name} · ${approve ? "schválená" : "zamietnutá"} žiadosť: ${desc}${approve ? ` (${r.reason})` : note ? " – " + note : ""}`,
+    });
+    revalidatePath("/", "layout");
+    return { ok: approve ? "Žiadosť schválená, dochádzka je uložená" : "Žiadosť zamietnutá" };
+  }
   const rec = r.payload as Entry;
   const old = (r.original as Entry | null) ?? null;
   const desc =

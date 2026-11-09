@@ -77,7 +77,8 @@ export function readWorkTime(f: FormData, p = ""): WorkTime {
   const breakMode: BreakMode = s("break_mode") === "window" ? "window" : "fixed";
   return {
     flexible,
-    day_start: flexible ? null : t("day_start"),
+    // pevný: začiatok; pružný: predvolený príchod (zapisuje sa len odchýlka)
+    day_start: t("day_start"),
     day_end: flexible ? null : t("day_end"),
     daily_hours: n("daily_hours", null),
     core_start: flexible ? t("core_start") : null,
@@ -118,6 +119,9 @@ export function checkWorkTime(w: WorkTime): string[] {
       else if (lt(w.core_start, w.arrive_to) || lt(w.leave_from, w.core_end)) e.push("Základný čas musí začínať najskôr po poslednom príchode a končiť najneskôr pred prvým odchodom.");
     }
     if (!w.daily_hours || w.daily_hours <= 0) e.push("Pri pružnom čase vyplňte denný fond hodín.");
+    if (!w.day_start) e.push("Vyplňte predvolený príchod.");
+    else if (w.arrive_from && w.arrive_to && (toMin(w.day_start) < toMin(w.arrive_from) || toMin(w.day_start) > toMin(w.arrive_to)))
+      e.push("Predvolený príchod musí byť v čase voliteľného príchodu.");
   }
   if (w.daily_hours != null && (w.daily_hours < 0.5 || w.daily_hours > 12)) e.push("Denný fond musí byť od 0,5 do 12 hodín.");
   if (w.break_mode === "window" && (!w.break_from || !w.break_to || !lt(w.break_from, w.break_to))) e.push("Vyplňte okno, v ktorom si môže vziať prestávku (od – do).");
@@ -143,7 +147,7 @@ export function longInfo(w: WorkTime): string[] {
   const out: string[] = [];
   out.push(
     w.flexible
-      ? `pružný – príchod ${hm(w.arrive_from)}–${hm(w.arrive_to)}, odchod ${hm(w.leave_from)}–${hm(w.leave_to)}${
+      ? `pružný – príchod ${hm(w.arrive_from)}–${hm(w.arrive_to)} (predvolene ${hm(w.day_start ?? w.arrive_from)}), odchod ${hm(w.leave_from)}–${hm(w.leave_to)}${
           w.core_start && w.core_end ? `, základný čas ${hm(w.core_start)}–${hm(w.core_end)}` : ""
         }, fond ${nf(H)} h denne, pružné obdobie ${FLEX_PERIOD[w.flex_period]}`
       : `pevný ${hm(w.day_start)}–${hm(w.day_end)} = ${nf(H)} h denne`

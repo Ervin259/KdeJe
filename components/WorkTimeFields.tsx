@@ -78,6 +78,9 @@ export function WorkTimeFields({ g, prefix = "", disabled = false }: { g: WorkTi
           {time("arrive_from", "07:00", "Príchod najskôr")}
           <span className="ct">–</span>
           {time("arrive_to", "10:00", "Príchod najneskôr")}
+          <span className="ct" title="S týmto príchodom aplikácia počíta, kým zamestnanec nezapíše iný">(predvolene</span>
+          <input className="ci t" type="time" step={900} name={n("day_start")} defaultValue={hm(g.day_start) || hm(g.arrive_from) || "08:00"} aria-label="Predvolený príchod" />
+          <span className="ct">)</span>
           <span className="ct">· odchod</span>
           {time("leave_from", "15:00", "Odchod najskôr")}
           <span className="ct">–</span>
