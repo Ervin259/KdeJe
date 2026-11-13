@@ -62,7 +62,7 @@ function NotifRuleCard({ r, preview, logs, firm, year }: { r: NotifRuleView; pre
     : tab === "ty"
       ? { first: "Ján", last: "Novák", nick: "Jano", sal: "ty" as const, firm, year, left: 13, carry: 10, over: 3 }
       : { first: "Ján", last: "Novák", nick: "", sal: "pan" as const, firm, year, left: 13, carry: 10, over: 3 };
-  const mail = vacMail({ subject, body, body_ty: bodyTy }, sample, "https://kdeje.app");
+  const mail = vacMail({ subject, body, body_ty: bodyTy }, sample, typeof window === "undefined" ? "https://kdeje.app" : window.location.origin);
   const withMail = preview.filter((p) => p.email).length;
   // vybraní: predvolene nikto – aby sa omylom neposlalo všetkým
   const [sel, setSel] = useState<Set<string>>(new Set());

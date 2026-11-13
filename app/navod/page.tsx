@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import "../site.css";
+import { siteHost } from "@/lib/site";
 
 export const metadata = { title: "Návod – KdeJe" };
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const host = await siteHost();
   return (
     <div className="site">
       <SiteHeader />
@@ -26,7 +28,7 @@ export default function GuidePage() {
           <h2 id="prihlasenie">Prihlásenie</h2>
           <ol>
             <li>
-              Na <Link href="/login">kdeje.app/login</Link> zadajte pracovný e-mail a kliknite na „Poslať prihlasovací odkaz“.
+              Na <Link href="/login">{host}/login</Link> zadajte pracovný e-mail a kliknite na „Poslať prihlasovací odkaz“.
             </li>
             <li>Otvorte e-mail od KdeJe a kliknite na odkaz – v tom istom prehliadači, v ktorom chcete aplikáciu používať.</li>
             <li>Heslo nepotrebujete. Prihlásenie vydrží, kým sa neodhlásite alebo nevymažete údaje prehliadača.</li>

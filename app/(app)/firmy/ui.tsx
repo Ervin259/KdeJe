@@ -122,7 +122,7 @@ export function SupplierForm({ s }: { s: PlatformSettings }) {
         <Msg st={st} />
       </div>
       <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>
-        Tieto údaje sa zobrazujú v obchodných podmienkach na kdeje.app/podmienky a firmám pri platobných údajoch.
+        Tieto údaje sa zobrazujú v obchodných podmienkach (stránka /podmienky) a firmám pri platobných údajoch.
       </p>
     </form>
   );

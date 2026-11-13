@@ -88,7 +88,11 @@ export function textMailHtml(text: string, button?: { href: string; label: strin
   const btn = button
     ? `<p style="margin-top:18px"><a href="${esc(button.href)}" style="display:inline-block;background:#2944C2;color:#fff;padding:11px 20px;border-radius:10px;text-decoration:none;font-weight:600">${esc(button.label)}</a></p>`
     : "";
-  return `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#161D2B">${paras}${btn}<p style="color:#596379;font-size:12px;margin-top:24px">KdeJe · kdeje.app</p></div>`;
+  let host = "kdeje.app";
+  try {
+    if (button) host = new URL(button.href).host.replace(/^www\./, "");
+  } catch {}
+  return `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#161D2B">${paras}${btn}<p style="color:#596379;font-size:12px;margin-top:24px">KdeJe · ${esc(host)}</p></div>`;
 }
 
 export type VacMail = {

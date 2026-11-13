@@ -38,6 +38,16 @@ export async function sendMail(to: string | null | undefined, subject: string, h
 const esc = (s: string | number | null | undefined) =>
   String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
+/** Doména do pätičky e-mailu: podľa odkazu v e-maile, inak APP_URL (do konca roka bežia kdeje.app aj outtime.io). */
+export function footHost(href?: string): string {
+  for (const u of [href, process.env.APP_URL]) {
+    try {
+      if (u) return new URL(u).host.replace(/^www\./, "");
+    } catch {}
+  }
+  return "kdeje.app";
+}
+
 /** Jednoduchý e-mail: nadpis, riadky „Popis: hodnota“ a tlačidlo. */
 export function mailHtml(title: string, rows: [string, string | number | null | undefined][], button?: { href: string; label: string }) {
   const tr = rows
@@ -47,5 +57,5 @@ export function mailHtml(title: string, rows: [string, string | number | null | 
   const btn = button
     ? `<p style="margin-top:18px"><a href="${esc(button.href)}" style="display:inline-block;background:#2944C2;color:#fff;padding:11px 20px;border-radius:10px;text-decoration:none;font-weight:600">${esc(button.label)}</a></p>`
     : "";
-  return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#161D2B"><h2 style="margin:0 0 12px">${esc(title)}</h2><table>${tr}</table>${btn}<p style="color:#596379;font-size:12px;margin-top:24px">KdeJe · kdeje.app</p></div>`;
+  return `<div style="font-family:Arial,sans-serif;font-size:14px;color:#161D2B"><h2 style="margin:0 0 12px">${esc(title)}</h2><table>${tr}</table>${btn}<p style="color:#596379;font-size:12px;margin-top:24px">KdeJe · ${esc(footHost(button?.href))}</p></div>`;
 }

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requirePlatform, todayIso } from "@/lib/data";
 import { Header } from "@/components/Header";
+import { siteHost } from "@/lib/site";
 import { eur, fdate, loadPlatformSettings, nextInvoice, settle, yearlyPrice, type BillingCompany, type Invoice } from "@/lib/billing";
 import { editConfirmedHolidays, makeHolidayDraftAction } from "./actions";
 import { DecideSignup, ExemptToggle, HolidayDraft, RunDaily, InvoiceActions, IssueInvoices, ResendInvite, SupplierForm } from "./ui";
@@ -35,6 +36,7 @@ const STATUS: Record<string, [string, string]> = {
 
 /** Superadmin: žiadosti o zriadenie služby a prehľad všetkých firiem. */
 export default async function CompaniesPage() {
+  const host = await siteHost();
   const me = await requirePlatform();
   const supabase = await createClient();
   const [{ data: su }, { data: co }, { data: inv }, ps] = await Promise.all([
@@ -97,7 +99,7 @@ export default async function CompaniesPage() {
                 Žiadosti o zriadenie <span className={`pill ${pend.length ? "warn" : "closed"}`}>{pend.length}</span>
               </h3>
               <span className="muted" style={{ fontSize: 12 }}>
-                Z formulára na kdeje.app/registracia · po schválení sa firma založí a admin dostane pozvánku
+                Z formulára na {host}/registracia · po schválení sa firma založí a admin dostane pozvánku
               </span>
             </div>
             <div className="reqs">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteFooter, SiteHeader } from "@/components/site/SiteChrome";
 import { SupplierBlock } from "@/components/site/Supplier";
+import { siteHost } from "@/lib/site";
 import { eur, loadPlatformSettings, months } from "@/lib/billing";
 import "../site.css";
 
@@ -8,6 +9,7 @@ export const metadata = { title: "Obchodné podmienky – KdeJe" };
 export const dynamic = "force-dynamic";
 
 export default async function TermsPage() {
+  const host = await siteHost();
   const s = await loadPlatformSettings();
   const price = eur(s.price_month);
   const minYear = eur(s.min_employees * 12 * s.price_month);
@@ -45,7 +47,7 @@ export default async function TermsPage() {
           <h2 id="dodavatel">1. Dodávateľ a služba</h2>
           <SupplierBlock s={s} />
           <p>
-            KdeJe je webová aplikácia na evidenciu dochádzky a neprítomností zamestnancov (ďalej „služba“), dostupná na adrese kdeje.app. Služba je
+            KdeJe je webová aplikácia na evidenciu dochádzky a neprítomností zamestnancov (ďalej „služba“), dostupná na adrese {host}. Služba je
             určená firmám a podnikateľom (ďalej „zákazník“). Zmluva medzi dodávateľom a zákazníkom sa riadi Obchodným zákonníkom; ustanovenia o
             ochrane spotrebiteľa sa neuplatňujú.
           </p>
