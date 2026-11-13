@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 /**
  * Odoslanie e-mailu cez SMTP (Brevo – rovnaké údaje ako v Supabase → SMTP Settings).
  * Premenné vo Verceli: SMTP_USER (Login z Brevo), SMTP_PASS (SMTP kľúč),
- * voliteľne SMTP_HOST (smtp-relay.brevo.com), SMTP_PORT (587), MAIL_FROM (noreply@kdeje.app).
+ * voliteľne SMTP_HOST (smtp-relay.brevo.com), SMTP_PORT (587), MAIL_FROM (noreply@outtime.io), MAIL_FROM_NAME (OutTime).
  * Bez nich sa e-mail neodošle (aplikácia funguje ďalej) a do logu sa zapíše upozornenie.
  */
 export async function sendMail(to: string | null | undefined, subject: string, html: string): Promise<boolean> {
@@ -23,7 +23,7 @@ export async function sendMail(to: string | null | undefined, subject: string, h
       auth: { user, pass },
     });
     await tx.sendMail({
-      from: { name: process.env.MAIL_FROM_NAME ?? "KdeJe", address: process.env.MAIL_FROM ?? "noreply@kdeje.app" },
+      from: { name: process.env.MAIL_FROM_NAME ?? "OutTime", address: process.env.MAIL_FROM ?? "noreply@outtime.io" },
       to,
       subject,
       html,
